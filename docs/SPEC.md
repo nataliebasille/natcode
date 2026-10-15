@@ -48,7 +48,7 @@ Open design explorations: [Types as function-like constructs](design/type-functi
 - [`spec/`](spec/): Language syntax, semantics, and behavioral rules, with explicit statuses showing which portions are still proposals.
 - [`design/`](design/): Open design explorations, proposals, and alternatives.
 - [`compiler/`](compiler/): Compiler architecture, implementation choices, and algorithms. These do not redefine language semantics.
-- [`AGENTS.md`](AGENTS.md): Rules for coding agents working with this specification.
+- [`AGENTS.md`](../AGENTS.md): Rules for coding agents working with this specification.
 
 ## Initial direction (not yet normative)
 
