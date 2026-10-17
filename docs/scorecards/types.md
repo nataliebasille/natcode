@@ -167,7 +167,7 @@
   1. How does a type receive the error designation (declaration syntax, marker type, protocol, or another mechanism)?
   2. How are possible errors reflected in type inference, union types, and function return types?
   3. How do callers handle, transform, and propagate error values without exceptions?
-- **Notes:** Explicit, unwrapped error values and compiler-recognized designated error types are approved in TYP-ERR-02. Language-level exceptions are rejected (RUN-EFF-04).
+- **Notes:** Explicit, unwrapped error values and compiler-recognized designated error types are approved in TYP-ERR-02. Language-level exceptions are rejected (RUN-EFF-04). **Defer all remaining error designation, typing, and propagation decisions until the foundational type model is worked through**, especially TYP-ADT-01 (constructors), TYP-CON-03 (subtyping), and PAR-TYPE-02 (declarations). Do not assume marker types, structural inheritance, or nominal branding.
 
 ### TYP-ERR-02 — Designated first-class error types
 
