@@ -22,6 +22,12 @@ The function syntax in these examples is illustrative (PAR-FN-01, TYP-FN-03); th
 
 Compile-time evaluation rules should be standardized and deterministic. When an attempt to evaluate a pure expression exceeds its budget, **fall back to ordinary sound static inference rather than failing solely due to the budget**. Exact budgets and the relationship to type checking are TYP-EVAL-02.
 
+## Error handling
+
+Natcode has no language-level exceptions, throwing/catching semantics, or exception-based propagation (RUN-EFF-04). Recoverable errors are represented explicitly as values. `try`, `catch`, and `throw` are not built-in exception constructs (LEX-KW-11).
+
+The details of error values and their typing, handling, and propagation are tracked by TYP-ERR-01. Unrecoverable runtime faults and failures in lazy computations remain a separate question (RUN-EFF-02).
+
 ## Laziness
 
 - Top-level module bindings and exported object members are call-by-need and cached after evaluation.
