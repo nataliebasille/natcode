@@ -84,6 +84,14 @@ mod keywords {
     }
 
     #[test]
+    fn declaration_and_match_keywords_are_reserved() {
+        assert_clean(
+            "type fn match",
+            &[(Type, "type"), (Fn, "fn"), (Match, "match")],
+        );
+    }
+
+    #[test]
     fn true_and_false_are_boolean_literals() {
         assert_clean("true false", &[(True, "true"), (False, "false")]);
     }
@@ -91,13 +99,16 @@ mod keywords {
     #[test]
     fn keywords_are_case_sensitive() {
         assert_clean(
-            "From IMPORT Export True FALSE",
+            "From IMPORT Export True FALSE Type FN Match",
             &[
                 (Identifier, "From"),
                 (Identifier, "IMPORT"),
                 (Identifier, "Export"),
                 (Identifier, "True"),
                 (Identifier, "FALSE"),
+                (Identifier, "Type"),
+                (Identifier, "FN"),
+                (Identifier, "Match"),
             ],
         );
     }
@@ -105,7 +116,7 @@ mod keywords {
     #[test]
     fn words_containing_keywords_are_identifiers() {
         assert_clean(
-            "fromage imports exported trueish false_ _from",
+            "fromage imports exported trueish false_ _from types typeof fnord _fn fn2 matches rematch",
             &[
                 (Identifier, "fromage"),
                 (Identifier, "imports"),
@@ -113,23 +124,82 @@ mod keywords {
                 (Identifier, "trueish"),
                 (Identifier, "false_"),
                 (Identifier, "_from"),
+                (Identifier, "types"),
+                (Identifier, "typeof"),
+                (Identifier, "fnord"),
+                (Identifier, "_fn"),
+                (Identifier, "fn2"),
+                (Identifier, "matches"),
+                (Identifier, "rematch"),
             ],
         );
     }
 
     #[test]
-    fn illustrative_words_are_not_reserved() {
-        // The keyword list beyond from/import/export is deferred.
+    fn keywords_are_reserved_regardless_of_context() {
+        // Property-key and member positions still yield keyword tokens; whether
+        // the parser accepts them there is PAR-OBJ-01.
         assert_clean(
-            "if then else type let val var",
+            "{ type: 1, fn: 2 }.match",
+            &[
+                (LBrace, "{"),
+                (Type, "type"),
+                (Colon, ":"),
+                (Number, "1"),
+                (Comma, ","),
+                (Fn, "fn"),
+                (Colon, ":"),
+                (Number, "2"),
+                (RBrace, "}"),
+                (Dot, "."),
+                (Match, "match"),
+            ],
+        );
+        assert_clean("match = fn", &[(Match, "match"), (Equals, "="), (Fn, "fn")]);
+    }
+
+    #[test]
+    fn conditional_and_case_words_are_not_reserved() {
+        assert_clean(
+            "if else elif case",
             &[
                 (Identifier, "if"),
-                (Identifier, "then"),
                 (Identifier, "else"),
-                (Identifier, "type"),
+                (Identifier, "elif"),
+                (Identifier, "case"),
+            ],
+        );
+    }
+
+    #[test]
+    fn null_is_an_identifier() {
+        assert_clean(
+            "null = None",
+            &[(Identifier, "null"), (Equals, "="), (Identifier, "None")],
+        );
+    }
+
+    #[test]
+    fn return_is_an_identifier() {
+        assert_clean(
+            "return = 1",
+            &[(Identifier, "return"), (Equals, "="), (Number, "1")],
+        );
+    }
+
+    #[test]
+    fn undecided_words_are_not_reserved_for_now() {
+        // Pins provisional behavior: further reserved words are LEX-KW-03.
+        assert_clean(
+            "then let val var yield async await",
+            &[
+                (Identifier, "then"),
                 (Identifier, "let"),
                 (Identifier, "val"),
                 (Identifier, "var"),
+                (Identifier, "yield"),
+                (Identifier, "async"),
+                (Identifier, "await"),
             ],
         );
     }

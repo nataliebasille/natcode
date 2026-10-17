@@ -44,51 +44,58 @@
   1. Which additional words, if any, should be reserved beyond the approved set?
   2. Should generator/effect words such as `yield`, `async`, or `await` become reserved? Their semantics remain open.
   3. Is `then` or any other branch-related word necessary once `match` handles conditionals?
-- **Notes:** The implemented lexer currently recognizes only `from`, `import`, `export`, `true`, and `false`; newly approved keywords are not yet implemented. `if`, `else`, `case`, `return`, and `null` are explicitly excluded by approved decisions.
+- **Notes:** The lexer recognizes `from`, `import`, `export`, `type`, `fn`, `match`, `true`, and `false`. `if`, `else`, `elif`, `case`, `return`, and `null` are explicitly excluded by approved decisions. Other words, such as `then`, `let`, `val`, `var`, `yield`, `async`, and `await`, currently lex as identifiers (`tests/lexer/main.rs::keywords::undecided_words_are_not_reserved_for_now`).
 
 ### LEX-KW-04 — Hard-reserved keyword strategy
 
-- **Status:** Approved
+- **Status:** Implemented
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
 - **Done when:** Every designated keyword lexes as its keyword token regardless of syntactic context; no contextual keyword classification is used.
+- **Evidence:** `tests/lexer/main.rs::keywords::keywords_are_reserved_regardless_of_context`
 - **Notes:** Whether a keyword token is allowed in a property-key position is determined by the parser; it is never re-lexed as an identifier.
 
 ### LEX-KW-05 — Type declaration keyword
 
-- **Status:** Approved
+- **Status:** Implemented
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
 - **Done when:** `type` lexes as a hard-reserved keyword; longer words containing it remain identifiers.
+- **Evidence:** `tests/lexer/main.rs::keywords::declaration_and_match_keywords_are_reserved`, `tests/lexer/main.rs::keywords::keywords_are_case_sensitive`, `tests/lexer/main.rs::keywords::words_containing_keywords_are_identifiers`
 
 ### LEX-KW-06 — Function declaration keyword
 
-- **Status:** Approved
+- **Status:** Implemented
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
 - **Done when:** `fn` lexes as a hard-reserved keyword; longer words containing it remain identifiers.
+- **Evidence:** `tests/lexer/main.rs::keywords::declaration_and_match_keywords_are_reserved`, `tests/lexer/main.rs::keywords::keywords_are_case_sensitive`, `tests/lexer/main.rs::keywords::words_containing_keywords_are_identifiers`
 
 ### LEX-KW-07 — Unified matching keyword
 
-- **Status:** Approved
+- **Status:** Implemented
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
 - **Done when:** `match` lexes as a hard-reserved keyword; longer words containing it remain identifiers.
+- **Evidence:** `tests/lexer/main.rs::keywords::declaration_and_match_keywords_are_reserved`, `tests/lexer/main.rs::keywords::keywords_are_case_sensitive`, `tests/lexer/main.rs::keywords::words_containing_keywords_are_identifiers`
 
 ### LEX-KW-08 — No separate conditional or case keywords
 
-- **Status:** Approved
+- **Status:** Implemented
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
 - **Done when:** `if`, `else`, `elif`, and `case` are not treated as reserved words; conditional and pattern-matching constructs use `match`.
+- **Evidence:** `tests/lexer/main.rs::keywords::conditional_and_case_words_are_not_reserved`
 
 ### LEX-KW-09 — No null literal
 
-- **Status:** Approved
+- **Status:** Implemented
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
 - **Done when:** `null` is not recognized as a keyword or literal token; absence is represented through ordinary sum-type constructors such as `None`.
+- **Evidence:** `tests/lexer/main.rs::keywords::null_is_an_identifier`
 - **Notes:** Foreign-language null conversions are a separate interoperability issue.
 
 ### LEX-KW-10 — No return keyword
 
-- **Status:** Approved
+- **Status:** Implemented
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
 - **Done when:** `return` is not treated as a reserved word or control-flow token; functions return their final expression (PAR-FN-03).
+- **Evidence:** `tests/lexer/main.rs::keywords::return_is_an_identifier`
 
 ## Identifiers
 

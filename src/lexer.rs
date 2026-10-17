@@ -1,11 +1,12 @@
 //! Lexer for Natcode. Item status lives in `docs/scorecards/lexer.md`.
 //!
 //! Implements the Implemented `LEX-*` items: UAX #31 identifiers (XID_Start
-//! or `_`, then XID_Continue) normalized to NFC, the `from`/`import`/`export`
-//! keywords, boolean literals, decimal numbers, escape-free double-quoted
-//! strings, line/nested block comments, the core operator set, and newline
-//! tokens. Emoji identifiers (LEX-ID-04) and indentation tokens (LEX-IND-01)
-//! are open questions and not handled yet.
+//! or `_`, then XID_Continue) normalized to NFC, the hard-reserved
+//! `from`/`import`/`export`/`type`/`fn`/`match` keywords, boolean literals,
+//! decimal numbers, escape-free double-quoted strings, line/nested block
+//! comments, the core operator set, and newline tokens. Emoji identifiers
+//! (LEX-ID-04) and indentation tokens (LEX-IND-01) are open questions and not
+//! handled yet.
 
 use unicode_ident::{is_xid_continue, is_xid_start};
 use unicode_normalization::{UnicodeNormalization, is_nfc};
@@ -20,6 +21,9 @@ pub enum TokenKind {
     From,
     Import,
     Export,
+    Type,
+    Fn,
+    Match,
     /// Standalone `_`, reserved as a wildcard.
     Underscore,
     /// `=`
@@ -394,6 +398,9 @@ impl Lexer<'_> {
             "from" => TokenKind::From,
             "import" => TokenKind::Import,
             "export" => TokenKind::Export,
+            "type" => TokenKind::Type,
+            "fn" => TokenKind::Fn,
+            "match" => TokenKind::Match,
             "true" => TokenKind::True,
             "false" => TokenKind::False,
             _ => TokenKind::Identifier,
