@@ -97,6 +97,13 @@
 - **Done when:** `return` is not treated as a reserved word or control-flow token; functions return their final expression (PAR-FN-03).
 - **Evidence:** `tests/lexer/main.rs::keywords::return_is_an_identifier`
 
+### LEX-KW-11 — No exception-handling keywords
+
+- **Status:** Approved
+- **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
+- **Done when:** `try`, `catch`, and `throw` are ordinary identifiers, not exception-related keywords or tokens.
+- **Notes:** The language-level exception mechanism is rejected (RUN-EFF-04).
+
 ## Identifiers
 
 ### LEX-ID-01 — Unicode identifiers (UAX #31)
