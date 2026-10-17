@@ -1,6 +1,6 @@
-# Type inference, lazy evaluation, and debugging: approved directions
+# Type inference, lazy evaluation, and debugging
 
-**Status:** Relevant cross-cutting decisions already made; exact semantics not fully specified.
+Item status and open questions for this file are tracked in the [types](../scorecards/types.md), [runtime](../scorecards/runtime.md), and [debugger](../scorecards/debugger.md) scorecards.
 
 ## Literal precision
 
@@ -18,9 +18,9 @@ test(x: number) => x * 2   // return: number
 test(x: 24) => x * 2       // return: 48
 ```
 
-These examples do **not** approve the syntax for declaring functions or overloads. They illustrate type inference rules only.
+The function syntax in these examples is illustrative (PAR-FN-01, TYP-FN-03); they illustrate type inference rules only.
 
-Compile-time evaluation rules should be standardized and deterministic. When an attempt to evaluate a pure expression exceeds its budget, **fall back to ordinary sound static inference rather than failing solely due to the budget**. Exact budgets and the relationship to type checking are not yet specified.
+Compile-time evaluation rules should be standardized and deterministic. When an attempt to evaluate a pure expression exceeds its budget, **fall back to ordinary sound static inference rather than failing solely due to the budget**. Exact budgets and the relationship to type checking are TYP-EVAL-02.
 
 ## Laziness
 
@@ -32,4 +32,4 @@ Compile-time evaluation rules should be standardized and deterministic. When an 
 
 Debug builds **preserve the language's lazy semantics**. Debugging tools may show suspended computations and let the developer explicitly force/step into them. Automatically evaluating every function in debug mode is rejected, because it changes program behavior. Production builds may remove unused pure computations and debug builds may retain richer source metadata.
 
-Detailed debugger UI, effects, resource limits, and evaluation mechanisms remain separate specifications.
+The debugger interface, effects, resource limits, and force semantics are DBG-API-01.

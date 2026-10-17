@@ -2,13 +2,13 @@
 
 Before designing or implementing any language feature:
 
-1. Read `docs/README.md` (the specification index) and all relevant files under `docs/spec/`, including linked dependencies and unresolved questions. The consolidated snapshot lives in `docs/natcore-spec.md`.
-2. Distinguish authoritative, approved design from proposals, partial specifications, and open questions.
+1. Read `docs/README.md`, all relevant files under `docs/spec/`, and the scorecards in `docs/scorecards/` for every system the work touches, including linked items and their open questions. `docs/natcore-spec.md` is a generated single-file copy of the spec.
+2. Use each scorecard item's status (Proposed, Open question, Approved, In progress, Implemented) to distinguish decided design from proposals and open questions.
 3. Review even apparently complete specifications critically for omissions, contradictions, or unclear behavior. Raise issues rather than making implicit choices.
 4. Do **not** invent syntax, semantics, default behavior, or language rules to fill a gap.
-5. Do **not** implement a feature or subset unless its scope is explicitly marked **Approved** for implementation by the language owner. An agent's **Recommended** assessment is not approval.
-6. Independently specified subsets may be implemented when explicitly approved and unaffected by incomplete related designs. Do not broaden their scope implicitly.
-7. Keep language semantics in `docs/spec/`, the consolidated decision snapshot in `docs/natcore-spec.md`, and implementation tracking in `docs/SCORECARD.md` and `docs/implementation/`. Deferred and not-yet-approved subjects belong in `docs/spec/deferred.md`.
-8. Do not change specification decisions or implementation approvals without explicit owner authorization. You may propose changes and record unresolved questions for review.
+5. Do **not** implement an item unless its scorecard status is **Approved** (or already In progress). A **Proposed** item, or an agent's suggested answer to an open question, is not approval.
+6. Approved items may be implemented even when related items are still open, as long as they are unaffected by them. Do not broaden an item's scope implicitly.
+7. Keep language semantics in `docs/spec/`, and all status, open questions, and test evidence in `docs/scorecards/` (format and rules in `docs/scorecards/README.md`). Undecided subjects are **Open question** items, never spec prose. After editing docs, run `python docs/tools/build_spec.py` and `python docs/tools/scorecard_status.py --check`.
+8. Only the language owner moves items to **Open question** or **Approved**, or changes specification decisions. You may add **Proposed** items, add questions, and suggest answers for review. Move items to **In progress** or **Implemented** only for approved work, recording passing tests as evidence.
 
 When blocked, describe the missing decision, why it affects implementation, and possible alternatives without selecting one on the owner's behalf.

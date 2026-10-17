@@ -1,6 +1,6 @@
 # Modules, imports, exports, and program entry
 
-**Status: Approved module rules with some deferred details.**
+Item status and open questions for this file are tracked in the [parser](../scorecards/parser.md), [resolver](../scorecards/resolver.md), [types](../scorecards/types.md), and [runtime](../scorecards/runtime.md) scorecards.
 
 ## What is a module?
 
@@ -8,7 +8,7 @@ A module is a **logical, lexically scoped collection of declarations** with its 
 
 A source file permits **top-level declarations only** (including imports and the terminal export declaration), not standalone executable expressions. A top-level variable initializer is part of a declaration, not a standalone statement.
 
-Functions associated with types, future extension functions, and constructor-like functions may live in separate file modules and be connected through the import/export and future type-association system. The extension/constructor syntax remains deferred.
+Functions associated with types, future extension functions, and constructor-like functions may live in separate file modules and be connected through the import/export and future type-association system. Their syntax and resolution are PAR-EXT-01 and RES-EXT-01.
 
 ## Module form
 
@@ -68,7 +68,7 @@ export { squareNumber = square }
 - An executable module is **not importable** by other modules.
 - Its entry function can be **imported from a library module**; it need not be declared locally.
 - Each module has only one terminal export, so an executable module has one entry function.
-- The **entry function's parameter shape, effect/purity model, and runtime context** are deliberately **deferred** until function/effect specifications are designed. There is no mandated `main` name.
+- The **entry function's parameter shape, effect/purity model, and runtime context** are RUN-ENTRY-01. There is no mandated `main` name.
 
 ```natcore
 // app.nat
@@ -95,7 +95,7 @@ from "./math" import { PI }, Math
 - `{ PI, square }` imports named exports as direct local bindings.
 - `*` imports **all possible exported names** as direct local bindings; `_` is **not** an import wildcard.
 - The combined form `{ PI }, Math` imports `PI` directly and places only the **remaining** names in `Math`; `Math.PI` is absent from that combined import.
-- The designer also wants remaining exports to be importable unqualified via wildcard in a combined selective import; exact combined `*, { ... }` grammar can be finalized with import syntax.
+- The designer also wants remaining exports to be importable unqualified via wildcard in a combined selective import; the grammar for this is PAR-IMP-08.
 - Import aliases use `=` with local alias on the left: `from "./math" import { localName = publicName }`.
 - Bare `from "./math"` without `import ...` is **invalid**.
 - Multiple import declarations from the **same module are allowed** and resolved independently. For example, separate `{ PI }` and `Math` imports leave `PI` inside `Math`; one combined `{ PI }, Math` import removes `PI` from that `Math` view.
@@ -105,8 +105,8 @@ from "./math" import { PI }, Math
 - Ordinary import paths must be **static string literals**, not computed expressions or runtime variables.
 - Local imports use explicit relative prefixes `./` or `../`, resolved against the importing file.
 - `.nat` can be omitted for Natcore source modules; non-Natcore formats (such as `.json`) use an explicit extension.
-- Direct imports of **JSON** are supported in principle. Other non-Natcore file types may be supported later; their mapping into Natcore values is not yet defined.
-- Future built-in and external package path schemes are deferred.
+- Direct imports of **JSON** are supported in principle; their value representation is RES-MOD-08. Other non-Natcore file types are RES-MOD-09.
+- Built-in and external package path schemes are RES-MOD-07.
 - **Circular module dependencies are forbidden**, including cycles through several modules; the compiler reports an error.
 
 ## Import names and shadowing
@@ -126,16 +126,16 @@ PI = 3.14    // allowed local declaration
 
 Namespace imports are **first-class immutable values**, not compile-time-only symbols. They can be assigned, passed to functions, returned, and nested in other objects and namespaces.
 
-Multiple imports of the same module initially reference the **same logical exported namespace value**. An update such as `Math.PI = 3.14` constructs a **new immutable namespace value** for the current binding rather than mutating the shared original. Other references and previously captured values retain the older version. Persistent data structures and structural sharing are intended implementation techniques; detailed dotted-update semantics belong to the later object specification.
+Multiple imports of the same module initially reference the **same logical exported namespace value**. An update such as `Math.PI = 3.14` constructs a **new immutable namespace value** for the current binding rather than mutating the shared original. Other references and previously captured values retain the older version. Persistent data structures and structural sharing are intended implementation techniques; detailed dotted-update syntax and semantics are PAR-UPD-01 and RUN-UPD-02.
 
 ## Exported object shapes and optional properties
 
 - The exported object may have multiple possible statically inferred shapes (e.g., a union of object types).
 - The compiler must statically enumerate the **finite set of possible public property names**, but the presence and values of each property can vary at runtime.
-- A named import is legal when the property exists in **at least one** possible export shape. If absent in some branches, its inferred type includes a provisional `None` case.
+- A named import is legal when the property exists in **at least one** possible export shape. If absent in some branches, its inferred type includes a `None` case.
 - Importing a property that exists in **no** possible export shape is a compile-time error.
 - Wildcard imports include the **union of all possible export names**, even conditionally present ones.
-- No `null` or `undefined` values are intended for Natcore. The exact semantics/spelling of `None` will be established in the type specification.
+- No `null` or `undefined` values are intended for Natcore. The exact semantics and spelling of `None` are TYP-NONE-01.
 - A dynamic object with arbitrary runtime keys may be exported **inside a statically named property** (e.g. `export { data }`); arbitrary unenumerable runtime keys are not allowed as the module's top-level public export interface.
 
 ```natcore
@@ -160,7 +160,7 @@ export {}
 - Importing a module does not eagerly evaluate all its top-level values.
 - Bindings are evaluated on first demand and **memoized** (call-by-need).
 - Exported object properties are independently lazy; accessing one property does not evaluate another unrelated property.
-- Arbitrary factory expressions can produce exported objects, and deferred function bodies may expose lazily computed members. The details of lowering this through arbitrary function calls and the purity/effect boundary are deferred to the evaluation specification.
+- Arbitrary factory expressions can produce exported objects, and deferred function bodies may expose lazily computed members. Lowering this through arbitrary function calls, and the purity/effect boundary, are RUN-LAZY-05.
 
 ```natcore
 export { cheap = 42, expensive = expensiveCalculation() }

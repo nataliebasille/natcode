@@ -1,6 +1,6 @@
 # Variable declarations and identifiers
 
-**Status: Approved, with stated boundaries.**
+Item status and open questions for this file are tracked in the [parser](../scorecards/parser.md), [resolver](../scorecards/resolver.md), and [types](../scorecards/types.md) scorecards.
 
 ## Declaration syntax
 
@@ -34,7 +34,7 @@ if condition
 result = x           // outer x remains 10
 ```
 
-The `if` form is illustrative, but **indentation-defined code blocks** (rather than brace-delimited blocks) were separately approved.
+The `if` form is illustrative; code blocks are **indentation-defined** rather than brace-delimited (see [syntax-and-types.md](syntax-and-types.md#code-blocks-and-data-structures)).
 
 - Visibility is **sequential**: ordinary declarations become visible to later declarations, not earlier ones.
 - Functions may be **self-recursive**, as an explicit exception to the ordinary visibility rule.
@@ -51,12 +51,12 @@ result = getX()       // 10
 
 ## Identifier categories
 
-- Ordinary value bindings use Haskell-style **lowercase-leading** names, including Unicode letters supported by Unicode identifier categories, or approved emoji identifiers.
+- Ordinary value bindings use Haskell-style **lowercase-leading** names, including Unicode letters supported by Unicode identifier categories, or emoji identifiers.
 - Types and constructors use **PascalCase** and cannot use emoji identifiers.
 - Namespaces introduced by imports must use **PascalCase**.
 - **Top-level values** may *also* use `UPPER_SNAKE_CASE`; this is **allowed but not required**. Types/constructors may not use `UPPER_SNAKE_CASE`. Ordinary local values do not gain this exception.
 - A standalone `_` is reserved as a wildcard, not an ordinary binding identifier.
-- Unicode emoji sequences are valid value names, including composed emoji such as `👩‍💻`. The precise emoji lexer grammar beyond these examples can be finalized separately.
+- Unicode emoji sequences are valid value names, including composed emoji such as `👩‍💻`. Which emoji sequences are admitted is LEX-ID-04.
 
 ```natcore
 maxSize = 100
@@ -74,7 +74,7 @@ Identifiers unsupported by a target language (e.g., emoji) are mapped to generat
 - Direct primitive literals infer their exact literal types: `42`, `"Alice"`, `true`, rather than automatically widening to `number`, `string`, `boolean`.
 - Compile-time constant expressions infer exact literal results when statically evaluable: `40 + 2` may infer `42`.
 - A binding's optional `:` constraint does not erase this precision.
-- Precise rules for function return inference and evaluation are recorded in [evaluation.md](evaluation.md); they are not a requirement to finalize basic variable syntax.
+- Precise rules for function return inference and evaluation are recorded in [evaluation.md](evaluation.md); they don't affect basic variable syntax.
 
 ## Declaration grammar (schematic)
 
@@ -82,4 +82,4 @@ Identifiers unsupported by a target language (e.g., emoji) are mapped to generat
 variableDeclaration = valueIdentifier, [":", typeExpression], "=", expression ;
 ```
 
-The `valueIdentifier` category depends on scope: top-level `UPPER_SNAKE_CASE` is additionally permitted. Full lexer, expressions, and type grammar remain separate subjects.
+The `valueIdentifier` category depends on scope: top-level `UPPER_SNAKE_CASE` is additionally permitted. The lexical grammar is in [lexical.md](lexical.md); expression and type grammars are PAR-EXPR-01 and PAR-TYPE-01.
