@@ -16,7 +16,7 @@ Source text is UTF-8. Positions are reported as byte-offset spans plus 1-based l
 
 | Category | Forms |
 | --- | --- |
-| Reserved keywords | `from`, `import`, `export` (case-sensitive; `From` is an identifier) |
+| Reserved keywords | Implemented: `from`, `import`, `export`. Approved, not yet implemented: `type`, `fn`, `match`. These are case-sensitive, hard-reserved words (LEX-KW-04 through LEX-KW-07). |
 | Boolean literals | `true`, `false` |
 | Identifiers | Unicode identifiers per UAX #31: first character is `XID_Start` or `_`; following characters are `XID_Continue`. Letters of any script (`café`, `größe`, `π`, `中文`) are allowed. |
 | Wildcard | A standalone `_` is its own token, never an identifier. `_x`, `__`, and `x_` are identifiers. |
@@ -26,7 +26,7 @@ Source text is UTF-8. Positions are reported as byte-offset spans plus 1-based l
 | Comments | `// …` to end of line; `/* … */` block comments, which nest. Comments produce no tokens. Whether line breaks inside a block comment produce newline tokens is LEX-COM-04. |
 | Line breaks | LF or CRLF; each is one newline token. Spaces are insignificant between tokens. |
 
-The keyword list above is deliberately minimal. Words such as `if`, `then`, `else`, and `type` that appear in illustrative examples are ordinary identifiers (see LEX-KW-03).
+The reserved words are recognized as keywords regardless of position; they cannot name ordinary bindings. Keyword spellings are permitted as object property names, with details of the object grammar still to be determined (PAR-OBJ-01). `if`, `else`, `elif`, and `case` are not reserved words or language control-flow constructs. `return` is not a control-flow construct or keyword. `null` is not a native literal or reserved word; absence is represented using constructors such as `None`. Further words, including `then` and generator/effect vocabulary, remain open questions (LEX-KW-03).
 
 ## Identifier normalization
 
@@ -58,18 +58,49 @@ Item status and open questions for this file are tracked in the [parser](scoreca
 ## Code blocks and data structures
 
 - **Code blocks are indentation-defined.** Braces `{}` are for **data structures**, not statement/function control-flow blocks.
-- Conditional, lambda, function-definition, and data-object grammars are PAR-COND-01, PAR-FN-01, and PAR-OBJ-01; block syntax is PAR-BLK-02.
+- Match-branch, lambda, function-definition, and data-object grammars are PAR-COND-01, PAR-FN-01, and PAR-OBJ-01; block syntax is PAR-BLK-02.
 
-The following block is **conceptual**; its `if` form is illustrative:
+The following block is **conceptual**; its lambda form is illustrative:
 
 ```natcore
 x = 10
-if condition
+getInner = () =>
     x = x + 1
+    x
 result = x
 ```
 
 It illustrates an indented nested scope, not a brace-delimited code block.
+
+## Match expressions
+
+Natcore uses one `match` keyword for both structural pattern matching and conditional branching (PAR-COND-02). It does not have separate `if`/`else` or `case` control-flow constructs.
+
+- **Subjectful** `match expression` selects a branch by matching patterns against that subject.
+- **Subjectless** `match` evaluates Boolean branch conditions in source order and selects the first true condition.
+- Both forms are expressions that produce the selected branch's value.
+
+The following forms are **illustrative**, not a finalized branch grammar (PAR-COND-01, PAR-PAT-01):
+
+```natcore
+result = match option
+    Some(value) => value
+    None => 0
+
+size = match
+    x > 10 => "large"
+    x > 5 => "medium"
+    _ => "small"
+```
+
+The exact separator syntax, allowable patterns, branch bodies, fallback rules, and exhaustiveness handling remain open.
+
+## Declaration keywords and expression results
+
+- `fn` introduces named function declarations (PAR-FN-02). Parameter and body syntax remain open (PAR-FN-01).
+- Functions return the value of their final expression; there is no `return` statement or explicit early return (PAR-FN-03).
+- `type` introduces named type declarations (PAR-TYPE-03). Constructor and generic declaration grammar remain open (PAR-TYPE-02).
+- Ordinary variable bindings continue to use keyword-free `name = expression` declarations (PAR-DECL-01).
 
 ## Inference-first philosophy
 
@@ -138,12 +169,13 @@ A declaration's initializer resolves a same-name reference to the **previously v
 
 ```natcore
 x = 10
-if condition
+getInner = () =>
     x = x + 1        // inner x = 11
+    x
 result = x           // outer x remains 10
 ```
 
-The `if` form is illustrative; code blocks are **indentation-defined** rather than brace-delimited (see [syntax-and-types.md](spec/syntax-and-types.md#code-blocks-and-data-structures)).
+The lambda syntax is illustrative; code blocks are **indentation-defined** rather than brace-delimited (see [syntax-and-types.md](spec/syntax-and-types.md#code-blocks-and-data-structures)).
 
 - Visibility is **sequential**: ordinary declarations become visible to later declarations, not earlier ones.
 - Functions may be **self-recursive**, as an explicit exception to the ordinary visibility rule.

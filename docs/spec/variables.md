@@ -29,12 +29,13 @@ A declaration's initializer resolves a same-name reference to the **previously v
 
 ```natcore
 x = 10
-if condition
+getInner = () =>
     x = x + 1        // inner x = 11
+    x
 result = x           // outer x remains 10
 ```
 
-The `if` form is illustrative; code blocks are **indentation-defined** rather than brace-delimited (see [syntax-and-types.md](syntax-and-types.md#code-blocks-and-data-structures)).
+The lambda syntax is illustrative; code blocks are **indentation-defined** rather than brace-delimited (see [syntax-and-types.md](syntax-and-types.md#code-blocks-and-data-structures)).
 
 - Visibility is **sequential**: ordinary declarations become visible to later declarations, not earlier ones.
 - Functions may be **self-recursive**, as an explicit exception to the ordinary visibility rule.

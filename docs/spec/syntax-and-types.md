@@ -5,18 +5,49 @@ Item status and open questions for this file are tracked in the [parser](../scor
 ## Code blocks and data structures
 
 - **Code blocks are indentation-defined.** Braces `{}` are for **data structures**, not statement/function control-flow blocks.
-- Conditional, lambda, function-definition, and data-object grammars are PAR-COND-01, PAR-FN-01, and PAR-OBJ-01; block syntax is PAR-BLK-02.
+- Match-branch, lambda, function-definition, and data-object grammars are PAR-COND-01, PAR-FN-01, and PAR-OBJ-01; block syntax is PAR-BLK-02.
 
-The following block is **conceptual**; its `if` form is illustrative:
+The following block is **conceptual**; its lambda form is illustrative:
 
 ```natcore
 x = 10
-if condition
+getInner = () =>
     x = x + 1
+    x
 result = x
 ```
 
 It illustrates an indented nested scope, not a brace-delimited code block.
+
+## Match expressions
+
+Natcore uses one `match` keyword for both structural pattern matching and conditional branching (PAR-COND-02). It does not have separate `if`/`else` or `case` control-flow constructs.
+
+- **Subjectful** `match expression` selects a branch by matching patterns against that subject.
+- **Subjectless** `match` evaluates Boolean branch conditions in source order and selects the first true condition.
+- Both forms are expressions that produce the selected branch's value.
+
+The following forms are **illustrative**, not a finalized branch grammar (PAR-COND-01, PAR-PAT-01):
+
+```natcore
+result = match option
+    Some(value) => value
+    None => 0
+
+size = match
+    x > 10 => "large"
+    x > 5 => "medium"
+    _ => "small"
+```
+
+The exact separator syntax, allowable patterns, branch bodies, fallback rules, and exhaustiveness handling remain open.
+
+## Declaration keywords and expression results
+
+- `fn` introduces named function declarations (PAR-FN-02). Parameter and body syntax remain open (PAR-FN-01).
+- Functions return the value of their final expression; there is no `return` statement or explicit early return (PAR-FN-03).
+- `type` introduces named type declarations (PAR-TYPE-03). Constructor and generic declaration grammar remain open (PAR-TYPE-02).
+- Ordinary variable bindings continue to use keyword-free `name = expression` declarations (PAR-DECL-01).
 
 ## Inference-first philosophy
 
