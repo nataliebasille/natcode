@@ -113,3 +113,10 @@
 - **Spec:** [evaluation.md — Laziness](../spec/evaluation.md#laziness)
 - **Questions:**
   1. Are memoized results shared across program runs, threads, or other runtime scopes?
+
+### RUN-EFF-04 — No exceptions or exception propagation
+
+- **Status:** Approved
+- **Spec:** [evaluation.md — Error handling](../spec/evaluation.md#error-handling)
+- **Done when:** Natcode provides no language-level exception mechanism, catching/throwing semantics, or exception-based propagation for recoverable errors. Such failures are represented explicitly as values.
+- **Notes:** The error-value design is TYP-ERR-01. Runtime faults and failures of suspended computations remain an open subject (RUN-EFF-02); this decision does not prescribe fault termination or recovery behavior.
