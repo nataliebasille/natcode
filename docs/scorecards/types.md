@@ -39,6 +39,15 @@
   1. What are the assignability and subtype relations between types?
   2. Is subtyping semantic (set-based) or structural, and how are semantic subtyping details defined?
 
+## Named type identity
+
+### TYP-NOM-01 — Distinct nominal identities for named types
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Named type identity](../spec/syntax-and-types.md#named-type-identity)
+- **Done when:** Each independently declared named type has its own identity, so two such types are not interchangeable solely because they share an underlying representation or structural shape. Named type declarations are not transparent aliases.
+- **Notes:** Construction, representation, and permitted conversions of values of a named type are not established by this decision (TYP-ADT-01, PAR-TYPE-02); broader assignability/subtyping remains TYP-CON-03.
+
 ## Unions and intersections
 
 ### TYP-UNI-01 — Union types
@@ -173,6 +182,7 @@
 - **Spec:** [syntax-and-types.md — Union and intersection types](../spec/syntax-and-types.md#union-and-intersection-types)
 - **Questions:**
   1. How are algebraic data types and their constructors designed?
+  2. How are values of named nominal types constructed, and can those types specify underlying representations or conversions?
 
 ### TYP-GEN-01 — Generics
 
