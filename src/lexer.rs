@@ -1,4 +1,4 @@
-//! Lexer for Natcore. Item status lives in `docs/scorecards/lexer.md`.
+//! Lexer for Natcode. Item status lives in `docs/scorecards/lexer.md`.
 //!
 //! Implements the Implemented `LEX-*` items: UAX #31 identifiers (XID_Start
 //! or `_`, then XID_Continue) normalized to NFC, the `from`/`import`/`export`

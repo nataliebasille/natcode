@@ -115,7 +115,7 @@
 
 - **Status:** Approved
 - **Spec:** [modules.md — Paths and dependencies](../spec/modules.md#paths-and-dependencies)
-- **Done when:** `./math` resolves to `math.nat`; non-Natcore files require their explicit extension.
+- **Done when:** `./math` resolves to `math.nat`; non-Natcode files require their explicit extension.
 
 ### RES-MOD-04 — Missing module diagnostics
 
@@ -148,14 +148,14 @@
 - **Status:** Open question
 - **Spec:** [modules.md — Paths and dependencies](../spec/modules.md#paths-and-dependencies)
 - **Questions:**
-  1. JSON imports are supported in principle. How are JSON values represented in Natcore, and what import forms apply?
+  1. JSON imports are supported in principle. How are JSON values represented in Natcode, and what import forms apply?
 
-### RES-MOD-09 — Other non-Natcore file formats
+### RES-MOD-09 — Other non-Natcode file formats
 
 - **Status:** Open question
 - **Spec:** [modules.md — Paths and dependencies](../spec/modules.md#paths-and-dependencies)
 - **Questions:**
-  1. Which other file formats can be imported, and how do they map to Natcore values?
+  1. Which other file formats can be imported, and how do they map to Natcode values?
 
 ## Imports
 

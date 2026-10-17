@@ -12,7 +12,7 @@ Item status and open questions for this file are tracked in the [types](../score
 
 The designer revised an earlier broader constant-evaluation proposal: **function return types are inferred from parameter types and the function's own body**, not specialized using the specific values passed at each call site, nor values outside the function. Exact types can propagate through function-local variables.
 
-```natcore
+```natcode
 // Illustration of intended syntax and inference:
 test(x: number) => x * 2   // return: number
 test(x: 24) => x * 2       // return: 48

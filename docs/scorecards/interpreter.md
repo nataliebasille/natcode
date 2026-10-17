@@ -1,7 +1,7 @@
 # Interpreter scorecard
 
 - **Prefix:** INT
-- **Covers:** Running Natcore programs on the native interpreter, and passing the shared conformance cases for every runtime-observable behavior.
+- **Covers:** Running Natcode programs on the native interpreter, and passing the shared conformance cases for every runtime-observable behavior.
 - **Note:** Execution targets are project goals rather than approved decisions, so their items stay Proposed until the language owner approves the target.
 
 ## Target

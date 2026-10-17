@@ -1,8 +1,8 @@
-# Natcore documentation
+# Natcode documentation
 
 ## Specification
 
-The language semantics live in [`spec/`](spec/). [`natcore-spec.md`](natcore-spec.md) is a single-file copy generated from them with `python docs/tools/build_spec.py`.
+The language semantics live in [`spec/`](spec/). [`natcode-spec.md`](natcode-spec.md) is a single-file copy generated from them with `python docs/tools/build_spec.py`.
 
 - [Lexical structure](spec/lexical.md)
 - [Broader syntax and type-system decisions](spec/syntax-and-types.md)
@@ -23,7 +23,7 @@ python docs/tools/scorecard_status.py --check   # validate scorecards, links, ev
 
 ## Design snapshot
 
-- Natcore is a functional language with immutable bindings and persistent-value updates.
+- Natcode is a functional language with immutable bindings and persistent-value updates.
 - A source file defines exactly one module; modules are logical, scoped namespaces.
 - Top-level source contains imports, declarations, and one final `export`, not standalone statements.
 - Module exports are either an object-shaped library interface or an executable function. Export kind is statically decidable.

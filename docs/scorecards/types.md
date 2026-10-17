@@ -164,7 +164,7 @@
 - **Status:** Open question
 - **Spec:** [modules.md — Exported object shapes and optional properties](../spec/modules.md#exported-object-shapes-and-optional-properties)
 - **Questions:**
-  1. What are the spelling and semantics of `None` (Natcore has no `null` or `undefined`)?
+  1. What are the spelling and semantics of `None` (Natcode has no `null` or `undefined`)?
   2. How is it checked against other types?
 
 ### TYP-ADT-01 — Algebraic data types and constructors

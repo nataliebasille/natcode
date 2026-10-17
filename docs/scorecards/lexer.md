@@ -36,14 +36,59 @@
 - **Done when:** `true` and `false` lex as boolean literal tokens.
 - **Evidence:** `tests/lexer/main.rs::keywords::true_and_false_are_boolean_literals`
 
-### LEX-KW-03 — Full keyword list
+### LEX-KW-03 — Remaining keyword inventory
 
 - **Status:** Open question
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
 - **Questions:**
-  1. Which further words are reserved? Illustrative examples use `if`, `then`, `else`, and `type`.
-  2. Are any keywords contextual (reserved only in certain positions) rather than reserved everywhere?
-- **Notes:** Currently all such words lex as identifiers (`tests/lexer/main.rs::keywords::illustrative_words_are_not_reserved`).
+  1. Which additional words, if any, should be reserved beyond the approved set?
+  2. Should generator/effect words such as `yield`, `async`, or `await` become reserved? Their semantics remain open.
+  3. Is `then` or any other branch-related word necessary once `match` handles conditionals?
+- **Notes:** The implemented lexer currently recognizes only `from`, `import`, `export`, `true`, and `false`; newly approved keywords are not yet implemented. `if`, `else`, `case`, `return`, and `null` are explicitly excluded by approved decisions.
+
+### LEX-KW-04 — Hard-reserved keyword strategy
+
+- **Status:** Approved
+- **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
+- **Done when:** Every designated keyword lexes as its keyword token regardless of syntactic context; no contextual keyword classification is used.
+- **Notes:** Whether a keyword token is allowed in a property-key position is determined by the parser; it is never re-lexed as an identifier.
+
+### LEX-KW-05 — Type declaration keyword
+
+- **Status:** Approved
+- **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
+- **Done when:** `type` lexes as a hard-reserved keyword; longer words containing it remain identifiers.
+
+### LEX-KW-06 — Function declaration keyword
+
+- **Status:** Approved
+- **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
+- **Done when:** `fn` lexes as a hard-reserved keyword; longer words containing it remain identifiers.
+
+### LEX-KW-07 — Unified matching keyword
+
+- **Status:** Approved
+- **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
+- **Done when:** `match` lexes as a hard-reserved keyword; longer words containing it remain identifiers.
+
+### LEX-KW-08 — No separate conditional or case keywords
+
+- **Status:** Approved
+- **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
+- **Done when:** `if`, `else`, `elif`, and `case` are not treated as reserved words; conditional and pattern-matching constructs use `match`.
+
+### LEX-KW-09 — No null literal
+
+- **Status:** Approved
+- **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
+- **Done when:** `null` is not recognized as a keyword or literal token; absence is represented through ordinary sum-type constructors such as `None`.
+- **Notes:** Foreign-language null conversions are a separate interoperability issue.
+
+### LEX-KW-10 — No return keyword
+
+- **Status:** Approved
+- **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
+- **Done when:** `return` is not treated as a reserved word or control-flow token; functions return their final expression (PAR-FN-03).
 
 ## Identifiers
 

@@ -150,15 +150,38 @@
 - **Status:** Open question
 - **Spec:** [evaluation.md — Function return inference: context-independent](../spec/evaluation.md#function-return-inference-context-independent)
 - **Questions:**
-  1. What is the complete grammar for lambdas and function definitions? `x => x * x`, `() => x`, and `test(x: number) => x * 2` are illustrative.
-  2. How are parameter types written?
+  1. What is the complete grammar for functions introduced by `fn` and for lambda expressions? `x => x * x` and `() => x` are illustrative.
+  2. How are parameters and their type constraints written?
 
-### PAR-COND-01 — Conditional syntax
+### PAR-FN-02 — Dedicated function declaration keyword
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Declaration keywords and expression results](../spec/syntax-and-types.md#declaration-keywords-and-expression-results)
+- **Done when:** Named function declarations are introduced by `fn`; ordinary value bindings remain keyword-free.
+- **Notes:** Parameter and body syntax remain PAR-FN-01.
+
+### PAR-FN-03 — Implicit function results and no early return
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Declaration keywords and expression results](../spec/syntax-and-types.md#declaration-keywords-and-expression-results)
+- **Done when:** A function's result is the value of its final expression; an explicit `return` or early-return statement is not part of Natcode grammar.
+- **Notes:** Exact function body/block grammar remains PAR-BLK-02 and PAR-FN-01.
+
+### PAR-COND-01 — Match branch grammar
 
 - **Status:** Open question
-- **Spec:** [syntax-and-types.md — Code blocks and data structures](../spec/syntax-and-types.md#code-blocks-and-data-structures)
+- **Spec:** [syntax-and-types.md — Match expressions](../spec/syntax-and-types.md#match-expressions)
 - **Questions:**
-  1. What is the conditional grammar? `if condition` with an indented body and `if … then … else` are illustrative.
+  1. What is the exact grammar for branch patterns, condition tests, separators, and indented bodies? `=>` remains illustrative.
+  2. What are the exhaustive-match requirements and behavior when no branch matches?
+  3. Are pattern guards supported, and how are they spelled?
+
+### PAR-COND-02 — Unified matching and conditional form
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Match expressions](../spec/syntax-and-types.md#match-expressions)
+- **Done when:** Natcode accepts `match expression` for matching patterns against a subject and subjectless `match` for testing Boolean conditions in order; both are value-producing expressions, and `if`/`else` conditionals are not supported.
+- **Notes:** The complete branch grammar and exhaustiveness behavior remain PAR-COND-01.
 
 ### PAR-OBJ-01 — Object literal grammar
 
@@ -181,7 +204,13 @@
 - **Status:** Open question
 - **Spec:** [variables.md — Identifier categories](../spec/variables.md#identifier-categories)
 - **Questions:**
-  1. How are named types and constructors declared? `type Point(x: number, y: number)` is illustrative.
+  1. After the approved `type` introducer, how are named types, generic parameters, and constructors declared? `type Point(x: number, y: number)` is illustrative.
+
+### PAR-TYPE-03 — Dedicated named type keyword
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Declaration keywords and expression results](../spec/syntax-and-types.md#declaration-keywords-and-expression-results)
+- **Done when:** Named type declarations use the `type` introducer; their remaining grammar is determined by PAR-TYPE-02.
 
 ### PAR-UPD-01 — Dotted update syntax
 
@@ -207,9 +236,10 @@
 ### PAR-PAT-01 — Pattern matching syntax
 
 - **Status:** Open question
-- **Spec:** [syntax-and-types.md — Inference-first philosophy](../spec/syntax-and-types.md#inference-first-philosophy)
+- **Spec:** [syntax-and-types.md — Match expressions](../spec/syntax-and-types.md#match-expressions)
 - **Questions:**
-  1. Pattern matching is a design goal. What is its syntax, and where may `_` appear as a wildcard pattern?
+  1. Which constructor, literal, destructuring, and other pattern forms are supported inside the approved subjectful `match` expression?
+  2. Where may `_` appear as a wildcard within compound patterns?
 
 ## Errors
 

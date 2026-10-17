@@ -1,7 +1,7 @@
 # Python backend scorecard
 
 - **Prefix:** PY
-- **Covers:** Running Natcore programs on Python, and passing the shared conformance cases for every runtime-observable behavior.
+- **Covers:** Running Natcode programs on Python, and passing the shared conformance cases for every runtime-observable behavior.
 - **Note:** Python is a prospective target. Its items stay Proposed until PY-TGT-01 is answered.
 
 ## Target
@@ -11,7 +11,7 @@
 - **Status:** Open question
 - **Spec:** [syntax-and-types.md — Target directions](../spec/syntax-and-types.md#target-directions)
 - **Questions:**
-  1. Natcore may compile to Python. Is Python adopted as a supported target?
+  1. Natcode may compile to Python. Is Python adopted as a supported target?
 
 ### PY-GEN-01 — Python output runs a core program
 
@@ -24,9 +24,9 @@
 - **Status:** Open question
 - **Spec:** [syntax-and-types.md — Target directions](../spec/syntax-and-types.md#target-directions)
 - **Questions:**
-  1. How are Natcore modules mapped onto Python files or modules?
+  1. How are Natcode modules mapped onto Python files or modules?
   2. How is the output linked or packaged?
-  3. Which source-map format links generated code back to Natcore source?
+  3. Which source-map format links generated code back to Natcode source?
 
 ## Identifiers
 

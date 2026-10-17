@@ -1,7 +1,7 @@
 # WebAssembly backend scorecard
 
 - **Prefix:** WASM
-- **Covers:** Running Natcore programs on WebAssembly, and passing the shared conformance cases for every runtime-observable behavior.
+- **Covers:** Running Natcode programs on WebAssembly, and passing the shared conformance cases for every runtime-observable behavior.
 - **Note:** Execution targets are project goals rather than approved decisions, so their items stay Proposed until the language owner approves the target.
 
 ## Target
@@ -17,9 +17,9 @@
 - **Status:** Open question
 - **Spec:** [syntax-and-types.md — Target directions](../spec/syntax-and-types.md#target-directions)
 - **Questions:**
-  1. How are Natcore modules mapped onto WebAssembly files or modules?
+  1. How are Natcode modules mapped onto WebAssembly files or modules?
   2. How is the output linked or packaged?
-  3. Which source-map format links generated code back to Natcore source?
+  3. Which source-map format links generated code back to Natcode source?
 
 ## Identifiers
 
