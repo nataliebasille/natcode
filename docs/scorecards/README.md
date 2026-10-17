@@ -1,6 +1,6 @@
-# Natcore scorecards
+# Natcode scorecards
 
-Each system of the Natcore toolchain has one scorecard. A scorecard lists every **atomic item** that system must implement, and records each item's decision and implementation status, its open questions, and its test evidence.
+Each system of the Natcode toolchain has one scorecard. A scorecard lists every **atomic item** that system must implement, and records each item's decision and implementation status, its open questions, and its test evidence.
 
 The scorecards are the **only** record of status. Spec files in [`../spec/`](../spec/) describe semantics and refer to scorecard items by ID; they don't carry their own status labels or open-question lists.
 
@@ -82,4 +82,4 @@ python docs/tools/scorecard_status.py --json   # machine-readable counts
 python docs/tools/scorecard_status.py --check  # validate format, links, evidence, and the merged spec
 ```
 
-`--check` verifies that every item has the required fields for its status, IDs are unique and match their file's prefix, spec links resolve, evidence names existing tests, IDs referenced from spec files exist, and [`../natcore-spec.md`](../natcore-spec.md) matches the spec files. Regenerate the merged spec with `python docs/tools/build_spec.py`.
+`--check` verifies that every item has the required fields for its status, IDs are unique and match their file's prefix, spec links resolve, evidence names existing tests, IDs referenced from spec files exist, and [`../natcode-spec.md`](../natcode-spec.md) matches the spec files. Regenerate the merged spec with `python docs/tools/build_spec.py`.

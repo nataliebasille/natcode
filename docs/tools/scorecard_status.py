@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Summarize and validate the Natcore system scorecards in docs/scorecards/."""
+"""Summarize and validate the Natcode system scorecards in docs/scorecards/."""
 from __future__ import annotations
 
 import argparse
@@ -218,7 +218,7 @@ def main() -> int:
         sys.path.insert(0, str(Path(__file__).parent))
         from build_spec import OUTPUT, build
         if not OUTPUT.exists() or OUTPUT.read_text(encoding='utf-8') != build():
-            errors.append('docs/natcore-spec.md is out of date; run python docs/tools/build_spec.py')
+            errors.append('docs/natcode-spec.md is out of date; run python docs/tools/build_spec.py')
 
     report = summarize(cards)
     if args.json:

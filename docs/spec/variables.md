@@ -4,7 +4,7 @@ Item status and open questions for this file are tracked in the [parser](../scor
 
 ## Declaration syntax
 
-```natcore
+```natcode
 identifier = expression
 identifier: Type = expression
 ```
@@ -19,7 +19,7 @@ identifier: Type = expression
 
 Each declaration creates a **new immutable binding**. Reusing the same identifier, including in the same scope and with an unrelated type, is valid. The newest visible binding shadows earlier bindings; it never mutates them.
 
-```natcore
+```natcode
 x = 10
 x = x + 5           // initializer sees previous x; new x = 15
 x: string = "hi"    // new binding; previous x remains immutable
@@ -27,7 +27,7 @@ x: string = "hi"    // new binding; previous x remains immutable
 
 A declaration's initializer resolves a same-name reference to the **previously visible** binding. This holds both for a same-scope redeclaration and when a declaration shadows a binding in an outer lexical scope.
 
-```natcore
+```natcode
 x = 10
 getInner = () =>
     x = x + 1        // inner x = 11
@@ -41,7 +41,7 @@ The lambda syntax is illustrative; code blocks are **indentation-defined** rathe
 - Functions may be **self-recursive**, as an explicit exception to the ordinary visibility rule.
 - A function's references to outer names resolve to the **specific bindings visible at the function's definition**, rather than a later same-name redeclaration or the caller's scope.
 
-```natcore
+```natcode
 x = 10
 getX = () => x
 x = 20
@@ -59,7 +59,7 @@ result = getX()       // 10
 - A standalone `_` is reserved as a wildcard, not an ordinary binding identifier.
 - Unicode emoji sequences are valid value names, including composed emoji such as `👩‍💻`. Which emoji sequences are admitted is LEX-ID-04.
 
-```natcore
+```natcode
 maxSize = 100
 MAX_SIZE = 100         // allowed at module top level
 🚀 = 42

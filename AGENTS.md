@@ -1,8 +1,8 @@
-# Natcore coding-agent instructions
+# Natcode coding-agent instructions
 
 Before designing or implementing any language feature:
 
-1. Read `docs/README.md`, all relevant files under `docs/spec/`, and the scorecards in `docs/scorecards/` for every system the work touches, including linked items and their open questions. `docs/natcore-spec.md` is a generated single-file copy of the spec.
+1. Read `docs/README.md`, all relevant files under `docs/spec/`, and the scorecards in `docs/scorecards/` for every system the work touches, including linked items and their open questions. `docs/natcode-spec.md` is a generated single-file copy of the spec.
 2. Use each scorecard item's status (Proposed, Open question, Approved, In progress, Implemented) to distinguish decided design from proposals and open questions.
 3. Review even apparently complete specifications critically for omissions, contradictions, or unclear behavior. Raise issues rather than making implicit choices.
 4. Do **not** invent syntax, semantics, default behavior, or language rules to fill a gap.

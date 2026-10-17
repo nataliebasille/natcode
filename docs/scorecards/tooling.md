@@ -37,7 +37,7 @@
 - **Status:** Open question
 - **Spec:** [modules.md — Entry modules](../spec/modules.md#entry-modules)
 - **Questions:**
-  1. What are the command names and options? `natcore run src/main.nat` is illustrative.
+  1. What are the command names and options? `natcode run src/main.nat` is illustrative.
 
 ## Build and architecture
 

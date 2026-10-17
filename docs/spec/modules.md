@@ -4,7 +4,7 @@ Item status and open questions for this file are tracked in the [parser](../scor
 
 ## What is a module?
 
-A module is a **logical, lexically scoped collection of declarations** with its own namespace and an import/export boundary. Its conceptual role is distinct from a package and from a physical file. For Natcore's initial source layout, **each `.nat` source file defines exactly one module**; no explicit module declaration is required.
+A module is a **logical, lexically scoped collection of declarations** with its own namespace and an import/export boundary. Its conceptual role is distinct from a package and from a physical file. For Natcode's initial source layout, **each `.nat` source file defines exactly one module**; no explicit module declaration is required.
 
 A source file permits **top-level declarations only** (including imports and the terminal export declaration), not standalone executable expressions. A top-level variable initializer is part of a declaration, not a standalone statement.
 
@@ -14,7 +14,7 @@ Functions associated with types, future extension functions, and constructor-lik
 
 All imports must precede other declarations. Every module must have **exactly one** `export` declaration **at the end** of the module, with nothing declared after it.
 
-```natcore
+```natcode
 from "./math" import { PI }
 
 area = PI * 5 * 5
@@ -34,18 +34,18 @@ The final export may be an **arbitrary expression**, but its inferred type must 
 - **Primitive or directly exported type** → invalid. Types and primitive values must appear as **properties of an exported object**.
 - **Expression potentially returning either object or function** → compilation error; module kind cannot depend on runtime outcomes.
 
-```natcore
+```natcode
 PI = 3.14159
 square = x => x * x
 export { PI, square }        // library: object-shaped public interface
 ```
 
-```natcore
+```natcode
 run = () => print("Hello")
 export run                   // executable: function entry
 ```
 
-```natcore
+```natcode
 api = { PI = 3.14159, square = x => x * x }
 export api                   // same public interface as export { PI, square }
 ```
@@ -57,20 +57,20 @@ Here `export { ... }` builds the module's exported object. `export api` where `a
 - Object properties' **public names must be unique** within the exported interface. Unlike same-scope variable redeclarations, duplicate public export keys are compilation errors.
 - **Export aliases** use `=` with the public name on the left: `export { publicName = localName }`.
 
-```natcore
+```natcode
 from "./math" import { square }
 export { squareNumber = square }
 ```
 
 ## Entry modules
 
-- An executable is selected by **source-file path**, allowing multiple executable files in the same project; command shape `natcore run src/main.nat` is illustrative.
+- An executable is selected by **source-file path**, allowing multiple executable files in the same project; command shape `natcode run src/main.nat` is illustrative.
 - An executable module is **not importable** by other modules.
 - Its entry function can be **imported from a library module**; it need not be declared locally.
 - Each module has only one terminal export, so an executable module has one entry function.
 - The **entry function's parameter shape, effect/purity model, and runtime context** are RUN-ENTRY-01. There is no mandated `main` name.
 
-```natcore
+```natcode
 // app.nat
 run = () => print("Hello")
 export { run }               // library
@@ -82,9 +82,9 @@ export run                   // executable
 
 ## Import syntax and ordering
 
-Natcore uses **file-first syntax**:
+Natcode uses **file-first syntax**:
 
-```natcore
+```natcode
 from "./math" import Math
 from "./math" import { PI, square }
 from "./math" import *
@@ -104,8 +104,8 @@ from "./math" import { PI }, Math
 
 - Ordinary import paths must be **static string literals**, not computed expressions or runtime variables.
 - Local imports use explicit relative prefixes `./` or `../`, resolved against the importing file.
-- `.nat` can be omitted for Natcore source modules; non-Natcore formats (such as `.json`) use an explicit extension.
-- Direct imports of **JSON** are supported in principle; their value representation is RES-MOD-08. Other non-Natcore file types are RES-MOD-09.
+- `.nat` can be omitted for Natcode source modules; non-Natcode formats (such as `.json`) use an explicit extension.
+- Direct imports of **JSON** are supported in principle; their value representation is RES-MOD-08. Other non-Natcode file types are RES-MOD-09.
 - Built-in and external package path schemes are RES-MOD-07.
 - **Circular module dependencies are forbidden**, including cycles through several modules; the compiler reports an error.
 
@@ -113,9 +113,9 @@ from "./math" import { PI }, Math
 
 - Two imports that introduce the **same local identifier** are a **compilation error**, even if imported from the same module, even if they identify the exact same source binding, and even if unused.
 - Different aliases or namespaces may be used to disambiguate.
-- This is not inconsistent with ordinary binding redeclaration: a later **local declaration can shadow an imported binding** according to Natcore's immutable sequential scope rules.
+- This is not inconsistent with ordinary binding redeclaration: a later **local declaration can shadow an imported binding** according to Natcode's immutable sequential scope rules.
 
-```natcore
+```natcode
 from "./math" import { MATH_PI = PI }
 from "./geometry" import { GEO_PI = PI }
 
@@ -135,10 +135,10 @@ Multiple imports of the same module initially reference the **same logical expor
 - A named import is legal when the property exists in **at least one** possible export shape. If absent in some branches, its inferred type includes a `None` case.
 - Importing a property that exists in **no** possible export shape is a compile-time error.
 - Wildcard imports include the **union of all possible export names**, even conditionally present ones.
-- No `null` or `undefined` values are intended for Natcore. The exact semantics and spelling of `None` are TYP-NONE-01.
+- No `null` or `undefined` values are intended for Natcode. The exact semantics and spelling of `None` are TYP-NONE-01.
 - A dynamic object with arbitrary runtime keys may be exported **inside a statically named property** (e.g. `export { data }`); arbitrary unenumerable runtime keys are not allowed as the module's top-level public export interface.
 
-```natcore
+```natcode
 // api.nat (illustrative conditional syntax)
 export if condition then
     { x = 10, y = 20 }
@@ -146,7 +146,7 @@ else
     { x = 30, z = 40 }
 ```
 
-```natcore
+```natcode
 // consumer.nat
 from "./api" import *
 // x: 10 | 30
@@ -162,7 +162,7 @@ export {}
 - Exported object properties are independently lazy; accessing one property does not evaluate another unrelated property.
 - Arbitrary factory expressions can produce exported objects, and deferred function bodies may expose lazily computed members. Lowering this through arbitrary function calls, and the purity/effect boundary, are RUN-LAZY-05.
 
-```natcore
+```natcode
 export { cheap = 42, expensive = expensiveCalculation() }
 // Accessing cheap does not force expensiveCalculation().
 ```

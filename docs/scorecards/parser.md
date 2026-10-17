@@ -164,7 +164,7 @@
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Declaration keywords and expression results](../spec/syntax-and-types.md#declaration-keywords-and-expression-results)
-- **Done when:** A function's result is the value of its final expression; an explicit `return` or early-return statement is not part of Natcore grammar.
+- **Done when:** A function's result is the value of its final expression; an explicit `return` or early-return statement is not part of Natcode grammar.
 - **Notes:** Exact function body/block grammar remains PAR-BLK-02 and PAR-FN-01.
 
 ### PAR-COND-01 — Match branch grammar
@@ -180,7 +180,7 @@
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Match expressions](../spec/syntax-and-types.md#match-expressions)
-- **Done when:** Natcore accepts `match expression` for matching patterns against a subject and subjectless `match` for testing Boolean conditions in order; both are value-producing expressions, and `if`/`else` conditionals are not supported.
+- **Done when:** Natcode accepts `match expression` for matching patterns against a subject and subjectless `match` for testing Boolean conditions in order; both are value-producing expressions, and `if`/`else` conditionals are not supported.
 - **Notes:** The complete branch grammar and exhaustiveness behavior remain PAR-COND-01.
 
 ### PAR-OBJ-01 — Object literal grammar

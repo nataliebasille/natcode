@@ -9,7 +9,7 @@ Item status and open questions for this file are tracked in the [parser](../scor
 
 The following block is **conceptual**; its lambda form is illustrative:
 
-```natcore
+```natcode
 x = 10
 getInner = () =>
     x = x + 1
@@ -21,7 +21,7 @@ It illustrates an indented nested scope, not a brace-delimited code block.
 
 ## Match expressions
 
-Natcore uses one `match` keyword for both structural pattern matching and conditional branching (PAR-COND-02). It does not have separate `if`/`else` or `case` control-flow constructs.
+Natcode uses one `match` keyword for both structural pattern matching and conditional branching (PAR-COND-02). It does not have separate `if`/`else` or `case` control-flow constructs.
 
 - **Subjectful** `match expression` selects a branch by matching patterns against that subject.
 - **Subjectless** `match` evaluates Boolean branch conditions in source order and selects the first true condition.
@@ -29,7 +29,7 @@ Natcore uses one `match` keyword for both structural pattern matching and condit
 
 The following forms are **illustrative**, not a finalized branch grammar (PAR-COND-01, PAR-PAT-01):
 
-```natcore
+```natcode
 result = match option
     Some(value) => value
     None => 0
@@ -51,7 +51,7 @@ The exact separator syntax, allowable patterns, branch bodies, fallback rules, a
 
 ## Inference-first philosophy
 
-Natcore seeks a TypeScript-like ergonomics with a substantially more functional model, emphasizing purity, piping, and pattern matching. These are **design goals** (see RUN-EFF-01, PAR-PIPE-01, and PAR-PAT-01).
+Natcode seeks a TypeScript-like ergonomics with a substantially more functional model, emphasizing purity, piping, and pattern matching. These are **design goals** (see RUN-EFF-01, PAR-PIPE-01, and PAR-PAT-01).
 
 Ordinary variable types and function return types are intended to be inferred. The optional declaration constraint `x: Type = expression` is permitted as an **assignability check** without replacing or widening the inferred type; this updates the earlier inference-only proposal.
 
@@ -63,7 +63,7 @@ Ordinary variable types and function return types are intended to be inferred. T
 
 For example, this union:
 
-```natcore
+```natcode
 { kind: "left", value: number }
 |
 { kind: "right", value: string }
@@ -71,7 +71,7 @@ For example, this union:
 
 must not be simplified into:
 
-```natcore
+```natcode
 { kind: "left" | "right", value: number | string }
 ```
 
@@ -81,4 +81,4 @@ See TYP-UNI-05 (difference and complement operators), TYP-CON-03 (subtyping), TY
 
 ## Target directions
 
-Natcore is intended to support a native interpreter and compilation to JavaScript, WebAssembly, C, and potentially Python (PY-TGT-01). These are project goals rather than language semantics. A shared compiler IR/runtime design and the implementation language are TOOL-ARCH-01.
+Natcode is intended to support a native interpreter and compilation to JavaScript, WebAssembly, C, and potentially Python (PY-TGT-01). These are project goals rather than language semantics. A shared compiler IR/runtime design and the implementation language are TOOL-ARCH-01.
