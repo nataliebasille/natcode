@@ -204,7 +204,8 @@
 - **Status:** Open question
 - **Spec:** [variables.md — Identifier categories](../spec/variables.md#identifier-categories)
 - **Questions:**
-  1. After the approved `type` introducer, how are named types, generic parameters, and constructors declared? `type Point(x: number, y: number)` is illustrative.
+  1. After the approved `type` introducer, how are named nominal types, generic parameters, and constructors declared? `type Point(x: number, y: number)` is illustrative.
+  2. What syntax constructs a value of a nominal type from an underlying value, if such a form is allowed?
 
 ### PAR-TYPE-03 — Dedicated named type keyword
 
