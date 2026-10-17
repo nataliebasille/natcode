@@ -26,7 +26,9 @@ Compile-time evaluation rules should be standardized and deterministic. When an 
 
 Natcode has no language-level exceptions, throwing/catching semantics, or exception-based propagation (RUN-EFF-04). Recoverable errors are represented explicitly as values. `try`, `catch`, and `throw` are not built-in exception constructs (LEX-KW-11).
 
-The details of error values and their typing, handling, and propagation are tracked by TYP-ERR-01. Unrecoverable runtime faults and failures in lazy computations remain a separate question (RUN-EFF-02).
+Error values are ordinary first-class values, but their types are designated as errors and recognized by the type checker (TYP-ERR-02). Operations may produce a success value or an error value directly as alternatives in a union, without mandatory `Ok` and `Err` wrappers. For example, `number | ParseError` can represent either a successful number or a designated parse error (the exact type declaration syntax is still open).
+
+How types receive the error designation, how possible errors are inferred in signatures, and how errors are propagated and handled remain open (TYP-ERR-01). Unrecoverable runtime faults and failures in lazy computations remain a separate question (RUN-EFF-02).
 
 ## Laziness
 
