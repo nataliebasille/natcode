@@ -26,7 +26,7 @@ Source text is UTF-8. Positions are reported as byte-offset spans plus 1-based l
 | Comments | `// …` to end of line; `/* … */` block comments, which nest. Comments produce no tokens. Whether line breaks inside a block comment produce newline tokens is LEX-COM-04. |
 | Line breaks | LF or CRLF; each is one newline token. Spaces are insignificant between tokens. |
 
-The reserved words are recognized as keywords regardless of position; they cannot name ordinary bindings. Keyword spellings are permitted as object property names, with details of the object grammar still to be determined (PAR-OBJ-01). `if`, `else`, `elif`, and `case` are not reserved words or language control-flow constructs. `return` is not a control-flow construct or keyword. `null` is not a native literal or reserved word; absence is represented using constructors such as `None`. Further words, including `then` and generator/effect vocabulary, remain open questions (LEX-KW-03).
+The reserved words are recognized as keywords regardless of position; they cannot name ordinary bindings. Keyword spellings are permitted as object property names, with details of the object grammar still to be determined (PAR-OBJ-01). `if`, `else`, `elif`, and `case` are not reserved words or language control-flow constructs. `return` is not a control-flow construct or keyword. `try`, `catch`, and `throw` are not reserved or built-in exception constructs (LEX-KW-11). `null` is not a native literal or reserved word; absence is represented using constructors such as `None`. Further words, including `then` and generator/effect vocabulary, remain open questions (LEX-KW-03).
 
 ## Identifier normalization
 
@@ -421,6 +421,12 @@ test(x: 24) => x * 2       // return: 48
 The function syntax in these examples is illustrative (PAR-FN-01, TYP-FN-03); they illustrate type inference rules only.
 
 Compile-time evaluation rules should be standardized and deterministic. When an attempt to evaluate a pure expression exceeds its budget, **fall back to ordinary sound static inference rather than failing solely due to the budget**. Exact budgets and the relationship to type checking are TYP-EVAL-02.
+
+## Error handling
+
+Natcode has no language-level exceptions, throwing/catching semantics, or exception-based propagation (RUN-EFF-04). Recoverable errors are represented explicitly as values. `try`, `catch`, and `throw` are not built-in exception constructs (LEX-KW-11).
+
+The details of error values and their typing, handling, and propagation are tracked by TYP-ERR-01. Unrecoverable runtime faults and failures in lazy computations remain a separate question (RUN-EFF-02).
 
 ## Laziness
 
