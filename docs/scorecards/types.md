@@ -159,15 +159,22 @@
 
 ## Open type-system subjects
 
-### TYP-ERR-01 — Explicit error value model
+### TYP-ERR-01 — Error designation and propagation details
 
 - **Status:** Open question
 - **Spec:** [evaluation.md — Error handling](../spec/evaluation.md#error-handling)
 - **Questions:**
-  1. How are recoverable errors represented as explicit values (ordinary constructors, a standard `Result` type, or another model)?
-  2. How are possible errors reflected in type inference and function return types?
+  1. How does a type receive the error designation (declaration syntax, marker type, protocol, or another mechanism)?
+  2. How are possible errors reflected in type inference, union types, and function return types?
   3. How do callers handle, transform, and propagate error values without exceptions?
-- **Notes:** The language owner requires explicit error values and rejects language-level exceptions (RUN-EFF-04).
+- **Notes:** Explicit, unwrapped error values and compiler-recognized designated error types are approved in TYP-ERR-02. Language-level exceptions are rejected (RUN-EFF-04).
+
+### TYP-ERR-02 — Designated first-class error types
+
+- **Status:** Approved
+- **Spec:** [evaluation.md — Error handling](../spec/evaluation.md#error-handling)
+- **Done when:** Error values are ordinary first-class values; success values and designated error values may be returned directly as alternatives in a union, without obligatory `Ok`/`Err` wrappers. The type checker recognizes designated error types as distinct from ordinary non-error types.
+- **Notes:** The mechanism of designating an error type, exact return-type inference, and propagation rules remain open in TYP-ERR-01.
 
 ### TYP-NONE-01 — Representation of `None`
 
