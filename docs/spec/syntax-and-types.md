@@ -55,6 +55,19 @@ Natcode seeks a TypeScript-like ergonomics with a substantially more functional 
 
 Ordinary variable types and function return types are intended to be inferred. The optional declaration constraint `x: Type = expression` is permitted as an **assignability check** without replacing or widening the inferred type; this updates the earlier inference-only proposal.
 
+## Named type identity
+
+Named type declarations introduce distinct **nominal type identities** (TYP-NOM-01). Two independently declared named types are not interchangeable merely because they share the same structural members or underlying representation. A named type declaration does not create a transparent type alias.
+
+For example, these declarations are *illustrative* (the exact declaration syntax is still PAR-TYPE-02):
+
+```natcode
+type UserId = number
+type ProductId = number
+```
+
+Even with identical underlying representations, `UserId` and `ProductId` are different identities; the representation alone does not make their values assignable to each other. This identity rule does not by itself authorize constructing a `UserId` from an ordinary number.
+
 ## Union and intersection types
 
 - `|` is type **union**.
