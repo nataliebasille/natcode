@@ -43,8 +43,8 @@
 - **Questions:**
   1. Which additional words, if any, should be reserved beyond the approved set?
   2. Should generator/effect words such as `yield`, `async`, or `await` become reserved? Their semantics remain open.
-  3. Is `then` or any other branch-related word necessary once `match` handles conditionals?
-- **Notes:** The lexer currently recognizes `from`, `import`, `export`, `type`, `fn`, `match`, `true`, and `false`; the approved `alias` keyword (LEX-KW-12) is not yet implemented. `if`, `else`, `elif`, `case`, `return`, and `null` are explicitly excluded by approved decisions. Other words, such as `then`, `let`, `val`, `var`, `yield`, `async`, and `await`, currently lex as identifiers (`tests/lexer/main.rs::keywords::undecided_words_are_not_reserved_for_now`).
+  3. Is `then` or any other branch-related word necessary once `when` handles conditionals?
+- **Notes:** The lexer currently recognizes `from`, `import`, `export`, `type`, `fn`, `match`, `true`, and `false`; the approved `alias` keyword (LEX-KW-12) is not yet implemented. This `match` implementation predates the approved `when` design. `if`, `else`, `elif`, `case`, `return`, and `null` are explicitly excluded by approved decisions. Other words, such as `then`, `let`, `val`, `var`, `yield`, `async`, and `await`, currently lex as identifiers (`tests/lexer/main.rs::keywords::undecided_words_are_not_reserved_for_now`).
 
 ### LEX-KW-04 — Hard-reserved keyword strategy
 
@@ -68,18 +68,19 @@
 - **Done when:** `fn` lexes as a hard-reserved keyword; longer words containing it remain identifiers.
 - **Evidence:** `tests/lexer/main.rs::keywords::declaration_and_match_keywords_are_reserved`, `tests/lexer/main.rs::keywords::keywords_are_case_sensitive`, `tests/lexer/main.rs::keywords::words_containing_keywords_are_identifiers`
 
-### LEX-KW-07 — Unified matching keyword
+### LEX-KW-07 — Unified `when` keyword
 
-- **Status:** Implemented
+- **Status:** Needs update
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
-- **Done when:** `match` lexes as a hard-reserved keyword; longer words containing it remain identifiers.
-- **Evidence:** `tests/lexer/main.rs::keywords::declaration_and_match_keywords_are_reserved`, `tests/lexer/main.rs::keywords::keywords_are_case_sensitive`, `tests/lexer/main.rs::keywords::words_containing_keywords_are_identifiers`
+- **Done when:** `when` is hard-reserved and `match` is no longer reserved; longer identifiers containing `when` remain identifiers.
+- **Previous evidence:** `tests/lexer/main.rs::keywords::declaration_and_match_keywords_are_reserved`, `tests/lexer/main.rs::keywords::keywords_are_case_sensitive`, `tests/lexer/main.rs::keywords::words_containing_keywords_are_identifiers`
+- **Notes:** Implemented for `match`, but approved language syntax switched to `when` on 2026-10-18. Update the lexer and tests before restoring Implemented.
 
 ### LEX-KW-08 — No separate conditional or case keywords
 
 - **Status:** Implemented
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
-- **Done when:** `if`, `else`, `elif`, and `case` are not treated as reserved words; conditional and pattern-matching constructs use `match`.
+- **Done when:** `if`, `else`, `elif`, and `case` are not treated as reserved words.
 - **Evidence:** `tests/lexer/main.rs::keywords::conditional_and_case_words_are_not_reserved`
 
 ### LEX-KW-09 — No null literal

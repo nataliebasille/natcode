@@ -15,8 +15,8 @@ REPO = DOCS.parent
 SCORECARDS = DOCS / 'scorecards'
 SPEC = DOCS / 'spec'
 
-STATUSES = ['Implemented', 'In progress', 'Approved', 'Open question', 'Proposed']
-FIELDS = {'Status', 'Spec', 'Done when', 'Evidence', 'Questions', 'Notes'}
+STATUSES = ['Implemented', 'Needs update', 'In progress', 'Approved', 'Open question', 'Proposed', 'Superseded']
+FIELDS = {'Status', 'Spec', 'Done when', 'Evidence', 'Previous evidence', 'Superseded by', 'Questions', 'Notes'}
 HEADING = re.compile(r'^### (\S+) — (.+)$')
 FIELD = re.compile(r'^- \*\*([^*]+):\*\*\s*(.*)$')
 QUESTION = re.compile(r'^\s+\d+\.\s+\S')
@@ -132,7 +132,7 @@ def validate(cards: list[Scorecard], errors: list[str]) -> None:
                     errors.append(f'{where}: {item.id} Spec must be a Markdown link or "None"')
                 for target in links:
                     check_link(item, target, errors)
-            if status != 'Open question' and not item.fields.get('Done when'):
+            if status not in ('Open question', 'Superseded') and not item.fields.get('Done when'):
                 errors.append(f'{where}: {item.id} ({status}) is missing "Done when"')
             if status == 'Open question':
                 if item.questions == 0:
@@ -146,7 +146,35 @@ def validate(cards: list[Scorecard], errors: list[str]) -> None:
                 for reference in evidence:
                     check_evidence(item, reference, errors)
             elif 'Evidence' in item.fields:
-                errors.append(f'{where}: {item.id} has Evidence but is {status}; only Implemented items record evidence')
+                errors.append(f'{where}: {item.id} has Evidence but is {status}; only Implemented items record current evidence')
+            if status in ('Needs update', 'In progress', 'Implemented', 'Superseded'):
+                previous = EVIDENCE.findall(item.fields.get('Previous evidence', ''))
+                if status == 'Needs update' and not previous:
+                    errors.append(f'{where}: {item.id} is Needs update but lacks backticked Previous evidence')
+                if 'Previous evidence' in item.fields and not previous:
+                    errors.append(f'{where}: {item.id} has Previous evidence without backticked test references')
+                for reference in previous:
+                    if '::' not in reference:
+                        errors.append(f'{where}: {item.id} previous evidence {reference!r} must be "<historical file>::<test>"')
+            elif 'Previous evidence' in item.fields:
+                errors.append(f'{where}: {item.id} has Previous evidence but is {status}')
+            if status == 'Superseded':
+                replacement = item.fields.get('Superseded by')
+                if not replacement:
+                    errors.append(f'{where}: {item.id} is Superseded but lacks Superseded by')
+                elif replacement != 'None' and not re.fullmatch(r'[A-Z]+-[A-Z]+-\d{2}', replacement):
+                    errors.append(f'{where}: {item.id} has invalid Superseded by reference {replacement!r}')
+                elif replacement == item.id:
+                    errors.append(f'{where}: {item.id} cannot supersede itself')
+                if not item.fields.get('Notes'):
+                    errors.append(f'{where}: {item.id} is Superseded but lacks Notes explaining why')
+            elif 'Superseded by' in item.fields:
+                errors.append(f'{where}: {item.id} has Superseded by but is {status}')
+    for item in all_ids.values():
+        if item.fields.get('Status') == 'Superseded':
+            replacement = item.fields.get('Superseded by')
+            if replacement and replacement != 'None' and replacement not in all_ids:
+                errors.append(f'{item.file.relative_to(REPO)}:{item.line}: {item.id} supersedes to unknown ID {replacement}')
     check_references(cards, set(all_ids), errors)
 
 
@@ -196,7 +224,7 @@ def summarize(cards: list[Scorecard]) -> dict:
 
 
 def print_table(report: dict) -> None:
-    columns = ['Implemented', 'In progress', 'Approved', 'Open question', 'Proposed', 'total']
+    columns = [*STATUSES, 'total']
     header = f'{"System":<16}' + ''.join(f'{c.title() if c == "total" else c:>15}' for c in columns)
     print(header)
     print('-' * len(header))

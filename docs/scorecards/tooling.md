@@ -55,3 +55,12 @@
 - **Questions:**
   1. Do all targets share one intermediate representation and runtime design, and what is it?
   2. Is Rust the confirmed implementation language? The current code is Rust.
+
+## Scorecard lifecycle
+
+### TOOL-SCORE-01 — Revision-aware scorecard status validation
+
+- **Status:** In progress
+- **Spec:** None
+- **Done when:** The scorecard validator and status report recognize `Needs update` and `Superseded`, require historical evidence for revised implementations, validate replacement references and retirement reasons, and preserve existing `Implemented` evidence checks. The lifecycle unit tests and full scorecard check pass.
+- **Notes:** Status behavior and validator tests have been added in PR #7; automated test execution has not yet been verified.

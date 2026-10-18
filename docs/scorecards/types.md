@@ -126,23 +126,23 @@
 - **Spec:** [syntax-and-types.md — Union and intersection types](../spec/syntax-and-types.md#union-and-intersection-types)
 - **Done when:** `A | B` and `A & B` denote set union and intersection respectively, with commutativity and idempotence; neither operator creates a new nominal identity or constructs a value.
 
-### TYP-UNI-07 — Built-in empty type `never`
+### TYP-UNI-07 — Universal `Any` and empty `Empty` types
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Union and intersection types](../spec/syntax-and-types.md#union-and-intersection-types)
-- **Done when:** `never` has no inhabitants; `A | never` equals `A` and `A & never` equals `never`.
+- **Done when:** `Any` is universal and `Empty` has no inhabitants; `A | Empty = A`, `A & Empty = Empty`, `A | Any = Any`, and `A & Any = A`.
 
 ### TYP-UNI-08 — Empty intersections are valid expressions
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Union and intersection types](../spec/syntax-and-types.md#union-and-intersection-types)
-- **Done when:** Provably empty intersections, including nested expressions, resolve to `never` without an intersection-specific error or warning; attempts to supply impossible values are rejected.
+- **Done when:** Provably empty intersections, including nested expressions, resolve to `Empty` without an intersection-specific error or warning; attempts to supply impossible values are rejected.
 
 ### TYP-UNI-09 — Unrelated nominal constructors are disjoint
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Union and intersection types](../spec/syntax-and-types.md#union-and-intersection-types)
-- **Done when:** `UserId & ProductId` resolves to `never` for unrelated nominal constructor types, even when they have the same payload representation.
+- **Done when:** `UserId & ProductId` resolves to `Empty` for unrelated nominal constructor types, even when they have the same payload representation.
 
 ### TYP-UNI-05 — Difference and complement types
 
@@ -190,19 +190,52 @@
 
 ## Compile-time evaluation
 
-### TYP-EVAL-01 — Bounded evaluation falls back soundly
+### TYP-EVAL-01 — Optional evaluation preserves type semantics
 
 - **Status:** Approved
 - **Spec:** [evaluation.md — Function return inference: context-independent](../spec/evaluation.md#function-return-inference-context-independent)
-- **Done when:** When compile-time evaluation exceeds its budget, inference falls back to a sound static type instead of failing compilation.
+- **Done when:** Optional evaluation success or failure cannot affect inferred types, runtime semantics or compilation validity.
 
-### TYP-EVAL-02 — Standardized evaluation budgets
+### TYP-EVAL-02 — Guaranteed evaluation subset and budgets
 
 - **Status:** Open question
 - **Spec:** [evaluation.md — Function return inference: context-independent](../spec/evaluation.md#function-return-inference-context-independent)
 - **Questions:**
-  1. What are the exact, deterministic evaluation budgets?
-  2. How does compile-time evaluation relate to type checking?
+  1. What deterministic evaluation capabilities and resource budgets are guaranteed?
+  2. How are resource-limit failures handled for mandatory checks?
+
+### TYP-EVAL-03 — Compile-time pure-function validation
+
+- **Status:** Approved
+- **Spec:** [evaluation.md — Function return inference: context-independent](../spec/evaluation.md#function-return-inference-context-independent)
+- **Done when:** Eligible pure functions with known inputs validate mandatory type constraints; false constraints are compile errors, without silent broadening or fallback.
+
+### TYP-EVAL-04 — Constraint grammar and unknown inputs
+
+- **Status:** Open question
+- **Spec:** [evaluation.md — Function return inference: context-independent](../spec/evaluation.md#function-return-inference-context-independent)
+- **Questions:**
+  1. What is the constraint declaration syntax, including validation of entire constructor values?
+  2. Which pure functions qualify and how are unknown inputs handled?
+
+### TYP-EVAL-05 — Symbolic reasoning and proofs
+
+- **Status:** Open question
+- **Spec:** [evaluation.md — Function return inference: context-independent](../spec/evaluation.md#function-return-inference-context-independent)
+- **Questions:**
+  1. Should the compiler reason about constraints over unknown values, beyond evaluation?
+
+### TYP-DIAG-01 — Compile errors versus warnings
+
+- **Status:** Approved
+- **Spec:** [evaluation.md — Function return inference: context-independent](../spec/evaluation.md#function-return-inference-context-independent)
+- **Done when:** Missing or disproven mandatory guarantees cause errors; known redundancy in valid code can warn without blocking compilation; optional analysis failure alone has no diagnostic.
+
+### TYP-PAT-01 — Exhaustiveness and redundant catch-all
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — When expressions](../spec/syntax-and-types.md#when-expressions)
+- **Done when:** Subject-based and subjectless `when` require `_` unless remaining possibilities are provably `Empty`; a provably redundant `_` warns but is valid, and arbitrary predicates alone do not prove exhaustiveness.
 
 ## Module export kinds and shapes
 

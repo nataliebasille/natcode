@@ -29,21 +29,29 @@ The scorecards are the **only** record of status. Spec files in [`../spec/`](../
 | **Open question** | Behavior is undecided. The item lists its questions. |
 | **Approved** | Decided by the language owner and ready to implement. |
 | **In progress** | Being implemented. |
-| **Implemented** | Done, with passing automated tests recorded as evidence. |
+| **Implemented** | Meets the current approved specification, with passing automated tests recorded as evidence. |
+| **Needs update** | Previously implemented with evidence, but an approved specification change requires implementation and/or test updates. |
+| **Superseded** | Retired or replaced behavior, kept as a historical record; not an active implementation target. |
 
 ### Transitions
 
 ```
 Proposed ──► Open question ──► Approved ──► In progress ──► Implemented
-    │                             ▲
-    └─────────────────────────────┘
+    │                             ▲                             │
+    └─────────────────────────────┘                             │
+                                  In progress ◄── Needs update ◄─┘
+
+Any active status ──► Superseded (with language-owner approval)
 ```
 
 - Agents add new items as **Proposed**. Only the language owner moves an item from Proposed to Open question or Approved.
 - **Open question** moves only to **Approved**, when the owner answers it. Agents may write a suggested answer under a question, but must not change the status.
 - Postponed subjects stay **Open question**; there is no separate deferred state.
 - Agents may move an item from **Approved** to **In progress**, and to **Implemented** once its tests pass.
-- Work must not begin on an item that isn't **Approved**.
+- When an **Implemented** item's approved requirements change, move it to **Needs update**, replace its *Done when* criterion with the new one, and move old *Evidence* to *Previous evidence*. It returns through **In progress** to **Implemented** only with passing tests for the new requirement.
+- **Superseded** is a terminal historical status for behavior that has been retired or replaced entirely; preserve its ID, record the replacement ID (or `None` if removed outright), and explain why in Notes. Language-owner approval is required to supersede an item.
+- Keep *Previous evidence* on the item even after its updated implementation returns to **Implemented**. These references are historical, so a later removal or rename of the old test does not invalidate the scorecard.
+- Work may begin on **Approved** or **Needs update** items. Do not treat **Needs update** or **Superseded** as implemented current behavior.
 - Resolve one open question at a time, and keep decisions distinct from illustrative code in the spec.
 
 ## Item format
@@ -61,16 +69,18 @@ Proposed ──► Open question ──► Approved ──► In progress ──
 | Field | Required | Content |
 | --- | --- | --- |
 | Heading | Always | `### <ID> — <short title>` |
-| **Status** | Always | One of the five statuses. |
+| **Status** | Always | One of the seven statuses. |
 | **Spec** | Always | Link to the spec section, or `None` for engineering items with no language rule. |
-| **Done when** | Unless Open question | The observable acceptance criterion. |
-| **Evidence** | Implemented only | Backticked test references, `path::module::test_name`. |
+| **Done when** | Unless Open question or Superseded | The current observable acceptance criterion; Superseded items may retain their former one. |
+| **Evidence** | Implemented only | Passing tests for the current specification, backticked `path::module::test_name` references. |
+| **Previous evidence** | Needs update required; In progress, Implemented, Superseded optional | Historical, backticked test references from an older implementation; these may reference removed tests. |
+| **Superseded by** | Superseded only | Replacement scorecard item ID, or `None` if retired without replacement. |
 | **Questions** | Open question only | A numbered list of the undecided points. |
-| **Notes** | Optional | Context, blockers, current provisional behavior. |
+| **Notes** | Superseded required, otherwise optional | Context, blockers, revision history, or reason for retirement. |
 
 ## IDs
 
-IDs have the form `<PREFIX>-<AREA>-<NN>`, for example `LEX-NUM-02` or `RES-SCOPE-04`. The prefix matches the scorecard; the area groups related items within it. IDs are never renumbered or reused, so links and evidence stay valid. Remove an obsolete item only with the owner's agreement.
+IDs have the form `<PREFIX>-<AREA>-<NN>`, for example `LEX-NUM-02` or `RES-SCOPE-04`. The prefix matches the scorecard; the area groups related items within it. IDs are never renumbered or reused, so links and evidence stay valid. Keep obsolete items as **Superseded** rather than deleting them.
 
 ## Checking status
 
@@ -80,6 +90,7 @@ From the repository root:
 python docs/tools/scorecard_status.py          # status counts per system
 python docs/tools/scorecard_status.py --json   # machine-readable counts
 python docs/tools/scorecard_status.py --check  # validate format, links, evidence, and the merged spec
+python -m unittest discover -s docs/tools -p 'test_*.py'  # run scorecard validator unit tests
 ```
 
-`--check` verifies that every item has the required fields for its status, IDs are unique and match their file's prefix, spec links resolve, evidence names existing tests, IDs referenced from spec files exist, and [`../natcode-spec.md`](../natcode-spec.md) matches the spec files. Regenerate the merged spec with `python docs/tools/build_spec.py`.
+`--check` verifies that every item has the required fields for its status, IDs are unique and match their file's prefix, spec links resolve, current evidence names existing tests, historical evidence is recorded separately, replacement IDs exist, IDs referenced from spec files exist, and [`../natcode-spec.md`](../natcode-spec.md) matches the spec files. Regenerate the merged spec with `python docs/tools/build_spec.py`.

@@ -14,7 +14,7 @@ Spec files describe semantics only. Examples may use **illustrative syntax** whe
 
 ## Scorecards
 
-Every system has a [scorecard](scorecards/README.md) listing its atomic items. Each item records its status (Proposed, Open question, Approved, In progress, or Implemented), its open questions, and its test evidence. The scorecards are the only record of what is decided and what is built.
+Every system has a [scorecard](scorecards/README.md) listing its atomic items. Each item records its status (Proposed, Open question, Approved, In progress, Implemented, Needs update, or Superseded), its open questions, and its test evidence. The scorecards are the only record of what is decided and what is built.
 
 ```
 python docs/tools/scorecard_status.py           # status counts per system

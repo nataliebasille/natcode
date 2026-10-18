@@ -20,7 +20,9 @@ test(x: 24) => x * 2       // return: 48
 
 The function syntax in these examples is illustrative (PAR-FN-01, TYP-FN-03); they illustrate type inference rules only.
 
-Compile-time evaluation rules should be standardized and deterministic. When an attempt to evaluate a pure expression exceeds its budget, **fall back to ordinary sound static inference rather than failing solely due to the budget**. Exact budgets and the relationship to type checking are TYP-EVAL-02.
+Optional compile-time evaluation must not change inferred types, runtime semantics, or whether a program is valid (TYP-EVAL-01). Pure functions with statically known inputs may be evaluated at compile time to validate type-level constraints (TYP-EVAL-03). False mandatory constraints are compile errors; required validation cannot silently fall back to a broader type. Eligible functions, resource limits, unknown inputs, and constraint syntax remain open (TYP-EVAL-02, TYP-EVAL-04). More general proof-based reasoning is deferred (TYP-EVAL-05).
+
+Diagnostics (TYP-DIAG-01): violated or unestablished mandatory guarantees are errors; provably redundant but valid code may warn; unsuccessful optional analyses need no diagnostic. Warnings do not prevent compilation or change semantics.
 
 ## Error handling
 
