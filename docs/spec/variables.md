@@ -63,7 +63,7 @@ result = getX()       // 10
 maxSize = 100
 MAX_SIZE = 100         // allowed at module top level
 🚀 = 42
-type Point(x: number, y: number)  // illustrative type syntax
+type Point(number, number)  // positional nominal constructor declaration
 ```
 
 ## Identifier mangling and compilation

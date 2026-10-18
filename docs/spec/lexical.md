@@ -8,7 +8,7 @@ Source text is UTF-8. Positions are reported as byte-offset spans plus 1-based l
 
 | Category | Forms |
 | --- | --- |
-| Reserved keywords | `from`, `import`, `export`, `type`, `fn`, `match`. These are case-sensitive, hard-reserved words (LEX-KW-01, LEX-KW-04 through LEX-KW-07). |
+| Reserved keywords | `from`, `import`, `export`, `type`, `alias`, `fn`, `match`. These are case-sensitive, hard-reserved words (LEX-KW-01, LEX-KW-04 through LEX-KW-07, LEX-KW-11). |
 | Boolean literals | `true`, `false` |
 | Identifiers | Unicode identifiers per UAX #31: first character is `XID_Start` or `_`; following characters are `XID_Continue`. Letters of any script (`café`, `größe`, `π`, `中文`) are allowed. |
 | Wildcard | A standalone `_` is its own token, never an identifier. `_x`, `__`, and `x_` are identifiers. |

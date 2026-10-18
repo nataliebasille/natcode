@@ -199,18 +199,42 @@
   1. What is the grammar for record types, unions with `|`, intersections with `&`, and literal types? `{ kind: "left", value: number }` is illustrative.
   2. What is the generic parameter grammar?
 
-### PAR-TYPE-02 — Type declarations
+### PAR-TYPE-02 — Remaining type declaration grammar
 
 - **Status:** Open question
-- **Spec:** [variables.md — Identifier categories](../spec/variables.md#identifier-categories)
+- **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
 - **Questions:**
-  1. After the approved `type` introducer, how are named types, generic parameters, and constructors declared? `type Point(x: number, y: number)` is illustrative.
+  1. What additional grammar is needed for generic parameters, named fields, recursive declarations, and advanced variants beyond the approved positional and indented constructor forms?
 
 ### PAR-TYPE-03 — Dedicated named type keyword
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Declaration keywords and expression results](../spec/syntax-and-types.md#declaration-keywords-and-expression-results)
 - **Done when:** Named type declarations use the `type` introducer; their remaining grammar is determined by PAR-TYPE-02.
+
+### PAR-TYPE-04 — Positional nominal constructors
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
+- **Done when:** `type UserId(number)` and `type Point(number, number)` parse as nominal type declarations with positional constructor payloads.
+
+### PAR-TYPE-05 — Alias declarations
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
+- **Done when:** `alias Identifier = UserId | ProductId` and `alias Some = Option.Some` parse as transparent aliases, distinguishable from nominal `type` declarations.
+
+### PAR-TYPE-06 — Indented constructors and qualified lookup
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
+- **Done when:** `type Option` with indented `Some(any)` and `None` parses as a nominal algebraic declaration and `Option.Some` resolves as a qualified constructor name.
+
+### PAR-TYPE-07 — Constructor restrictions in type expressions
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
+- **Done when:** `Value("one" | "two")` parses in a type context as a restriction on an existing nominal constructor, while `Value("one")` in a value context constructs a value.
 
 ### PAR-UPD-01 — Dotted update syntax
 
@@ -238,7 +262,7 @@
 - **Status:** Open question
 - **Spec:** [syntax-and-types.md — Match expressions](../spec/syntax-and-types.md#match-expressions)
 - **Questions:**
-  1. Which constructor, literal, destructuring, and other pattern forms are supported inside the approved subjectful `match` expression?
+  1. What is the detailed grammar for constructor-destructuring patterns and any additional literal, destructuring, and other pattern forms within subjectful `match`? Constructor destructuring is approved.
   2. Where may `_` appear as a wildcard within compound patterns?
 
 ## Errors
