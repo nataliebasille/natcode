@@ -162,7 +162,7 @@ def validate(cards: list[Scorecard], errors: list[str]) -> None:
                 replacement = item.fields.get('Superseded by')
                 if not replacement:
                     errors.append(f'{where}: {item.id} is Superseded but lacks Superseded by')
-                elif replacement != 'None' and not re.fullmatch(r'[A-Z]+-[A-Z]+-\\d{2}', replacement):
+                elif replacement != 'None' and not re.fullmatch(r'[A-Z]+-[A-Z]+-\d{2}', replacement):
                     errors.append(f'{where}: {item.id} has invalid Superseded by reference {replacement!r}')
                 elif replacement == item.id:
                     errors.append(f'{where}: {item.id} cannot supersede itself')
