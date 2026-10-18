@@ -16,7 +16,7 @@ Source text is UTF-8. Positions are reported as byte-offset spans plus 1-based l
 
 | Category | Forms |
 | --- | --- |
-| Reserved keywords | `from`, `import`, `export`, `type`, `fn`, `match`. These are case-sensitive, hard-reserved words (LEX-KW-01, LEX-KW-04 through LEX-KW-07). |
+| Reserved keywords | `from`, `import`, `export`, `type`, `alias`, `fn`, `match`. These are case-sensitive, hard-reserved words (LEX-KW-01, LEX-KW-04 through LEX-KW-07, LEX-KW-12). |
 | Boolean literals | `true`, `false` |
 | Identifiers | Unicode identifiers per UAX #31: first character is `XID_Start` or `_`; following characters are `XID_Continue`. Letters of any script (`café`, `größe`, `π`, `中文`) are allowed. |
 | Wildcard | A standalone `_` is its own token, never an identifier. `_x`, `__`, and `x_` are identifiers. |
@@ -26,7 +26,7 @@ Source text is UTF-8. Positions are reported as byte-offset spans plus 1-based l
 | Comments | `// …` to end of line; `/* … */` block comments, which nest. Comments produce no tokens. Whether line breaks inside a block comment produce newline tokens is LEX-COM-04. |
 | Line breaks | LF or CRLF; each is one newline token. Spaces are insignificant between tokens. |
 
-The reserved words are recognized as keywords regardless of position; they cannot name ordinary bindings. Keyword spellings are permitted as object property names, with details of the object grammar still to be determined (PAR-OBJ-01). `if`, `else`, `elif`, and `case` are not reserved words or language control-flow constructs. `return` is not a control-flow construct or keyword. `null` is not a native literal or reserved word; absence is represented using constructors such as `None`. Further words, including `then` and generator/effect vocabulary, remain open questions (LEX-KW-03).
+The reserved words are recognized as keywords regardless of position; they cannot name ordinary bindings. Keyword spellings are permitted as object property names, with details of the object grammar still to be determined (PAR-OBJ-01). `if`, `else`, `elif`, and `case` are not reserved words or language control-flow constructs. `return` is not a control-flow construct or keyword. `try`, `catch`, and `throw` are not reserved or built-in exception constructs (LEX-KW-11). `null` is not a native literal or reserved word; absence is represented using constructors such as `None`. Further words, including `then` and generator/effect vocabulary, remain open questions (LEX-KW-03).
 
 ## Identifier normalization
 
@@ -99,7 +99,9 @@ The exact separator syntax, allowable patterns, branch bodies, fallback rules, a
 
 - `fn` introduces named function declarations (PAR-FN-02). Parameter and body syntax remain open (PAR-FN-01).
 - Functions return the value of their final expression; there is no `return` statement or explicit early return (PAR-FN-03).
-- `type` introduces named type declarations (PAR-TYPE-03). Constructor and generic declaration grammar remain open (PAR-TYPE-02).
+- `type` introduces a new **nominal** type identity (PAR-TYPE-03, TYP-NOM-01); it never declares a transparent alias.
+- `alias` names an existing type expression or a constructor symbol without creating a new nominal identity (PAR-TYPE-05, TYP-ALI-01, TYP-ALI-02). The right-hand side is introduced by `=`. The full expression grammar remains PAR-TYPE-01.
+- Positional nominal constructor declarations and algebraic variants have approved forms (PAR-TYPE-04, PAR-TYPE-06). Further declaration and generic grammar remains open (PAR-TYPE-02).
 - Ordinary variable bindings continue to use keyword-free `name = expression` declarations (PAR-DECL-01).
 
 ## Inference-first philosophy
@@ -108,11 +110,88 @@ Natcode seeks a TypeScript-like ergonomics with a substantially more functional 
 
 Ordinary variable types and function return types are intended to be inferred. The optional declaration constraint `x: Type = expression` is permitted as an **assignability check** without replacing or widening the inferred type; this updates the earlier inference-only proposal.
 
+## Nominal types, constructors, and aliases
+
+A `type` declaration creates a fresh nominal identity. Constructing values of two independently declared nominal types does not make those values interchangeable, even when their payload types coincide (TYP-NOM-01).
+
+```natcode
+type UserId(number)
+type ProductId(number)
+
+userId = UserId(123)
+productId = ProductId(123)
+```
+
+Nominal wrappers do **not** implicitly convert to their payload types or automatically inherit their operators (TYP-NOM-02). User-defined operator syntax and resolution remain open until function semantics are designed.
+
+A constructor can have multiple positional parameters. The constructor form is also a pattern that binds the contents of its fields; there is no automatically generated `.value` accessor (TYP-NOM-03, TYP-NOM-04, PAR-PAT-01).
+
+```natcode
+type Point(number, number)
+
+point = Point(10, 20)
+coordinates = match point
+    Point(x, y) => { x, y }
+```
+
+The `match` branch and record literal syntax in these examples is illustrative; the pattern-matching ability to destructure constructors is approved, while the complete grammar is PAR-PAT-01 and PAR-COND-01.
+
+An algebraic nominal type may declare multiple constructors in an indented constructor list. A constructor is qualified by its declaring type by default; the constructor's unqualified name is **not** automatically in scope (TYP-ADT-01, PAR-TYPE-06, RES-NAME-06).
+
+```natcode
+type Option
+    Some(any)
+    None
+
+present = Option.Some(42)
+absent = Option.None
+```
+
+A transparent alias can name a type expression or an existing constructor symbol. Constructor aliases preserve the original constructor identity and are usable in value construction and constructor patterns (TYP-ALI-01, TYP-ALI-02).
+
+```natcode
+alias Some = Option.Some
+
+value = Some(42)
+unwrapped = match value
+    Some(x) => x
+```
+
+In **type-expression context**, applying an existing nominal constructor to type arguments describes a subset of that nominal type constrained by its payload values; in **value-expression context**, applying it constructs a value (TYP-NOM-05). Omitting the arguments names the entire nominal type with no further restriction.
+
+```natcode
+type Value(string)
+type Value2(number)
+
+alias Z = Value("one" | "two") | Value2(1 | 2)
+alias Unrestricted = Value | Value2
+```
+
+For a single-payload constructor, `Value(A | B)` represents the same set of possible values as `Value(A) | Value(B)`. For multiple arguments, correlations must be preserved: `Point(1 | 2, 3 | 4)` represents four combinations, while `Point(1, 3) | Point(2, 4)` represents only two. The complete grammar for literal type expressions is PAR-TYPE-01.
+
+Nominal types may contain other nominal types through ordinary constructor parameters (TYP-NOM-06).
+
+```natcode
+type Position(number, number)
+type Color(string)
+
+type Sprint(Position, Color)
+// Equivalent unrestricted parameter types:
+// type Sprint(Position(number, number), Color(string))
+
+sprint = Sprint(Position(10, 20), Color("red"))
+```
+
+These nested values are constructor arguments; this declaration **does not imply** implicit projection, inheritance, an interface, independent-aspect composition, or automatic reconstruction after a nested value is transformed. No separate nominal-combination operator or construct is approved. The previously explored special combination syntax is rejected in favor of ordinary nesting. How a function might preserve a containing value while transforming a nested value, versus return an unrelated value, remains an open question (TYP-FN-05).
+
 ## Union and intersection types
 
-- `|` is type **union**.
+- `|` is mathematical **set union**: a value belongs to `A | B` precisely when it belongs to `A` or `B`. Neither union nor intersection creates a new nominal identity (TYP-UNI-06).
 - Simplification/consolidation of a union is permitted **only when it preserves the exact represented set of possibilities**. In particular, preserve correlations between fields and exclusions; do not merge distinct object variants in ways that admit combinations not present in the original union.
-- `&` is reserved for type **intersection**, separate from `:` constraints.
+- `&` is mathematical **set intersection**: a value belongs to `A & B` precisely when it belongs to **both** types. It never constructs or combines constituent values and is distinct from `:` constraints (TYP-UNI-06).
+- `never` denotes the empty type: no values inhabit it. Thus `A | never = A` and `A & never = never` (TYP-UNI-07).
+- An intersection proven empty resolves to `never` and is **valid**, whether direct, nested, or involving explicit `never`. The declaration itself causes no warning or error merely for being empty. Attempting to provide a value where the type is uninhabited is an error (TYP-UNI-08).
+- Independently declared, unrelated nominal constructor types are disjoint: for example, `UserId & ProductId` is `never` (TYP-UNI-09). Nominal subtyping or other explicit overlapping-identity relationships are not introduced by ordinary constructors.
 
 For example, this union:
 
@@ -130,7 +209,7 @@ must not be simplified into:
 
 because the latter would allow a `"left"` tag paired with a `string` value, which the original type excludes. The record-type syntax here is illustrative.
 
-See TYP-UNI-05 (difference and complement operators), TYP-CON-03 (subtyping), TYP-GEN-01 (generics), and TYP-ADT-01 (algebraic data types).
+Set identities include `A | B = B | A`, `A | A = A`, `A & B = B & A`, and `A & A = A`. More detailed structural membership and normalization choices remain TYP-UNI-04. Difference/complement operators remain TYP-UNI-05; generic types remain TYP-GEN-01; broader subtyping remains TYP-CON-03.
 
 ## Target directions
 
@@ -203,7 +282,7 @@ result = getX()       // 10
 maxSize = 100
 MAX_SIZE = 100         // allowed at module top level
 🚀 = 42
-type Point(x: number, y: number)  // illustrative type syntax
+type Point(number, number)  // positional nominal constructor declaration
 ```
 
 ## Identifier mangling and compilation
@@ -421,6 +500,14 @@ test(x: 24) => x * 2       // return: 48
 The function syntax in these examples is illustrative (PAR-FN-01, TYP-FN-03); they illustrate type inference rules only.
 
 Compile-time evaluation rules should be standardized and deterministic. When an attempt to evaluate a pure expression exceeds its budget, **fall back to ordinary sound static inference rather than failing solely due to the budget**. Exact budgets and the relationship to type checking are TYP-EVAL-02.
+
+## Error handling
+
+Natcode has no language-level exceptions, throwing/catching semantics, or exception-based propagation (RUN-EFF-04). Recoverable errors are represented explicitly as values. `try`, `catch`, and `throw` are not built-in exception constructs (LEX-KW-11).
+
+Error values are ordinary first-class values, but their types are designated as errors and recognized by the type checker (TYP-ERR-02). Operations may produce a success value or an error value directly as alternatives in a union, without mandatory `Ok` and `Err` wrappers. For example, `number | ParseError` can represent either a successful number or a designated parse error (how error types are designated remains open).
+
+How types receive the error designation, how possible errors are inferred in signatures, and how errors are propagated and handled remain open (TYP-ERR-01). Unrecoverable runtime faults and failures in lazy computations remain a separate question (RUN-EFF-02).
 
 ## Laziness
 

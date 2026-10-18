@@ -38,6 +38,18 @@
   2. How are all-caps words and single capitals classified, for example `PI` (used as a value in examples) or `A`: UPPER_SNAKE_CASE value, or PascalCase type/namespace?
   3. How are titlecase letters (such as `ǅ`) and uncased scripts classified for type and namespace names?
 
+### RES-NAME-06 — Qualified constructor lookup
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
+- **Done when:** `Option.Some` and `Option.None` resolve as constructors of `Option`; their unqualified names are not automatically bound.
+
+### RES-NAME-07 — Constructor aliases preserve identity
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
+- **Done when:** `alias Some = Option.Some` binds the same constructor for construction and pattern matching without introducing another nominal identity.
+
 ## Scopes and bindings
 
 ### RES-SCOPE-01 — New immutable binding per declaration
