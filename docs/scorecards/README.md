@@ -90,6 +90,7 @@ From the repository root:
 python docs/tools/scorecard_status.py          # status counts per system
 python docs/tools/scorecard_status.py --json   # machine-readable counts
 python docs/tools/scorecard_status.py --check  # validate format, links, evidence, and the merged spec
+python -m unittest discover -s docs/tools -p 'test_*.py'  # run scorecard validator unit tests
 ```
 
 `--check` verifies that every item has the required fields for its status, IDs are unique and match their file's prefix, spec links resolve, current evidence names existing tests, historical evidence is recorded separately, replacement IDs exist, IDs referenced from spec files exist, and [`../natcode-spec.md`](../natcode-spec.md) matches the spec files. Regenerate the merged spec with `python docs/tools/build_spec.py`.
