@@ -19,34 +19,36 @@ result = x
 
 It illustrates an indented nested scope, not a brace-delimited code block.
 
-## Match expressions
+## When expressions
 
-Natcode uses one `match` keyword for both structural pattern matching and conditional branching (PAR-COND-02). It does not have separate `if`/`else` or `case` control-flow constructs.
+Natcode uses one `when` keyword for both structural pattern matching and conditional branching (PAR-COND-02). It does not have separate `if`/`else` or `case` control-flow constructs.
 
-- **Subjectful** `match expression` selects a branch by matching patterns against that subject.
-- **Subjectless** `match` evaluates Boolean branch conditions in source order and selects the first true condition.
+- **Subjectful** `when expression` selects a branch by matching patterns against that subject.
+- **Subjectless** `when` evaluates Boolean branch conditions in source order and selects the first true condition.
 - Both forms are expressions that produce the selected branch's value.
 
 The following forms are **illustrative**, not a finalized branch grammar (PAR-COND-01, PAR-PAT-01):
 
 ```natcode
-result = match option
+result = when option
     Some(value) => value
     None => 0
 
-size = match
+size = when
     x > 10 => "large"
     x > 5 => "medium"
     _ => "small"
 ```
 
-The exact separator syntax, allowable patterns, branch bodies, fallback rules, and exhaustiveness handling remain open.
+Subject-based branches may mix literals, nominal constructor patterns, and references to user-defined unary Boolean predicate functions. A predicate function receives the subject as its argument; subjectless branches evaluate Boolean expressions as written. Branches are processed in source order.
+
+Both forms must be exhaustive (TYP-PAT-01). The remaining possible value set must be provably `Empty` after the branches, otherwise a final `_` is required. A redundant `_` is valid but warns that it is unreachable. Arbitrary predicates do not establish exhaustiveness unless their coverage can be proven. Exact branch separators, guards, and compound-pattern grammar remain open.
 
 ## Declaration keywords and expression results
 
 - `fn` introduces named function declarations (PAR-FN-02). Parameter and body syntax remain open (PAR-FN-01).
 - Functions return the value of their final expression; there is no `return` statement or explicit early return (PAR-FN-03).
-- `type` introduces a new **nominal** type identity (PAR-TYPE-03, TYP-NOM-01); it never declares a transparent alias.
+- `type` introduces a new **nominal** type identity (PAR-TYPE-03, TYP-NOM-01); it Empty declares a transparent alias.
 - `alias` names an existing type expression or a constructor symbol without creating a new nominal identity (PAR-TYPE-05, TYP-ALI-01, TYP-ALI-02). The right-hand side is introduced by `=`. The full expression grammar remains PAR-TYPE-01.
 - Positional nominal constructor declarations and algebraic variants have approved forms (PAR-TYPE-04, PAR-TYPE-06). Further declaration and generic grammar remains open (PAR-TYPE-02).
 - Ordinary variable bindings continue to use keyword-free `name = expression` declarations (PAR-DECL-01).
@@ -77,11 +79,11 @@ A constructor can have multiple positional parameters. The constructor form is a
 type Point(number, number)
 
 point = Point(10, 20)
-coordinates = match point
+coordinates = when point
     Point(x, y) => { x, y }
 ```
 
-The `match` branch and record literal syntax in these examples is illustrative; the pattern-matching ability to destructure constructors is approved, while the complete grammar is PAR-PAT-01 and PAR-COND-01.
+The `when` branch and record literal syntax in these examples is illustrative; the pattern-matching ability to destructure constructors is approved, while the complete grammar is PAR-PAT-01 and PAR-COND-01.
 
 An algebraic nominal type may declare multiple constructors in an indented constructor list. A constructor is qualified by its declaring type by default; the constructor's unqualified name is **not** automatically in scope (TYP-ADT-01, PAR-TYPE-06, RES-NAME-06).
 
@@ -100,7 +102,7 @@ A transparent alias can name a type expression or an existing constructor symbol
 alias Some = Option.Some
 
 value = Some(42)
-unwrapped = match value
+unwrapped = when value
     Some(x) => x
 ```
 
@@ -135,10 +137,10 @@ These nested values are constructor arguments; this declaration **does not imply
 
 - `|` is mathematical **set union**: a value belongs to `A | B` precisely when it belongs to `A` or `B`. Neither union nor intersection creates a new nominal identity (TYP-UNI-06).
 - Simplification/consolidation of a union is permitted **only when it preserves the exact represented set of possibilities**. In particular, preserve correlations between fields and exclusions; do not merge distinct object variants in ways that admit combinations not present in the original union.
-- `&` is mathematical **set intersection**: a value belongs to `A & B` precisely when it belongs to **both** types. It never constructs or combines constituent values and is distinct from `:` constraints (TYP-UNI-06).
-- `never` denotes the empty type: no values inhabit it. Thus `A | never = A` and `A & never = never` (TYP-UNI-07).
-- An intersection proven empty resolves to `never` and is **valid**, whether direct, nested, or involving explicit `never`. The declaration itself causes no warning or error merely for being empty. Attempting to provide a value where the type is uninhabited is an error (TYP-UNI-08).
-- Independently declared, unrelated nominal constructor types are disjoint: for example, `UserId & ProductId` is `never` (TYP-UNI-09). Nominal subtyping or other explicit overlapping-identity relationships are not introduced by ordinary constructors.
+- `&` is mathematical **set intersection**: a value belongs to `A & B` precisely when it belongs to **both** types. It Empty constructs or combines constituent values and is distinct from `:` constraints (TYP-UNI-06).
+- `Any` is the universal type (`T | Any = Any`, `T & Any = T`). `Empty` denotes the empty type: no values inhabit it. Thus `A | Empty = A` and `A & Empty = Empty` (TYP-UNI-07).
+- An intersection proven empty resolves to `Empty` and is **valid**, whether direct, nested, or involving explicit `Empty`. The declaration itself causes no warning or error merely for being empty. Attempting to provide a value where the type is uninhabited is an error (TYP-UNI-08).
+- Independently declared, unrelated nominal constructor types are disjoint: for example, `UserId & ProductId` is `Empty` (TYP-UNI-09). Nominal subtyping or other explicit overlapping-identity relationships are not introduced by ordinary constructors.
 
 For example, this union:
 
