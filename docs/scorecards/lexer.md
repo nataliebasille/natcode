@@ -70,16 +70,17 @@
 
 ### LEX-KW-07 — Unified `when` keyword
 
-- **Status:** Approved
+- **Status:** Needs update
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
 - **Done when:** `when` is hard-reserved and `match` is no longer reserved; longer identifiers containing `when` remain identifiers.
-- **Notes:** The current lexer and tests still implement the superseded `match` keyword.
+- **Previous evidence:** `tests/lexer/main.rs::keywords::declaration_and_match_keywords_are_reserved`, `tests/lexer/main.rs::keywords::keywords_are_case_sensitive`, `tests/lexer/main.rs::keywords::words_containing_keywords_are_identifiers`
+- **Notes:** Implemented for `match`, but approved language syntax switched to `when` on 2026-10-18. Update the lexer and tests before restoring Implemented.
 
 ### LEX-KW-08 — No separate conditional or case keywords
 
 - **Status:** Implemented
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
-- **Done when:** `if`, `else`, `elif`, and `case` are not treated as reserved words; conditional and pattern-matching constructs use `when`.
+- **Done when:** `if`, `else`, `elif`, and `case` are not treated as reserved words.
 - **Evidence:** `tests/lexer/main.rs::keywords::conditional_and_case_words_are_not_reserved`
 
 ### LEX-KW-09 — No null literal
