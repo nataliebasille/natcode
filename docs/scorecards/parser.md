@@ -167,21 +167,25 @@
 - **Done when:** A function's result is the value of its final expression; an explicit `return` or early-return statement is not part of Natcode grammar.
 - **Notes:** Exact function body/block grammar remains PAR-BLK-02 and PAR-FN-01.
 
-### PAR-COND-01 — Match branch grammar
+### PAR-COND-01 — When branch grammar
 
 - **Status:** Open question
-- **Spec:** [syntax-and-types.md — Match expressions](../spec/syntax-and-types.md#match-expressions)
+- **Spec:** [syntax-and-types.md — When expressions](../spec/syntax-and-types.md#when-expressions)
 - **Questions:**
-  1. What is the exact grammar for branch patterns, condition tests, separators, and indented bodies? `=>` remains illustrative.
-  2. What are the exhaustive-match requirements and behavior when no branch matches?
-  3. Are pattern guards supported, and how are they spelled?
+  1. What is the exact grammar for branch patterns, separators, and indented bodies? `=>` is illustrative.
+  2. Are pattern guards supported and how are they spelled?
 
-### PAR-COND-02 — Unified matching and conditional form
+### PAR-COND-02 — Unified `when` form
 
 - **Status:** Approved
-- **Spec:** [syntax-and-types.md — Match expressions](../spec/syntax-and-types.md#match-expressions)
-- **Done when:** Natcode accepts `match expression` for matching patterns against a subject and subjectless `match` for testing Boolean conditions in order; both are value-producing expressions, and `if`/`else` conditionals are not supported.
-- **Notes:** The complete branch grammar and exhaustiveness behavior remain PAR-COND-01.
+- **Spec:** [syntax-and-types.md — When expressions](../spec/syntax-and-types.md#when-expressions)
+- **Done when:** Both `when subject` and subjectless `when` produce values; the former matches its subject and the latter tests Boolean conditions in order. No separate `if`/`else` syntax.
+
+### PAR-COND-03 — Mixed patterns and predicates
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — When expressions](../spec/syntax-and-types.md#when-expressions)
+- **Done when:** Subject-based `when` accepts mixed literal, constructor, and unary Boolean predicate function branches; a predicate receives the subject implicitly. Subjectless branches evaluate written Boolean expressions.
 
 ### PAR-OBJ-01 — Object literal grammar
 
@@ -260,9 +264,9 @@
 ### PAR-PAT-01 — Pattern matching syntax
 
 - **Status:** Open question
-- **Spec:** [syntax-and-types.md — Match expressions](../spec/syntax-and-types.md#match-expressions)
+- **Spec:** [syntax-and-types.md — When expressions](../spec/syntax-and-types.md#when-expressions)
 - **Questions:**
-  1. What is the detailed grammar for constructor-destructuring patterns and any additional literal, destructuring, and other pattern forms within subjectful `match`? Constructor destructuring is approved.
+  1. What is the detailed grammar for constructor-destructuring patterns and any additional literal, destructuring, and other pattern forms within subjectful `when`? Constructor destructuring is approved.
   2. Where may `_` appear as a wildcard within compound patterns?
 
 ## Errors
