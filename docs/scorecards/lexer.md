@@ -44,7 +44,7 @@
   1. Which additional words, if any, should be reserved beyond the approved set?
   2. Should generator/effect words such as `yield`, `async`, or `await` become reserved? Their semantics remain open.
   3. Is `then` or any other branch-related word necessary once `match` handles conditionals?
-- **Notes:** The lexer currently recognizes `from`, `import`, `export`, `type`, `fn`, `match`, `true`, and `false`; the approved `alias` keyword (LEX-KW-11) is not yet implemented. `if`, `else`, `elif`, `case`, `return`, and `null` are explicitly excluded by approved decisions. Other words, such as `then`, `let`, `val`, `var`, `yield`, `async`, and `await`, currently lex as identifiers (`tests/lexer/main.rs::keywords::undecided_words_are_not_reserved_for_now`).
+- **Notes:** The lexer currently recognizes `from`, `import`, `export`, `type`, `fn`, `match`, `true`, and `false`; the approved `alias` keyword (LEX-KW-12) is not yet implemented. `if`, `else`, `elif`, `case`, `return`, and `null` are explicitly excluded by approved decisions. Other words, such as `then`, `let`, `val`, `var`, `yield`, `async`, and `await`, currently lex as identifiers (`tests/lexer/main.rs::keywords::undecided_words_are_not_reserved_for_now`).
 
 ### LEX-KW-04 — Hard-reserved keyword strategy
 
@@ -97,7 +97,7 @@
 - **Done when:** `return` is not treated as a reserved word or control-flow token; functions return their final expression (PAR-FN-03).
 - **Evidence:** `tests/lexer/main.rs::keywords::return_is_an_identifier`
 
-### LEX-KW-11 — Alias declaration keyword
+### LEX-KW-12 — Alias declaration keyword
 
 - **Status:** Approved
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
