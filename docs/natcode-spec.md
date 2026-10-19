@@ -16,17 +16,17 @@ Source text is UTF-8. Positions are reported as byte-offset spans plus 1-based l
 
 | Category | Forms |
 | --- | --- |
-| Reserved keywords | `from`, `import`, `export`, `type`, `alias`, `fn`, `when`. These are case-sensitive, hard-reserved words (LEX-KW-01, LEX-KW-04 through LEX-KW-07, LEX-KW-12). |
+| Reserved keywords | `from`, `import`, `export`, `type`, `alias`, `fn`, `when`, `where`. These are case-sensitive, hard-reserved words (LEX-KW-01, LEX-KW-04 through LEX-KW-07, LEX-KW-12, LEX-KW-13). |
 | Boolean literals | `true`, `false` |
 | Identifiers | Unicode identifiers per UAX #31: first character is `XID_Start` or `_`; following characters are `XID_Continue`. Letters of any script (`café`, `größe`, `π`, `中文`) are allowed. |
 | Wildcard | A standalone `_` is its own token, never an identifier. `_x`, `__`, and `x_` are identifiers. |
 | Numbers | Decimal integers (`42`) and decimal fractions (`3.14159`), using ASCII digits only. |
 | Strings | Double-quoted, single-line: `"Alice"`, `"./math"`. Any character except a line break is allowed, including non-ASCII. |
-| Operators and punctuation | `=` `=>` `:` `\|` `&` `{` `}` `(` `)` `,` `.` `*` `+` |
+| Operators and punctuation | `=` `=>` `:` `\|` `&` `/` `{` `}` `(` `)` `,` `.` `*` `+` |
 | Comments | `// …` to end of line; `/* … */` block comments, which nest. Comments produce no tokens. Whether line breaks inside a block comment produce newline tokens is LEX-COM-04. |
 | Line breaks | LF or CRLF; each is one newline token. Spaces are insignificant between tokens. |
 
-The reserved words are recognized as keywords regardless of position; they cannot name ordinary bindings. Keyword spellings are permitted as object property names, with details of the object grammar still to be determined (PAR-OBJ-01). `if`, `else`, `elif`, and `case` are not reserved words or language control-flow constructs. `return` is not a control-flow construct or keyword. `try`, `catch`, and `throw` are not reserved or built-in exception constructs (LEX-KW-11). `null` is not a native literal or reserved word; absence is represented using constructors such as `None`. Further words, including `then` and generator/effect vocabulary, remain open questions (LEX-KW-03).
+The reserved words are recognized as keywords regardless of position; they cannot name ordinary bindings. Keyword spellings are permitted as object property names, with details of the object grammar still to be determined (PAR-OBJ-01). `if`, `else`, `elif`, and `case` are not reserved words or language control-flow constructs. `return` is not a control-flow construct or keyword. `try`, `catch`, and `throw` are not reserved or built-in exception constructs (LEX-KW-11). `null` is not a native literal or reserved word; absence is represented using constructors such as `None`. `where` is the refinement-type keyword. Further words, including `then` and generator/effect vocabulary, remain open questions (LEX-KW-03).
 
 ## Identifier normalization
 
@@ -47,7 +47,7 @@ Identifiers are normalized to Unicode **NFC**, so visually identical spellings (
 
 ## Lexical errors
 
-Any character that cannot begin a token is an error, including emoji, non-identifier symbols such as `∑` or `€`, and ASCII characters outside the operator set (for example `-`, `/`, `;`, `@`). An unterminated block comment is an error. Lexing recovers after every error and reports all diagnostics in source order.
+Any character that cannot begin a token is an error, including emoji, non-identifier symbols such as `∑` or `€`, and ASCII characters outside the operator set (for example `-`, `;`, `@`). An unterminated block comment is an error. Lexing recovers after every error and reports all diagnostics in source order.
 
 ---
 
@@ -80,7 +80,7 @@ Natcode uses one `when` keyword for both structural pattern matching and conditi
 - **Subjectless** `when` evaluates Boolean branch conditions in source order and selects the first true condition.
 - Both forms are expressions that produce the selected branch's value.
 
-The following forms are **illustrative**, not a finalized branch grammar (PAR-COND-01, PAR-PAT-01):
+The fat arrow `=>` is the approved separator between a branch pattern or condition and its result (PAR-COND-04). The complete pattern and branch-body grammar remains open (PAR-COND-01, PAR-PAT-01):
 
 ```natcode
 result = when option
@@ -95,13 +95,13 @@ size = when
 
 Subject-based branches may mix literals, nominal constructor patterns, and references to user-defined unary Boolean predicate functions. A predicate function receives the subject as its argument; subjectless branches evaluate Boolean expressions as written. Branches are processed in source order.
 
-Both forms must be exhaustive (TYP-PAT-01). The remaining possible value set must be provably `Empty` after the branches, otherwise a final `_` is required. A redundant `_` is valid but warns that it is unreachable. Arbitrary predicates do not establish exhaustiveness unless their coverage can be proven. Exact branch separators, guards, and compound-pattern grammar remain open.
+Both forms must be exhaustive (TYP-PAT-01). The remaining possible value set must be provably `Empty` after the branches, otherwise a final `_` is required. A redundant `_` is valid but warns that it is unreachable. Restricted input types participate in this calculation, so constructors already eliminated from the subject type do not need branches. Arbitrary predicates do not establish exhaustiveness unless their coverage can be proven. Pattern guards and the complete compound-pattern grammar remain open.
 
 ## Declaration keywords and expression results
 
 - `fn` introduces named function declarations (PAR-FN-02). Parameter and body syntax remain open (PAR-FN-01).
 - Functions return the value of their final expression; there is no `return` statement or explicit early return (PAR-FN-03).
-- `type` introduces a new **nominal** type identity (PAR-TYPE-03, TYP-NOM-01); it Empty declares a transparent alias.
+- `type` introduces a new **nominal** type identity (PAR-TYPE-03, TYP-NOM-01); it never declares a transparent alias.
 - `alias` names an existing type expression or a constructor symbol without creating a new nominal identity (PAR-TYPE-05, TYP-ALI-01, TYP-ALI-02). The right-hand side is introduced by `=`. The full expression grammar remains PAR-TYPE-01.
 - Positional nominal constructor declarations and algebraic variants have approved forms (PAR-TYPE-04, PAR-TYPE-06). Further declaration and generic grammar remains open (PAR-TYPE-02).
 - Ordinary variable bindings continue to use keyword-free `name = expression` declarations (PAR-DECL-01).
@@ -186,11 +186,315 @@ sprint = Sprint(Position(10, 20), Color("red"))
 
 These nested values are constructor arguments; this declaration **does not imply** implicit projection, inheritance, an interface, independent-aspect composition, or automatic reconstruction after a nested value is transformed. No separate nominal-combination operator or construct is approved. The previously explored special combination syntax is rejected in favor of ordinary nesting. How a function might preserve a containing value while transforming a nested value, versus return an unrelated value, remains an open question (TYP-FN-05).
 
+## Refinement types with `where`
+
+`where` is a postfix type operator that describes a **subset** of the type expression on its left (TYP-REF-01, PAR-REF-01). It does not create a nominal identity. A branch predicate is Boolean: values for which the predicate is true remain in the type, and values for which it is false are excluded.
+
+```natcode
+alias Positive = number where
+    x => x > 0
+
+alias AboveDiagonal = Position where
+    (x, y) => x > y
+```
+
+A restricted alias remains assignable to the type it restricts. The reverse assignment is accepted only when the compiler can establish that the value satisfies the restriction (TYP-REF-11).
+
+### Where patterns and filtering
+
+`where` and subjectful `when` use the same pattern language (PAR-PAT-02). Literal patterns, constructor patterns, wildcards, and constructor destructuring therefore mean the same thing in both constructs. Unlike `when`, however, `where` is a filter and **does not require exhaustive branches** (TYP-REF-03).
+
+A pattern claims the part of the input type that it matches. Its Boolean result decides which values from that matched part remain. A value whose pattern matched but whose predicate is false is excluded; it does not fall through to a later branch. Values not matched by any branch are also excluded.
+
+```natcode
+type Option
+    Some(number)
+    None
+
+alias PositiveOption = Option where
+    Some(x) => x > 0
+```
+
+Here positive `Some` values remain, negative and zero `Some` values are excluded, and `None` is excluded because no branch includes it.
+
+Ordinary branch patterns must describe disjoint regions. If two ordinary branches could match the same value, that is a compile error. `_` is special: it denotes only the region not matched by earlier branches. Consequently it must be final whenever it consumes the entire remaining region, and any branch after the remaining region is already `Empty` is a compile error.
+
+```natcode
+alias KeepOtherCases = Option where
+    Some(x) => x > 0
+    _ => true
+```
+
+In this example, `Some(-1)` is still excluded: it matched `Some(x)` and failed that predicate, so it does not reach `_`. The wildcard includes only values from constructors or regions that earlier patterns did not match.
+
+Explicit `true` and `false` branches are valid. A bare constructor is sugar for including that entire constructor:
+
+```natcode
+type Result
+    Success(number)
+    Failure(string)
+
+alias Successful = Result where
+    Success
+
+// Equivalent ways to include every Success value:
+alias Successful2 = Result where
+    Success => true
+
+alias Successful3 = Result where
+    Success(_) => true
+```
+
+For a nullary constructor, `None` and `None => true` are likewise equivalent. Explicit exclusions such as `Failure => false` and catch-alls such as `_ => false` remain valid even when omission would currently produce the same set.
+
+A restriction that removes every possible value resolves to `Empty` and is valid. `Empty where ...` also resolves to `Empty` (TYP-REF-07).
+
+### Binding and destructuring the input
+
+A single binder may bind the entire candidate value regardless of how many constructors the input type contains:
+
+```natcode
+(Foo | Bar) where
+    value => isAllowed(value)
+```
+
+Positional destructuring without a constructor name is available only when the complete type on the left has one unambiguous constructor shape (PAR-REF-02). One exposed parameter may omit parentheses; two or more require parentheses.
+
+```natcode
+alias Positive = number where
+    x => x > 0
+
+alias AboveDiagonal = Position where
+    (x, y) => x > y
+```
+
+If different nominal constructors are possible, positional destructuring cannot choose between them:
+
+```natcode
+// Invalid: Foo and Bar are different nominal constructors.
+(Foo | Bar) where
+    (x, y) => x > y
+
+// Valid: each branch says which constructor it handles.
+(Foo | Bar) where
+    Foo(x, y) => x > y
+    Bar(x, y) => x < y
+```
+
+Within `Option where ...`, unqualified constructor names such as `Some` and `None` resolve contextually to `Option.Some` and `Option.None` without becoming bindings in the surrounding scope (RES-REF-01). Fully qualified names remain valid. If the input type contains multiple possible constructors with the same short name, that short name is ambiguous and must be qualified.
+
+### Where placement and precedence
+
+`where` is a normal type operator and may appear wherever a type expression is already permitted (PAR-REF-01). It binds more tightly than the set operators `|`, `&`, and `/`:
+
+```natcode
+A | B where x => predicate(x)
+// means:
+A | (B where x => predicate(x))
+```
+
+Parentheses select a larger input explicitly:
+
+```natcode
+(A | B) where
+    A(x) => ...
+    B(x) => ...
+```
+
+Directly chaining `where` operators is rejected. Combine conditions in one restriction or name the intermediate type instead:
+
+```natcode
+// Invalid:
+number where x => x > 0 where x => x < 10
+
+// Valid:
+alias Positive = number where
+    x => x > 0
+
+alias SmallPositive = Positive where
+    x => x < 10
+```
+
+A `where` may not be written directly after an already-applied constructor type such as `Position(0, number)` or `Position(number, number)` (PAR-REF-03). Restrict an individual parameter inside the constructor application, or name the specialized type and refine that name:
+
+```natcode
+alias PositiveXAxis = Position(
+    0,
+    number where y => y > 0
+)
+
+alias XAxis = Position(0, number)
+alias PositiveXAxis2 = XAxis where
+    y => y > 0
+```
+
+The second form sees the constructor shape exposed by `XAxis`: only its one remaining parameter. A specialized type with zero exposed parameters, such as `Position(0, 0)`, has nothing for `where` to bind and cannot be refined again with `where`. `Empty` is the explicit exception described above.
+
+A qualified constructor symbol may be refined directly:
+
+```natcode
+alias PositiveSome = Option.Some where
+    x => x > 0
+```
+
+### Restrictions in nominal declarations
+
+Restrictions may be attached at three scopes in a nominal declaration (TYP-REF-02):
+
+```natcode
+type Response
+    Success(number where code => code >= 200 && code < 300)
+    Failure(string)
+```
+
+The inner `where` can reference only that single parameter. It cannot reference adjacent constructor parameters.
+
+A restriction may instead apply to a constructor as a whole, allowing relationships between that constructor's parameters:
+
+```natcode
+type Range(number, number) where
+    (start, end) => start < end
+```
+
+For algebraic types, individual constructors may have whole-constructor restrictions:
+
+```natcode
+type Response
+    Success(number) where
+        code => code >= 200 && code < 300
+    Failure(string) where
+        message => message != ""
+```
+
+The algebraic type as a whole may also be filtered with constructor patterns:
+
+```natcode
+type Response
+    Success(number)
+    Failure(string)
+where
+    Success(code) => code >= 200 && code < 300
+    Failure(message) => message != ""
+```
+
+These restrictions do not change nominal identity. For example, restricting the payload accepted by a nominal `Port` constructor does not make `Port` assignable to `number`.
+
+When more than one restriction applies, all of them must hold; their effect is intersection (TYP-REF-02).
+
+### Specialized aliases and constructors
+
+Applying a constructor in a type expression fixes any literal positions and leaves the remaining positions as the parameters exposed by the resulting specialized type (TYP-NOM-07):
+
+```natcode
+type Position(number, number)
+
+alias XAxis = Position(number, 0)
+alias Center = Position(0, 0)
+
+x = XAxis(10)    // constructs Position(10, 0)
+center = Center  // zero-parameter application
+center2 = Center()
+```
+
+A zero-parameter application may omit `()` in both type and value contexts (TYP-NOM-08). Thus `x: Center` and `x: Center()` name the same type, and nullary constructors such as `Option.None` and `Option.None()` are equivalent.
+
+A restricted alias preserves the constructor structure of what it restricts rather than inventing new constructor shortcuts (TYP-REF-04). For an algebraic type, every constructor whose restricted set is not proven `Empty` is exposed under the alias namespace:
+
+```natcode
+type Option
+    Some(number)
+    None
+
+alias PositiveOption = Option where
+    Some(x) => x > 0
+
+value = PositiveOption.Some(5)
+```
+
+`PositiveOption.None` is absent because `None` was eliminated. `PositiveOption(5)` is not introduced, because `Option` itself was never a constructor. If the developer wants a directly callable constructor alias, the constructor itself can be restricted:
+
+```natcode
+alias PositiveSome = Option.Some(number where x => x > 0)
+value = PositiveSome(5)
+```
+
+A constructor is removed from a restricted alias only when the compiler can prove that its remaining set is `Empty`. Lack of proof that a constructor is inhabited is not itself proof that the constructor is empty; construction still must establish the restriction for the specific value.
+
+Construction through a restricted alias enforces every applicable restriction.
+
+### Constructibility through set algebra
+
+Constructibility is determined from the **normalized resulting type**, not mechanically inherited from one operand (TYP-REF-05).
+
+If a union or intersection still exposes one common effective constructor shape, the resulting alias remains directly constructible:
+
+```natcode
+type Vector3(number, number, number)
+
+alias PositiveX = Vector3 where
+    (x, y, z) => x > 0
+
+alias PositiveY = Vector3 where
+    (x, y, z) => y > 0
+
+alias EitherPositive = PositiveX | PositiveY
+alias BothPositive = PositiveX & PositiveY
+```
+
+Both aliases still expose the same three `Vector3` parameter positions, with their combined restrictions.
+
+Sharing only the same nominal origin is not enough:
+
+```natcode
+alias XAxis = Position(number, 0)
+alias YAxis = Position(0, number)
+
+alias Axis = XAxis | YAxis
+```
+
+`Axis` is a valid type but is not directly callable: `XAxis` and `YAxis` expose different parameter positions. By contrast:
+
+```natcode
+alias Center = XAxis & YAxis
+```
+
+normalizes to `Position(0, 0)`, so `Center` has the resulting zero-parameter constructor.
+
+Set difference preserves constructibility when its normalized result still has one effective constructor shape. The type-expression operator `A / B` denotes values in `A` that are not in `B` (TYP-UNI-10).
+
+### Purity and lexical capture
+
+A `where` predicate must be pure and deterministic (TYP-REF-06). Type membership cannot depend on I/O, mutable state, time, randomness, network or database state, or other effects.
+
+A predicate may call eligible pure functions. It may also close over earlier immutable bindings in lexical scope (RES-REF-02):
+
+```natcode
+minimum = 10
+
+alias AboveMinimum = number where
+    x => x > minimum
+```
+
+The captured binding is the specific earlier binding, consistent with Natcode's lexical binding model. Values needed for mandatory compile-time validation must still be evaluable or provable by the compiler; effectful or runtime-dependent state is not permitted in a type restriction.
+
+Restricted constructors are not themselves Boolean membership tests. Compose restrictions through types instead:
+
+```natcode
+alias Positive = number where
+    x => x > 0
+
+alias SmallerPositive = Positive where
+    x => x < 10
+```
+
+Exact runtime-validation syntax for values that cannot be established statically is intentionally left open (TYP-REF-12).
+
 ## Union and intersection types
 
 - `|` is mathematical **set union**: a value belongs to `A | B` precisely when it belongs to `A` or `B`. Neither union nor intersection creates a new nominal identity (TYP-UNI-06).
 - Simplification/consolidation of a union is permitted **only when it preserves the exact represented set of possibilities**. In particular, preserve correlations between fields and exclusions; do not merge distinct object variants in ways that admit combinations not present in the original union.
-- `&` is mathematical **set intersection**: a value belongs to `A & B` precisely when it belongs to **both** types. It Empty constructs or combines constituent values and is distinct from `:` constraints (TYP-UNI-06).
+- `&` is mathematical **set intersection**: a value belongs to `A & B` precisely when it belongs to **both** types. It never constructs or combines constituent values and is distinct from `:` constraints (TYP-UNI-06).
+- `/` is mathematical **set difference** in type expressions: `A / B` contains exactly the values in `A` that are not in `B` (TYP-UNI-10).
 - `Any` is the universal type (`T | Any = Any`, `T & Any = T`). `Empty` denotes the empty type: no values inhabit it. Thus `A | Empty = A` and `A & Empty = Empty` (TYP-UNI-07).
 - An intersection proven empty resolves to `Empty` and is **valid**, whether direct, nested, or involving explicit `Empty`. The declaration itself causes no warning or error merely for being empty. Attempting to provide a value where the type is uninhabited is an error (TYP-UNI-08).
 - Independently declared, unrelated nominal constructor types are disjoint: for example, `UserId & ProductId` is `Empty` (TYP-UNI-09). Nominal subtyping or other explicit overlapping-identity relationships are not introduced by ordinary constructors.
@@ -211,7 +515,7 @@ must not be simplified into:
 
 because the latter would allow a `"left"` tag paired with a `string` value, which the original type excludes. The record-type syntax here is illustrative.
 
-Set identities include `A | B = B | A`, `A | A = A`, `A & B = B & A`, and `A & A = A`. More detailed structural membership and normalization choices remain TYP-UNI-04. Difference/complement operators remain TYP-UNI-05; generic types remain TYP-GEN-01; broader subtyping remains TYP-CON-03.
+Set identities include `A | B = B | A`, `A | A = A`, `A & B = B & A`, and `A & A = A`. More detailed structural membership and normalization choices remain TYP-UNI-04. Set difference `/` is approved in TYP-UNI-10; a standalone complement operator remains TYP-UNI-05. Generic types remain TYP-GEN-01; broader subtyping remains TYP-CON-03.
 
 ## Target directions
 
@@ -233,6 +537,7 @@ identifier: Type = expression
 - No `val`, `let`, or `var` declaration keyword is required.
 - Initializers are **mandatory**; `x: number` alone is invalid.
 - `:` is an optional **assignability constraint**. The initializer's inferred type must be equal to or assignable to the declared type.
+- Any type expression, including a `where` refinement, may appear after `:`. For example, `x: number where n => n > 0 = 5` requires the initializer to satisfy that restricted type (TYP-REF-11).
 - A constraint **does not widen** or overwrite the inferred type. Thus `x: number = 42` still has inferred type `42`.
 - The `&` operator is reserved for type **intersections**, not type constraints.
 
@@ -501,9 +806,39 @@ test(x: 24) => x * 2       // return: 48
 
 The function syntax in these examples is illustrative (PAR-FN-01, TYP-FN-03); they illustrate type inference rules only.
 
-Optional compile-time evaluation must not change inferred types, runtime semantics, or whether a program is valid (TYP-EVAL-01). Pure functions with statically known inputs may be evaluated at compile time to validate type-level constraints (TYP-EVAL-03). False mandatory constraints are compile errors; required validation cannot silently fall back to a broader type. Eligible functions, resource limits, unknown inputs, and constraint syntax remain open (TYP-EVAL-02, TYP-EVAL-04). More general proof-based reasoning is deferred (TYP-EVAL-05).
+Optional compile-time evaluation must not change inferred types, runtime semantics, or whether a program is valid (TYP-EVAL-01). Pure functions with statically known inputs may be evaluated at compile time to validate mandatory `where` restrictions (TYP-EVAL-03). A restriction proven false is a compile error, and required validation cannot silently fall back to a broader type. If the compiler cannot establish a mandatory restriction, that is also a compile error; unknown is not treated as either true or false (TYP-EVAL-04). Exact evaluation budgets and the complete eligibility rules for compile-time function evaluation remain open (TYP-EVAL-02).
 
-Diagnostics (TYP-DIAG-01): violated or unestablished mandatory guarantees are errors; provably redundant but valid code may warn; unsuccessful optional analyses need no diagnostic. Warnings do not prevent compilation or change semantics.
+## Flow-sensitive refinement and symbolic reasoning
+
+Natcode carries facts established by control flow into type checking (TYP-EVAL-05). A successful Boolean condition refines the bindings used by that condition inside its branch, while later branches also learn from the conditions that previously failed.
+
+For example, with:
+
+```natcode
+alias Positive = number where
+    x => x > 0
+```
+
+inside a branch guarded by `x > 0`, `x` is known to satisfy `Positive`. If a previous branch tested `x > 0` and did not run, the remaining path knows that condition is false. With ordered numeric values, after excluding both `x > 0` and `x < 0`, the remaining path can refine `x` to `0`.
+
+Refinement facts compose through Boolean conjunction, disjunction, and negation. Pure named predicates also contribute facts: when a restriction is defined by a pure predicate, a branch in which that same predicate is known true may establish membership in the restricted type. Destructuring a restricted constructor preserves the facts that apply to its extracted parameters (TYP-REF-08).
+
+The initial symbolic solver must guarantee a practical decidable subset of numeric reasoning (TYP-REF-10):
+
+- equality and ordered comparisons between values;
+- Boolean combinations of those relations;
+- transitive implications such as `x > y` and `y > 0` implying `x > 0`;
+- linear arithmetic with known constant coefficients, such as `x + 5 > y`, `x - y <= 10`, and `2 * x > y`.
+
+Predicates outside that guaranteed symbolic subset remain valid. Multiplication or division between two unknown values, powers, and other nonlinear relationships are not required to be proven symbolically in the initial solver. When all relevant inputs are statically known, ordinary pure compile-time evaluation may still validate such a predicate directly.
+
+A failure to prove a fact outside the supported solver is **not** proof that the fact is false. It simply cannot satisfy a mandatory static restriction unless another known fact establishes it. Exact runtime validation for values that cannot be proven statically is intentionally left open (TYP-REF-12).
+
+## Diagnostics
+
+Violated or unestablished mandatory guarantees are compile errors; provably redundant but valid code may warn; unsuccessful optional analyses need no diagnostic. Warnings do not prevent compilation or change semantics (TYP-DIAG-01).
+
+Natcode diagnostics should be understandable without compiler or type-theory terminology (TYP-DIAG-02). When possible, an error should explain in ordinary language what the developer wrote, why Natcode cannot accept it, and what form would work instead. Invalid `where` forms are hard compile errors with source spans, and a concrete rewrite should be shown when the compiler can confidently provide one.
 
 ## Error handling
 
