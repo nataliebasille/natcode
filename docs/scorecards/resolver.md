@@ -50,6 +50,20 @@
 - **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
 - **Done when:** `alias Some = Option.Some` binds the same constructor for construction and pattern matching without introducing another nominal identity.
 
+## Refinement resolution
+
+### RES-REF-01 — Contextual constructor names inside `where`
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Binding and destructuring the input](../spec/syntax-and-types.md#binding-and-destructuring-the-input)
+- **Done when:** Inside `Option where ...`, an unqualified constructor name such as `Some` resolves to the unique matching constructor from the input type; fully qualified names remain valid, ambiguous short names require qualification, and contextual names do not leak into surrounding scope.
+
+### RES-REF-02 — Refinements capture earlier lexical bindings
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Purity and lexical capture](../spec/syntax-and-types.md#purity-and-lexical-capture)
+- **Done when:** A `where` predicate may reference an earlier immutable binding such as `minimum` in `number where x => x > minimum`, and the reference resolves to the specific binding visible at the restriction's declaration.
+
 ## Scopes and bindings
 
 ### RES-SCOPE-01 — New immutable binding per declaration
