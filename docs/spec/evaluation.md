@@ -20,9 +20,39 @@ test(x: 24) => x * 2       // return: 48
 
 The function syntax in these examples is illustrative (PAR-FN-01, TYP-FN-03); they illustrate type inference rules only.
 
-Optional compile-time evaluation must not change inferred types, runtime semantics, or whether a program is valid (TYP-EVAL-01). Pure functions with statically known inputs may be evaluated at compile time to validate type-level constraints (TYP-EVAL-03). False mandatory constraints are compile errors; required validation cannot silently fall back to a broader type. Eligible functions, resource limits, unknown inputs, and constraint syntax remain open (TYP-EVAL-02, TYP-EVAL-04). More general proof-based reasoning is deferred (TYP-EVAL-05).
+Optional compile-time evaluation must not change inferred types, runtime semantics, or whether a program is valid (TYP-EVAL-01). Pure functions with statically known inputs may be evaluated at compile time to validate mandatory `where` restrictions (TYP-EVAL-03). A restriction proven false is a compile error, and required validation cannot silently fall back to a broader type. If the compiler cannot establish a mandatory restriction, that is also a compile error; unknown is not treated as either true or false (TYP-EVAL-04). Exact evaluation budgets and the complete eligibility rules for compile-time function evaluation remain open (TYP-EVAL-02).
 
-Diagnostics (TYP-DIAG-01): violated or unestablished mandatory guarantees are errors; provably redundant but valid code may warn; unsuccessful optional analyses need no diagnostic. Warnings do not prevent compilation or change semantics.
+## Flow-sensitive refinement and symbolic reasoning
+
+Natcode carries facts established by control flow into type checking (TYP-EVAL-05). A successful Boolean condition refines the bindings used by that condition inside its branch, while later branches also learn from the conditions that previously failed.
+
+For example, with:
+
+```natcode
+alias Positive = number where
+    x => x > 0
+```
+
+inside a branch guarded by `x > 0`, `x` is known to satisfy `Positive`. If a previous branch tested `x > 0` and did not run, the remaining path knows that condition is false. With ordered numeric values, after excluding both `x > 0` and `x < 0`, the remaining path can refine `x` to `0`.
+
+Refinement facts compose through Boolean conjunction, disjunction, and negation. Pure named predicates also contribute facts: when a restriction is defined by a pure predicate, a branch in which that same predicate is known true may establish membership in the restricted type. Destructuring a restricted constructor preserves the facts that apply to its extracted parameters (TYP-REF-08).
+
+The initial symbolic solver must guarantee a practical decidable subset of numeric reasoning (TYP-REF-10):
+
+- equality and ordered comparisons between values;
+- Boolean combinations of those relations;
+- transitive implications such as `x > y` and `y > 0` implying `x > 0`;
+- linear arithmetic with known constant coefficients, such as `x + 5 > y`, `x - y <= 10`, and `2 * x > y`.
+
+Predicates outside that guaranteed symbolic subset remain valid. Multiplication or division between two unknown values, powers, and other nonlinear relationships are not required to be proven symbolically in the initial solver. When all relevant inputs are statically known, ordinary pure compile-time evaluation may still validate such a predicate directly.
+
+A failure to prove a fact outside the supported solver is **not** proof that the fact is false. It simply cannot satisfy a mandatory static restriction unless another known fact establishes it. Exact runtime validation for values that cannot be proven statically is intentionally left open (TYP-REF-12).
+
+## Diagnostics
+
+Violated or unestablished mandatory guarantees are compile errors; provably redundant but valid code may warn; unsuccessful optional analyses need no diagnostic. Warnings do not prevent compilation or change semantics (TYP-DIAG-01).
+
+Natcode diagnostics should be understandable without compiler or type-theory terminology (TYP-DIAG-02). When possible, an error should explain in ordinary language what the developer wrote, why Natcode cannot accept it, and what form would work instead. Invalid `where` forms are hard compile errors with source spans, and a concrete rewrite should be shown when the compiler can confidently provide one.
 
 ## Error handling
 
