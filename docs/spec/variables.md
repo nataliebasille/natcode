@@ -12,6 +12,7 @@ identifier: Type = expression
 - No `val`, `let`, or `var` declaration keyword is required.
 - Initializers are **mandatory**; `x: number` alone is invalid.
 - `:` is an optional **assignability constraint**. The initializer's inferred type must be equal to or assignable to the declared type.
+- Any type expression, including a `where` refinement, may appear after `:`. For example, `x: number where n => n > 0 = 5` requires the initializer to satisfy that restricted type (TYP-REF-11).
 - A constraint **does not widen** or overwrite the inferred type. Thus `x: number = 42` still has inferred type `42`.
 - The `&` operator is reserved for type **intersections**, not type constraints.
 
