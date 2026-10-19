@@ -167,13 +167,14 @@
 - **Done when:** A function's result is the value of its final expression; an explicit `return` or early-return statement is not part of Natcode grammar.
 - **Notes:** Exact function body/block grammar remains PAR-BLK-02 and PAR-FN-01.
 
-### PAR-COND-01 — When branch grammar
+### PAR-COND-01 — Remaining when branch grammar
 
 - **Status:** Open question
 - **Spec:** [syntax-and-types.md — When expressions](../spec/syntax-and-types.md#when-expressions)
 - **Questions:**
-  1. What is the exact grammar for branch patterns, separators, and indented bodies? `=>` is illustrative.
+  1. What is the exact grammar for indented branch bodies beyond the approved `=>` separator?
   2. Are pattern guards supported and how are they spelled?
+- **Notes:** The branch separator itself is approved as `=>` in PAR-COND-04.
 
 ### PAR-COND-02 — Unified `when` form
 
@@ -186,6 +187,12 @@
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — When expressions](../spec/syntax-and-types.md#when-expressions)
 - **Done when:** Subject-based `when` accepts mixed literal, constructor, and unary Boolean predicate function branches; a predicate receives the subject implicitly. Subjectless branches evaluate written Boolean expressions.
+
+### PAR-COND-04 — Fat-arrow branch separator
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — When expressions](../spec/syntax-and-types.md#when-expressions)
+- **Done when:** `=>` separates a `when` branch pattern or condition from its result and is shared with predicate-bearing `where` branches.
 
 ### PAR-OBJ-01 — Object literal grammar
 
@@ -240,6 +247,12 @@
 - **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
 - **Done when:** `Value("one" | "two")` parses in a type context as a restriction on an existing nominal constructor, while `Value("one")` in a value context constructs a value.
 
+### PAR-TYPE-08 — Set-difference type operator
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Union and intersection types](../spec/syntax-and-types.md#union-and-intersection-types)
+- **Done when:** `A / B` parses in type-expression context as binary set difference; its precedence relative to `where` follows PAR-REF-01, while the remaining set-operator precedence table stays PAR-TYPE-01.
+
 ### PAR-UPD-01 — Dotted update syntax
 
 - **Status:** Open question
@@ -268,6 +281,44 @@
 - **Questions:**
   1. What is the detailed grammar for constructor-destructuring patterns and any additional literal, destructuring, and other pattern forms within subjectful `when`? Constructor destructuring is approved.
   2. Where may `_` appear as a wildcard within compound patterns?
+
+### PAR-PAT-02 — Shared pattern language for `when` and `where`
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Where patterns and filtering](../spec/syntax-and-types.md#where-patterns-and-filtering)
+- **Done when:** Every pattern form defined by PAR-PAT-01 has the same pattern meaning in subjectful `when` and `where`, subject to each construct's different branch semantics.
+
+## Refinement type grammar
+
+### PAR-REF-01 — Postfix `where` type operator and precedence
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Where placement and precedence](../spec/syntax-and-types.md#where-placement-and-precedence)
+- **Done when:** `where` is accepted wherever a type expression is accepted, binds tighter than `|`, `&`, and `/`, parentheses can select a larger left operand, and a direct chain such as `T where ... where ...` is rejected.
+
+### PAR-REF-02 — Refinement binding and destructuring forms
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Binding and destructuring the input](../spec/syntax-and-types.md#binding-and-destructuring-the-input)
+- **Done when:** A single identifier binds the whole candidate value or the single exposed parameter; positional `(x, y, ...)` destructuring is accepted only when the left type has one unambiguous constructor shape; mixed nominal constructors require explicit constructor patterns.
+
+### PAR-REF-03 — Applied-constructor restriction boundary
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Where placement and precedence](../spec/syntax-and-types.md#where-placement-and-precedence)
+- **Done when:** A direct form such as `Position(0, number) where ...` or `Position(number, number) where ...` is rejected, while `Position(0, number where ...)` and a named specialized alias followed by `where` are accepted.
+
+### PAR-REF-04 — Refinement branch surface forms
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Where patterns and filtering](../spec/syntax-and-types.md#where-patterns-and-filtering)
+- **Done when:** Predicate branches use `pattern => BooleanExpression`; bare constructor branches such as `Success` are accepted as inclusion sugar; explicit `true`/`false` and final `_` branches parse; `where` itself does not require an exhaustive final branch.
+
+### PAR-REF-05 — Refinements in nominal declarations
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Restrictions in nominal declarations](../spec/syntax-and-types.md#restrictions-in-nominal-declarations)
+- **Done when:** `where` can appear inside an individual constructor parameter type, after a positional or algebraic constructor declaration, and after an algebraic constructor list to restrict the nominal type as a whole.
 
 ## Errors
 
