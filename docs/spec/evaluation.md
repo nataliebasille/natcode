@@ -46,13 +46,13 @@ The initial symbolic solver must guarantee a practical decidable subset of numer
 
 Predicates outside that guaranteed symbolic subset remain valid. Multiplication or division between two unknown values, powers, and other nonlinear relationships are not required to be proven symbolically in the initial solver. When all relevant inputs are statically known, ordinary pure compile-time evaluation may still validate such a predicate directly.
 
-A failure to prove a fact outside the supported solver is **not** proof that the fact is false. It simply cannot satisfy a mandatory static restriction unless another known fact establishes it. Exact runtime validation for values that cannot be proven statically is intentionally left open (TYP-REF-12).
+A failure to prove a fact outside the supported solver is **not** proof that the fact is false. It simply cannot satisfy a mandatory static restriction unless another known fact establishes it. When the source value is already statically compatible with a restricted target's validation input type, `as?` may explicitly perform the remaining membership check as runtime validation (TYP-REF-12). Its result type remains `Target | ValidationError` even if compile-time evaluation or symbolic reasoning can prove the particular application will succeed or fail; such proof may eliminate runtime work but does not alter the validator's stable signature (TYP-REF-13).
 
 ## Diagnostics
 
 Violated or unestablished mandatory guarantees are compile errors; provably redundant but valid code may warn; unsuccessful optional analyses need no diagnostic. Warnings do not prevent compilation or change semantics (TYP-DIAG-01).
 
-Natcode diagnostics should be understandable without compiler or type-theory terminology (TYP-DIAG-02). When possible, an error should explain in ordinary language what the developer wrote, why Natcode cannot accept it, and what form would work instead. Invalid `where` forms are hard compile errors with source spans, and a concrete rewrite should be shown when the compiler can confidently provide one.
+Natcode diagnostics should be understandable without compiler or type-theory terminology (TYP-DIAG-02). When possible, an error should explain in ordinary language what the developer wrote, why Natcode cannot accept it, and what form would work instead. Invalid `where` forms are hard compile errors with source spans, and a concrete rewrite should be shown when the compiler can confidently provide one. Whether a valid `as?` whose success or failure is already statically known should produce an informational or warning diagnostic remains open (TYP-DIAG-03).
 
 ## Error handling
 
@@ -60,7 +60,9 @@ Natcode has no language-level exceptions, throwing/catching semantics, or except
 
 Error values are ordinary first-class values, but their types are designated as errors and recognized by the type checker (TYP-ERR-02). Operations may produce a success value or an error value directly as alternatives in a union, without mandatory `Ok` and `Err` wrappers. For example, `number | ParseError` can represent either a successful number or a designated parse error (how error types are designated remains open).
 
-How types receive the error designation, how possible errors are inferred in signatures, and how errors are propagated and handled remain open (TYP-ERR-01). Unrecoverable runtime faults and failures in lazy computations remain a separate question (RUN-EFF-02).
+`ValidationError` is the designated error alternative produced by explicit restricted-type validation with `as?`; it captures type-level validation failures while preserving the requested target as the success alternative (TYP-REF-12, TYP-REF-15). Its exact payload/message representation remains open (TYP-REF-16).
+
+How types receive the general error designation, how possible errors are inferred in other signatures, and how errors are propagated and handled remain open (TYP-ERR-01). Unrecoverable runtime faults and failures in lazy computations remain a separate question (RUN-EFF-02).
 
 ## Laziness
 
