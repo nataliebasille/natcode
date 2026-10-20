@@ -434,7 +434,44 @@ alias SmallerPositive = Positive where
     x => x < 10
 ```
 
-Exact runtime-validation syntax for values that cannot be established statically is intentionally left open (TYP-REF-12).
+### Runtime validation
+
+The infix operator `as?` explicitly validates membership in a restricted type at runtime (TYP-REF-12, PAR-VAL-01). It is validation, not conversion or construction: on success the result is the original value, now known as the requested target type; on failure the result is a designated `ValidationError` value.
+
+Every runtime-validatable restricted target `T` has a **validation input type** `U`: the compatible unrestricted type whose values can safely be checked by `T`'s restrictions. For example, the validation input type of `number where x => x > 0` is `number`, and the validation input type of `Value("one" | "two")` is `Value`. A source expression in `x as? T` must already be statically assignable to `U`; `as?` does not perform dynamic discrimination between unrelated underlying types. Use `when` for that. A target whose validation input type is `Empty` is invalid for `as?`, because no value can be supplied to such a validator.
+
+```natcode
+alias Positive = number where
+    x => x > 0
+
+n: number = getNumber()
+validated = n as? Positive       // Positive | ValidationError
+
+text: string = getString()
+invalid = text as? Positive      // compile error: string is not a number
+```
+
+The right operand of `as?` is a complete type expression. Thus:
+
+```natcode
+x as? number where n => n > 0
+```
+
+means:
+
+```natcode
+x as? (number where n => n > 0)
+```
+
+For every valid application, the result type is stably `T | ValidationError` (TYP-REF-13). This signature does not collapse merely because the compiler can prove that the particular validation will succeed or fail. A proof may remove runtime work or precompute the result, but it does not change the expression's type. Whether such statically decided validations should produce a diagnostic remains open (TYP-DIAG-03).
+
+Runtime validation applies to any runtime-checkable restricted subset with one compatible non-empty validation input type, not only a subset written directly with `where` (TYP-REF-14). This includes constructor-payload restrictions and compatible unions, intersections, and differences. Sibling refinements of the same validation input type may validate against one another. A refinement built on another refinement validates the full inherited restriction chain.
+
+For a union target, validation succeeds when any alternative succeeds. Failures from alternatives are discarded when the union succeeds; if every alternative fails, the resulting `ValidationError` captures the failures from all determinable alternatives. For an intersection target, every component must succeed and all determinable component failures are collected. Set-difference validation follows ordinary membership semantics: the value must belong to the left side and not the right side (TYP-REF-14, TYP-REF-15).
+
+`ValidationError` is a first-class designated error type that carries the type-level validation failures encountered while checking the requested target. Validation evaluates all applicable checks needed to collect every determinable failure rather than stopping after the first independent failure (TYP-REF-15). The exact structure of `ValidationError`, developer-defined type-level validation messages or metadata, and their representation remain open (TYP-REF-16).
+
+A target type therefore conceptually induces a validator with the shape `U -> T | ValidationError`. General expression-placeholder syntax such as `_ as? T`, including multiple-placeholder and scope rules, remains open (PAR-EXPR-02). Pipe syntax and any error-aware short-circuiting behavior also remain open (PAR-PIPE-01, TYP-REF-17).
 
 ## Union and intersection types
 
