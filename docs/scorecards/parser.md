@@ -145,6 +145,16 @@
   2. What is the function call syntax (`f(x)`, `f x`, both)?
 - **Notes:** Approved examples rely on `x + 5`, `PI * 5 * 5`, `f()`, and `Math.PI` without a fixed grammar.
 
+### PAR-EXPR-02 — Expression placeholders and partial application
+
+- **Status:** Open question
+- **Spec:** [syntax-and-types.md — Runtime validation](../spec/syntax-and-types.md#runtime-validation)
+- **Questions:**
+  1. May standalone `_` appear in ordinary value expressions to introduce partial application, including forms such as `_ as? Positive`?
+  2. If so, what expression owns a placeholder, and how do multiple or nested placeholders introduce parameters?
+  3. How does placeholder application interact with future pipe syntax?
+- **Notes:** Standalone `_` already has a lexical token and wildcard meanings in patterns. Those existing meanings do not decide its ordinary-expression semantics.
+
 ### PAR-FN-01 — Function and lambda syntax
 
 - **Status:** Open question
@@ -273,6 +283,14 @@
 - **Spec:** [syntax-and-types.md — Inference-first philosophy](../spec/syntax-and-types.md#inference-first-philosophy)
 - **Questions:**
   1. Piping is a design goal. Is there a pipe operator, and what is its syntax and precedence?
+  2. How does piping interact with expression placeholders and designated error values, including any short-circuiting behavior?
+
+### PAR-VAL-01 — Runtime-validation expression
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Runtime validation](../spec/syntax-and-types.md#runtime-validation)
+- **Done when:** `value as? TypeExpression` parses as a runtime-validation expression whose right operand is one complete type expression; for example, `x as? number where n => n > 0` takes the whole refinement as its target. `as?` is the single token defined by LEX-OP-05.
+- **Notes:** The remaining precedence of ordinary value operators stays PAR-EXPR-01. General `_` partial-application grammar is PAR-EXPR-02.
 
 ### PAR-PAT-01 — Pattern matching syntax
 
