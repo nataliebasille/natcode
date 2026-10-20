@@ -136,14 +136,49 @@
 - **Spec:** [syntax-and-types.md — Refinement types with `where`](../spec/syntax-and-types.md#refinement-types-with-where)
 - **Done when:** A restricted type is assignable to the type it restricts; a value of the broader type is accepted as the restricted type only when compile-time evaluation, existing refinement facts, or the supported solver establishes membership.
 
-### TYP-REF-12 — Explicit runtime validation of restricted types
+### TYP-REF-12 — Explicit runtime validation with `as?`
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Runtime validation](../spec/syntax-and-types.md#runtime-validation)
+- **Done when:** For a runtime-checkable restricted target `T` with one compatible non-`Empty` validation input type `U`, `x as? T` is accepted only when the static type of `x` is assignable to `U`; success returns the original value typed as `T`, while failure returns designated `ValidationError`. `as?` does not convert, construct, or dynamically discriminate an unrelated underlying type.
+- **Notes:** The right operand is a complete type expression (PAR-VAL-01). A target whose validation input type is `Empty`, or which has no single compatible validation input type, is rejected. Pattern matching is the intended mechanism for discriminating unrelated alternatives.
+
+### TYP-REF-13 — Stable validation signature
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Runtime validation](../spec/syntax-and-types.md#runtime-validation)
+- **Done when:** Every valid `x as? T` has result type `T | ValidationError`, even when compile-time evaluation or symbolic reasoning proves that the particular application must succeed or fail; such proof may remove runtime work or precompute the result but does not collapse the expression type.
+
+### TYP-REF-14 — Validation across compatible restricted subsets
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Runtime validation](../spec/syntax-and-types.md#runtime-validation)
+- **Done when:** Runtime validation accepts `where` refinements, constructor-payload restrictions, sibling refinements with the same validation input type, inherited/nested refinement chains, and compatible union/intersection/difference targets. A union succeeds if any alternative accepts the value; an intersection requires every component; difference uses ordinary set-membership semantics.
+
+### TYP-REF-15 — Validation failure aggregation
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Runtime validation](../spec/syntax-and-types.md#runtime-validation)
+- **Done when:** A failed `as?` produces a designated `ValidationError` that captures every determinable applicable type-level validation failure. Independent checks do not stop after the first failure; union-branch failures are discarded when any union alternative succeeds and are aggregated only when all alternatives fail.
+
+### TYP-REF-16 — Validation-error payloads and type-level messages
 
 - **Status:** Open question
-- **Spec:** [syntax-and-types.md — Purity and lexical capture](../spec/syntax-and-types.md#purity-and-lexical-capture)
+- **Spec:** [syntax-and-types.md — Runtime validation](../spec/syntax-and-types.md#runtime-validation)
 - **Questions:**
-  1. What syntax explicitly requests runtime validation when membership cannot be established statically?
-  2. What success/error value and type does runtime validation produce?
-- **Notes:** Runtime validation capability is desired and approved in principle; its syntax and result/error representation are intentionally deferred until after the static refinement feature.
+  1. What is the exact data/constructor shape of `ValidationError`?
+  2. How can a developer attach human-readable messages, machine-readable codes, paths, or other metadata to type-level validation rules?
+  3. How are failures from nested and composite restrictions represented without losing their originating type-level errors?
+- **Notes:** `ValidationError` being a designated error and aggregating determinable failures is already approved in TYP-REF-12 and TYP-REF-15.
+
+### TYP-REF-17 — Validation composition and error short-circuiting
+
+- **Status:** Open question
+- **Spec:** [syntax-and-types.md — Runtime validation](../spec/syntax-and-types.md#runtime-validation)
+- **Questions:**
+  1. How do consecutive validations compose, especially through future pipe syntax?
+  2. Should pipes or another construct short-circuit designated error values automatically, and if so under what typing rules?
+- **Notes:** General pipe syntax remains PAR-PIPE-01; this item does not approve a pipe operator.
 
 ## Literal precision
 
@@ -330,6 +365,15 @@
 - **Status:** Approved
 - **Spec:** [evaluation.md — Diagnostics](../spec/evaluation.md#diagnostics)
 - **Done when:** Compile errors are understandable without compiler/type-theory jargon and, when possible, explain what was written, why Natcode cannot accept it, and a concrete form that would work instead.
+
+### TYP-DIAG-03 — Diagnostics for statically decided runtime validation
+
+- **Status:** Open question
+- **Spec:** [evaluation.md — Diagnostics](../spec/evaluation.md#diagnostics)
+- **Questions:**
+  1. Should a valid `as?` application warn or otherwise report when the compiler can already prove that it must succeed?
+  2. Should it warn or otherwise report when the compiler can already prove that it must fail?
+- **Notes:** Regardless of diagnostics, TYP-REF-13 keeps the stable `T | ValidationError` signature and permits compile-time elimination of runtime work.
 
 ### TYP-PAT-01 — Exhaustiveness and redundant catch-all
 
