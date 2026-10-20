@@ -22,11 +22,11 @@ Source text is UTF-8. Positions are reported as byte-offset spans plus 1-based l
 | Wildcard | A standalone `_` is its own token, never an identifier. `_x`, `__`, and `x_` are identifiers. |
 | Numbers | Decimal integers (`42`) and decimal fractions (`3.14159`), using ASCII digits only. |
 | Strings | Double-quoted, single-line: `"Alice"`, `"./math"`. Any character except a line break is allowed, including non-ASCII. |
-| Operators and punctuation | `=` `=>` `:` `\|` `&` `/` `{` `}` `(` `)` `,` `.` `*` `+` |
+| Operators and punctuation | `=` `=>` `:` `\|` `&` `/` `as?` `{` `}` `(` `)` `,` `.` `*` `+` |
 | Comments | `// …` to end of line; `/* … */` block comments, which nest. Comments produce no tokens. Whether line breaks inside a block comment produce newline tokens is LEX-COM-04. |
 | Line breaks | LF or CRLF; each is one newline token. Spaces are insignificant between tokens. |
 
-The reserved words are recognized as keywords regardless of position; they cannot name ordinary bindings. Keyword spellings are permitted as object property names, with details of the object grammar still to be determined (PAR-OBJ-01). `if`, `else`, `elif`, and `case` are not reserved words or language control-flow constructs. `return` is not a control-flow construct or keyword. `try`, `catch`, and `throw` are not reserved or built-in exception constructs (LEX-KW-11). `null` is not a native literal or reserved word; absence is represented using constructors such as `None`. `where` is the refinement-type keyword. Further words, including `then` and generator/effect vocabulary, remain open questions (LEX-KW-03).
+The reserved words are recognized as keywords regardless of position; they cannot name ordinary bindings. Keyword spellings are permitted as object property names, with details of the object grammar still to be determined (PAR-OBJ-01). `if`, `else`, `elif`, and `case` are not reserved words or language control-flow constructs. `return` is not a control-flow construct or keyword. `try`, `catch`, and `throw` are not reserved or built-in exception constructs (LEX-KW-11). `null` is not a native literal or reserved word; absence is represented using constructors such as `None`. `where` is the refinement-type keyword. `as?` is one indivisible runtime-validation operator token (LEX-OP-05); `as` by itself remains an ordinary identifier, and whitespace-separated `as ?` is not the operator. Further words, including `then` and generator/effect vocabulary, remain open questions (LEX-KW-03).
 
 ## Identifier normalization
 
@@ -487,7 +487,44 @@ alias SmallerPositive = Positive where
     x => x < 10
 ```
 
-Exact runtime-validation syntax for values that cannot be established statically is intentionally left open (TYP-REF-12).
+### Runtime validation
+
+The infix operator `as?` explicitly validates membership in a restricted type at runtime (TYP-REF-12, PAR-VAL-01). It is validation, not conversion or construction: on success the result is the original value, now known as the requested target type; on failure the result is a designated `ValidationError` value.
+
+Every runtime-validatable restricted target `T` has a **validation input type** `U`: the compatible unrestricted type whose values can safely be checked by `T`'s restrictions. For example, the validation input type of `number where x => x > 0` is `number`, and the validation input type of `Value("one" | "two")` is `Value`. A source expression in `x as? T` must already be statically assignable to `U`; `as?` does not perform dynamic discrimination between unrelated underlying types. Use `when` for that. A target whose validation input type is `Empty` is invalid for `as?`, because no value can be supplied to such a validator.
+
+```natcode
+alias Positive = number where
+    x => x > 0
+
+n: number = getNumber()
+validated = n as? Positive       // Positive | ValidationError
+
+text: string = getString()
+invalid = text as? Positive      // compile error: string is not a number
+```
+
+The right operand of `as?` is a complete type expression. Thus:
+
+```natcode
+x as? number where n => n > 0
+```
+
+means:
+
+```natcode
+x as? (number where n => n > 0)
+```
+
+For every valid application, the result type is stably `T | ValidationError` (TYP-REF-13). This signature does not collapse merely because the compiler can prove that the particular validation will succeed or fail. A proof may remove runtime work or precompute the result, but it does not change the expression's type. Whether such statically decided validations should produce a diagnostic remains open (TYP-DIAG-03).
+
+Runtime validation applies to any runtime-checkable restricted subset with one compatible non-empty validation input type, not only a subset written directly with `where` (TYP-REF-14). This includes constructor-payload restrictions and compatible unions, intersections, and differences. Sibling refinements of the same validation input type may validate against one another. A refinement built on another refinement validates the full inherited restriction chain.
+
+For a union target, validation succeeds when any alternative succeeds. Failures from alternatives are discarded when the union succeeds; if every alternative fails, the resulting `ValidationError` captures the failures from all determinable alternatives. For an intersection target, every component must succeed and all determinable component failures are collected. Set-difference validation follows ordinary membership semantics: the value must belong to the left side and not the right side (TYP-REF-14, TYP-REF-15).
+
+`ValidationError` is a first-class designated error type that carries the type-level validation failures encountered while checking the requested target. Validation evaluates all applicable checks needed to collect every determinable failure rather than stopping after the first independent failure (TYP-REF-15). The exact structure of `ValidationError`, developer-defined type-level validation messages or metadata, and their representation remain open (TYP-REF-16).
+
+A target type therefore conceptually induces a validator with the shape `U -> T | ValidationError`. General expression-placeholder syntax such as `_ as? T`, including multiple-placeholder and scope rules, remains open (PAR-EXPR-02). Pipe syntax and any error-aware short-circuiting behavior also remain open (PAR-PIPE-01, TYP-REF-17).
 
 ## Union and intersection types
 
@@ -832,13 +869,13 @@ The initial symbolic solver must guarantee a practical decidable subset of numer
 
 Predicates outside that guaranteed symbolic subset remain valid. Multiplication or division between two unknown values, powers, and other nonlinear relationships are not required to be proven symbolically in the initial solver. When all relevant inputs are statically known, ordinary pure compile-time evaluation may still validate such a predicate directly.
 
-A failure to prove a fact outside the supported solver is **not** proof that the fact is false. It simply cannot satisfy a mandatory static restriction unless another known fact establishes it. Exact runtime validation for values that cannot be proven statically is intentionally left open (TYP-REF-12).
+A failure to prove a fact outside the supported solver is **not** proof that the fact is false. It simply cannot satisfy a mandatory static restriction unless another known fact establishes it. When the source value is already statically compatible with a restricted target's validation input type, `as?` may explicitly perform the remaining membership check as runtime validation (TYP-REF-12). Its result type remains `Target | ValidationError` even if compile-time evaluation or symbolic reasoning can prove the particular application will succeed or fail; such proof may eliminate runtime work but does not alter the validator's stable signature (TYP-REF-13).
 
 ## Diagnostics
 
 Violated or unestablished mandatory guarantees are compile errors; provably redundant but valid code may warn; unsuccessful optional analyses need no diagnostic. Warnings do not prevent compilation or change semantics (TYP-DIAG-01).
 
-Natcode diagnostics should be understandable without compiler or type-theory terminology (TYP-DIAG-02). When possible, an error should explain in ordinary language what the developer wrote, why Natcode cannot accept it, and what form would work instead. Invalid `where` forms are hard compile errors with source spans, and a concrete rewrite should be shown when the compiler can confidently provide one.
+Natcode diagnostics should be understandable without compiler or type-theory terminology (TYP-DIAG-02). When possible, an error should explain in ordinary language what the developer wrote, why Natcode cannot accept it, and what form would work instead. Invalid `where` forms are hard compile errors with source spans, and a concrete rewrite should be shown when the compiler can confidently provide one. Whether a valid `as?` whose success or failure is already statically known should produce an informational or warning diagnostic remains open (TYP-DIAG-03).
 
 ## Error handling
 
@@ -846,7 +883,9 @@ Natcode has no language-level exceptions, throwing/catching semantics, or except
 
 Error values are ordinary first-class values, but their types are designated as errors and recognized by the type checker (TYP-ERR-02). Operations may produce a success value or an error value directly as alternatives in a union, without mandatory `Ok` and `Err` wrappers. For example, `number | ParseError` can represent either a successful number or a designated parse error (how error types are designated remains open).
 
-How types receive the error designation, how possible errors are inferred in signatures, and how errors are propagated and handled remain open (TYP-ERR-01). Unrecoverable runtime faults and failures in lazy computations remain a separate question (RUN-EFF-02).
+`ValidationError` is the designated error alternative produced by explicit restricted-type validation with `as?`; it captures type-level validation failures while preserving the requested target as the success alternative (TYP-REF-12, TYP-REF-15). Its exact payload/message representation remains open (TYP-REF-16).
+
+How types receive the general error designation, how possible errors are inferred in other signatures, and how errors are propagated and handled remain open (TYP-ERR-01). Unrecoverable runtime faults and failures in lazy computations remain a separate question (RUN-EFF-02).
 
 ## Laziness
 
