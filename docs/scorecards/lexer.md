@@ -315,6 +315,13 @@
 - **Done when:** `/` lexes as its own token so type expressions can use the approved `A / B` set-difference operator.
 - **Notes:** Any future value-expression meaning of `/` is separate from the approved type-expression meaning.
 
+### LEX-OP-05 — Runtime-validation `as?` token
+
+- **Status:** Approved
+- **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
+- **Done when:** `as?` lexes as one indivisible operator token; `as` alone remains an ordinary identifier, and whitespace-separated `as ?` does not form the operator.
+- **Notes:** Parser and type semantics are PAR-VAL-01 and TYP-REF-12. The lexer implementation is future work.
+
 ## Whitespace and indentation
 
 ### LEX-WS-01 — Spaces and line breaks
