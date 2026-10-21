@@ -28,6 +28,12 @@ Source text is UTF-8. Positions are reported as byte-offset spans plus 1-based l
 
 The reserved words are recognized as keywords regardless of position; they cannot name ordinary bindings. Keyword spellings are permitted as object property names, with details of the object grammar still to be determined (PAR-OBJ-01). `match`, `if`, `else`, `elif`, and `case` are not reserved words or language control-flow constructs. The unified matching and conditional keyword is `when` (LEX-KW-07). `return` is not a control-flow construct or keyword. `try`, `catch`, and `throw` are not reserved or built-in exception constructs (LEX-KW-11). `null` is not a native literal or reserved word; absence is represented using constructors such as `None`. `where` is the refinement-type keyword. `as?` is one indivisible runtime-validation operator token (LEX-OP-05); `as` by itself remains an ordinary identifier, and whitespace-separated `as ?` is not the operator. Further words, including `then` and generator/effect vocabulary, remain open questions (LEX-KW-03).
 
+## Layout and indentation
+
+Source indentation has **no fixed required width**. Explicit executable blocks are delimited by braces. Leading whitespace remains available for parsing `when` and `where` branch lists and nominal constructor lists, even when those constructs occur inside `{}` or `()`. These lists use their grammar and applicable branch constraints to establish membership: differing indentation alone is not a compile error when ownership is unambiguous. Blank lines and comment-only lines do not change grouping. An unresolved ambiguous grouping is a compilation error; the compiler must not guess or automatically reindent it.
+
+Natcode has **no explicit line-continuation marker**, including backslash continuation. Parentheses and other expression delimiters may allow multiline expressions; their complete newline grammar is still to be specified (PAR-BLK-02, PAR-EXPR-01). Canonical formatting uses four spaces and is part of the Natcode toolchain (TOOL-FMT-01). Tabs and other whitespace categories remain separately open in LEX-WS-02. Multiline block-comment token behavior remains LEX-COM-04.
+
 ## Identifier normalization
 
 Identifiers are normalized to Unicode **NFC**, so visually identical spellings (precomposed `é` versus `e` followed by a combining acute accent) name the same identifier. String literal contents are **not** normalized.
@@ -57,20 +63,61 @@ Item status and open questions for this file are tracked in the [parser](scoreca
 
 ## Code blocks and data structures
 
-- **Code blocks are indentation-defined.** Braces `{}` are for **data structures**, not statement/function control-flow blocks.
-- When-branch, lambda, function-definition, and data-object grammars are PAR-COND-01, PAR-FN-01, and PAR-OBJ-01; block syntax is PAR-BLK-02.
+- **Arbitrary executable scopes use braces `{}`**, including named function bodies and multi-expression arrow and `when` branch bodies (PAR-BLK-01). Indentation alone does not create an executable scope.
+- A single-expression arrow or `when` branch body can omit braces. Braced blocks yield their final expression; no explicit `return` is required or supported (PAR-FN-03).
+- **Algebraic constructor lists and `when`/`where` branch lists** retain newline-based, layout-sensitive presentation. Exact indentation width is not a syntax requirement: the parser recovers unambiguous ownership from grammar and applicable constraints, and rejects unresolved ambiguity rather than guessing (LEX-IND-01, PAR-LAYOUT-01). These lists can occur inside braces and parentheses.
+- Blank and comment-only lines never change ownership. Explicit backslash line continuation is not supported. The full statement/newline grammar and malformed-layout error recovery remain PAR-BLK-02 and LEX-IND-02.
 
-The following block is **conceptual**; its lambda form is illustrative:
+The following body form is approved; complete named-function parameter grammar remains PAR-FN-01:
 
 ```natcode
-x = 10
-getInner = () =>
-    x = x + 1
-    x
-result = x
+fn calculate(x) {
+    doubled = x * 2
+    doubled + 10
+}
 ```
 
-It illustrates an indented nested scope, not a brace-delimited code block.
+An arrow or `when` branch may return a single expression directly, including a nested `when`; a multi-expression body uses `{}`:
+
+```natcode
+result = when input
+    Option.Some(value) => value + 1
+    Option.None => {
+        fallback = 0
+        fallback
+    }
+```
+
+Objects also use braces, but **object literal properties use `:`**, while ordinary value declarations use `=`. Immediately after `=>`, unparenthesized `{}` means an executable block, so direct anonymous-object results must be parenthesized (PAR-OBJ-02):
+
+```natcode
+user = { name: "Ada" }
+getUser = () => ({ name: "Ada" })
+getName = () => {
+    name = "Ada"
+    name
+}
+```
+
+Exported-object forms such as `export { value }` and export aliases with `=` are separate grammar, unaffected by the object-literal property rule. Object separators, shorthands, and computed keys remain PAR-OBJ-01.
+
+## Canonical formatting
+
+Natcode has an **opinionated built-in formatter** (`natcode fmt`) and a non-mutating check mode (`natcode fmt --check`) without a separate lint or Prettier dependency (TOOL-FMT-01). The compiler accepts flexible indentation widths for recoverable structures, and the formatter produces **four spaces per level** as the canonical presentation. Compilation does not reformat files.
+
+The formatter uses parsed structure and never changes block or branch ownership. It preserves explicitly written executable braces, including braces around a single expression, and expands single-line braced executable bodies onto separate lines rather than removing their braces:
+
+```natcode
+// Written
+Result.Success(value) => { value + 1 }
+
+// Canonical
+Result.Success(value) => {
+    value + 1
+}
+```
+
+When syntax unambiguously determines constructor or branch membership, the formatter corrects alignment. If multiple interpretations remain and the compiler cannot safely determine ownership, it reports a compilation error with actionable diagnostics; it does not apply a speculative fix. Full proof of indentation safety and remaining error-recovery details are tracked separately (PAR-LAYOUT-01, LEX-IND-02).
 
 ## When expressions
 
@@ -95,7 +142,7 @@ size = when
 
 Subject-based branches may mix literals, nominal constructor patterns, and references to user-defined unary Boolean predicate functions. A predicate function receives the subject as its argument; subjectless branches evaluate Boolean expressions as written. Branches are processed in source order.
 
-Both forms must be exhaustive (TYP-PAT-01). The remaining possible value set must be provably `Empty` after the branches, otherwise a final `_` is required. A redundant `_` is valid but warns that it is unreachable. Restricted input types participate in this calculation, so constructors already eliminated from the subject type do not need branches. Arbitrary predicates do not establish exhaustiveness unless their coverage can be proven. Pattern guards and the complete compound-pattern grammar remain open.
+Both forms must be exhaustive (TYP-PAT-01). The remaining possible value set must be provably `Empty` after the branches, otherwise a final `_` is required. `_` stands for the remaining universal case, may occur **at most once**, and must be **last**. A provably redundant `_` or any other provably unreachable `when` branch is a **compilation error**, not a warning. Restricted input types participate in this calculation, so constructors already eliminated from the subject type do not need branches. Arbitrary predicates do not establish exhaustiveness unless their coverage can be proven. In ambiguous layout, diagnostics should explain why plausible branch ownership interpretations fail; no layout fix is applied by guessing. Pattern guards and the complete compound-pattern grammar remain open.
 
 ## Declaration keywords and expression results
 
@@ -138,7 +185,7 @@ coordinates = when point
 
 The `when` branch and record literal syntax in these examples is illustrative; the pattern-matching ability to destructure constructors is approved, while the complete grammar is PAR-PAT-01 and PAR-COND-01.
 
-An algebraic nominal type may declare multiple constructors in an indented constructor list. A constructor is qualified by its declaring type by default; the constructor's unqualified name is **not** automatically in scope (TYP-ADT-01, PAR-TYPE-06, RES-NAME-06).
+An algebraic nominal type may declare multiple constructors in a constructor list; its indentation is normalized by the formatter and does not independently establish semantic nesting. A constructor is qualified by its declaring type by default; the constructor's unqualified name is **not** automatically in scope (TYP-ADT-01, PAR-TYPE-06, RES-NAME-06).
 
 ```natcode
 type Option
@@ -285,7 +332,7 @@ Within `Option where ...`, unqualified constructor names such as `Some` and `Non
 
 ### Where placement and precedence
 
-`where` is a normal type operator and may appear wherever a type expression is already permitted (PAR-REF-01). It binds more tightly than the set operators `|`, `&`, and `/`:
+`where` is a normal type operator and may appear wherever a type expression is already permitted (PAR-REF-01). The `where` keyword must start on the **same physical line** as the type or constructor it restricts; moving it to the next line is invalid. Its branch indentation can be normalized when ownership is unambiguous (LEX-IND-01). It binds more tightly than the set operators `|`, `&`, and `/`:
 
 ```natcode
 A | B where x => predicate(x)
@@ -339,7 +386,7 @@ alias PositiveSome = Option.Some where
 
 ### Restrictions in nominal declarations
 
-Restrictions may be attached at three scopes in a nominal declaration (TYP-REF-02):
+Restrictions in a nominal declaration may be attached to individual constructor parameters or to the whole single constructor (TYP-REF-02):
 
 ```natcode
 type Response
@@ -366,9 +413,10 @@ type Response
         message => message != ""
 ```
 
-The algebraic type as a whole may also be filtered with constructor patterns:
+A declaration-wide `where` on a nominal type with multiple constructors is **not supported**:
 
 ```natcode
+// Invalid: a declaration-wide `where` cannot follow a multi-constructor type.
 type Response
     Success(number)
     Failure(string)
@@ -377,7 +425,15 @@ where
     Failure(message) => message != ""
 ```
 
-These restrictions do not change nominal identity. For example, restricting the payload accepted by a nominal `Port` constructor does not make `Port` assignable to `number`.
+To filter an existing algebraic nominal type as a whole, use an alias instead:
+
+```natcode
+alias FilteredResponse = Response where
+    Success(code) => code >= 200 && code < 300
+    Failure(message) => message != ""
+```
+
+`where` on a constructor declaration remains legal and can relate multiple parameters, unlike a parameter-local restriction. These restrictions do not change nominal identity. For example, restricting the payload accepted by a nominal `Port` constructor does not make `Port` assignable to `number`.
 
 When more than one restriction applies, all of them must hold; their effect is intersection (TYP-REF-02).
 
@@ -698,11 +754,11 @@ export run                   // executable: function entry
 ```
 
 ```natcode
-api = { PI = 3.14159, square = x => x * x }
+api = { PI: 3.14159, square: x => x * x }
 export api                   // same public interface as export { PI, square }
 ```
 
-Here `export { ... }` builds the module's exported object. `export api` where `api` is an object exposes its **properties as named exports**, not one implicitly named `api` export. Object literal and function body syntax above is illustrative.
+Here `export { ... }` builds the module's exported object. `export api` where `api` is an object exposes its **properties as named exports**, not one implicitly named `api` export. Object literal property colons are approved (PAR-OBJ-02); the remaining object-literal grammar is PAR-OBJ-01. Function body grammar beyond the approved brace-delimited block boundary remains PAR-FN-01 and PAR-BLK-02.
 
 - Both **types and values** can be placed in the same exported object; `export { Point, origin }` is valid.
 - A module may **re-export previously imported declarations**, including complete imported namespace values.

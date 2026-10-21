@@ -20,6 +20,12 @@ Source text is UTF-8. Positions are reported as byte-offset spans plus 1-based l
 
 The reserved words are recognized as keywords regardless of position; they cannot name ordinary bindings. Keyword spellings are permitted as object property names, with details of the object grammar still to be determined (PAR-OBJ-01). `match`, `if`, `else`, `elif`, and `case` are not reserved words or language control-flow constructs. The unified matching and conditional keyword is `when` (LEX-KW-07). `return` is not a control-flow construct or keyword. `try`, `catch`, and `throw` are not reserved or built-in exception constructs (LEX-KW-11). `null` is not a native literal or reserved word; absence is represented using constructors such as `None`. `where` is the refinement-type keyword. `as?` is one indivisible runtime-validation operator token (LEX-OP-05); `as` by itself remains an ordinary identifier, and whitespace-separated `as ?` is not the operator. Further words, including `then` and generator/effect vocabulary, remain open questions (LEX-KW-03).
 
+## Layout and indentation
+
+Source indentation has **no fixed required width**. Explicit executable blocks are delimited by braces. Leading whitespace remains available for parsing `when` and `where` branch lists and nominal constructor lists, even when those constructs occur inside `{}` or `()`. These lists use their grammar and applicable branch constraints to establish membership: differing indentation alone is not a compile error when ownership is unambiguous. Blank lines and comment-only lines do not change grouping. An unresolved ambiguous grouping is a compilation error; the compiler must not guess or automatically reindent it.
+
+Natcode has **no explicit line-continuation marker**, including backslash continuation. Parentheses and other expression delimiters may allow multiline expressions; their complete newline grammar is still to be specified (PAR-BLK-02, PAR-EXPR-01). Canonical formatting uses four spaces and is part of the Natcode toolchain (TOOL-FMT-01). Tabs and other whitespace categories remain separately open in LEX-WS-02. Multiline block-comment token behavior remains LEX-COM-04.
+
 ## Identifier normalization
 
 Identifiers are normalized to Unicode **NFC**, so visually identical spellings (precomposed `é` versus `e` followed by a combining acute accent) name the same identifier. String literal contents are **not** normalized.

@@ -76,11 +76,11 @@
 - **Spec:** [syntax-and-types.md — Refinement types with `where`](../spec/syntax-and-types.md#refinement-types-with-where)
 - **Done when:** `T where pattern => predicate` denotes exactly the values of `T` selected by the Boolean predicate and creates no new nominal identity.
 
-### TYP-REF-02 — Parameter, constructor, and nominal-type restrictions
+### TYP-REF-02 — Parameter and constructor restrictions
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Restrictions in nominal declarations](../spec/syntax-and-types.md#restrictions-in-nominal-declarations)
-- **Done when:** A `where` may restrict one constructor parameter, a constructor as a whole, or a complete nominal/algebraic type; parameter-level restrictions see only that parameter, whole-constructor restrictions may relate parameters, and every applicable restriction must hold.
+- **Done when:** A `where` may restrict one constructor parameter or a single whole nominal constructor, including constructors of algebraic types; parameter-level restrictions see only that parameter, whole-constructor restrictions may relate parameters, and every applicable restriction must hold. A nominal declaration containing multiple constructors cannot receive a single declaration-wide `where`; alias-level filtering of an existing algebraic type remains available.
 
 ### TYP-REF-03 — Non-exhaustive filtering branches
 
@@ -358,7 +358,7 @@
 
 - **Status:** Approved
 - **Spec:** [evaluation.md — Function return inference: context-independent](../spec/evaluation.md#function-return-inference-context-independent)
-- **Done when:** Missing or disproven mandatory guarantees cause errors; known redundancy in valid code can warn without blocking compilation; optional analysis failure alone has no diagnostic.
+- **Done when:** Missing or disproven mandatory guarantees cause errors; known redundancy in otherwise valid code can warn, except provably unreachable `when` branches (including redundant `_`) which are compilation errors under TYP-PAT-01; optional analysis failure alone has no diagnostic.
 
 ### TYP-DIAG-02 — Plain-language actionable diagnostics
 
@@ -379,7 +379,7 @@
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — When expressions](../spec/syntax-and-types.md#when-expressions)
-- **Done when:** Subject-based and subjectless `when` require `_` unless remaining possibilities are provably `Empty`; constructors eliminated by a restricted subject type do not require branches; a provably redundant `_` warns but is valid, and arbitrary predicates alone do not prove exhaustiveness.
+- **Done when:** Subject-based and subjectless `when` are exhaustive: remaining possibilities must be provably `Empty` or a final `_` branch must cover them. `_` represents the remaining `Any` case, occurs at most once and only as the final branch, and is a compile error if redundant. Every provably unreachable branch is a compile error (not a warning). Constructors eliminated by a restricted subject type need no branch, and arbitrary predicates alone do not prove exhaustiveness.
 
 ## Module export kinds and shapes
 

@@ -284,7 +284,7 @@
 - **Questions:**
   1. Do line breaks inside a multi-line block comment produce newline tokens, or does the comment join the two physical lines into one logical line?
   2. How does this interact with indentation (LEX-IND-01) and the broader comment design?
-- **Notes:** Provisionally no newline tokens are produced (`tests/lexer/main.rs::comments::multiline_block_comment_emits_no_newlines`).
+- **Notes:** Provisionally no newline tokens are produced (`tests/lexer/main.rs::comments::multiline_block_comment_emits_no_newlines`). Regardless of token representation, a comment-only physical line does not change layout ownership (LEX-IND-01).
 
 ## Operators and punctuation
 
@@ -346,16 +346,12 @@
   3. Are non-ASCII spaces (for example U+00A0) whitespace or errors?
 - **Notes:** All three are currently lexed as unexpected characters. Untested.
 
-### LEX-IND-01 — Indentation tokens
+### LEX-IND-01 — Context-sensitive layout and indentation
 
-- **Status:** Open question
-- **Spec:** [syntax-and-types.md — Code blocks and data structures](../spec/syntax-and-types.md#code-blocks-and-data-structures)
-- **Questions:**
-  1. How is the indentation unit defined (any consistent number of spaces, or a fixed width)?
-  2. Are blank and comment-only lines ignored for indentation?
-  3. Is indentation ignored inside `{}` and `()` (implicit line continuation)?
-  4. Is there an explicit line-continuation form?
-- **Notes:** Indentation-defined code blocks are part of the language; how they are tokenized is undecided. Depends on statement and block syntax (PAR-BLK-02).
+- **Status:** Approved
+- **Spec:** [lexical.md — Layout and indentation](../spec/lexical.md#layout-and-indentation)
+- **Done when:** The front end retains enough source positions, line breaks, and leading whitespace to recognize layout-sensitive `when`, `where`, and nominal constructor lists, including within `{}` and `()`, without requiring a fixed indentation width. Blank and comment-only lines do not alter branch ownership. Syntactically unambiguous structures are accepted regardless of indentation width or alignment, while unresolved layout ambiguity is a compile error rather than silently guessed. No explicit backslash line continuation is supported.
+- **Notes:** Approved 2026-10-21. Braces delimit executable scopes, while branch and constructor lists have their own layout-sensitive structure. Exact token representation and malformed-layout recovery are implementation concerns (LEX-IND-02, PAR-LAYOUT-01). Canonical formatting uses four spaces (TOOL-FMT-01). Whether newlines internal to block comments emit tokens remains LEX-COM-04; tab acceptance remains LEX-WS-02. This is a design approval, not an implementation claim.
 
 ### LEX-IND-02 — Malformed indentation errors
 

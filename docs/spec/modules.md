@@ -46,11 +46,11 @@ export run                   // executable: function entry
 ```
 
 ```natcode
-api = { PI = 3.14159, square = x => x * x }
+api = { PI: 3.14159, square: x => x * x }
 export api                   // same public interface as export { PI, square }
 ```
 
-Here `export { ... }` builds the module's exported object. `export api` where `api` is an object exposes its **properties as named exports**, not one implicitly named `api` export. Object literal and function body syntax above is illustrative.
+Here `export { ... }` builds the module's exported object. `export api` where `api` is an object exposes its **properties as named exports**, not one implicitly named `api` export. Object literal property colons are approved (PAR-OBJ-02); the remaining object-literal grammar is PAR-OBJ-01. Function body grammar beyond the approved brace-delimited block boundary remains PAR-FN-01 and PAR-BLK-02.
 
 - Both **types and values** can be placed in the same exported object; `export { Point, origin }` is valid.
 - A module may **re-export previously imported declarations**, including complete imported namespace values.
