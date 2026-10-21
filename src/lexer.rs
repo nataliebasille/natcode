@@ -2,9 +2,10 @@
 //!
 //! Implements the Implemented `LEX-*` items: UAX #31 identifiers (XID_Start
 //! or `_`, then XID_Continue) normalized to NFC, the hard-reserved
-//! `from`/`import`/`export`/`type`/`fn`/`when` keywords, boolean literals,
-//! decimal numbers, escape-free double-quoted strings, line/nested block
-//! comments, the core operator set, and newline tokens. Emoji identifiers
+//! `from`/`import`/`export`/`type`/`alias`/`fn`/`when`/`where` keywords,
+//! boolean literals, decimal numbers, escape-free double-quoted strings,
+//! line/nested block comments, the core operator set (including `/` and the
+//! indivisible `as?`), and newline tokens. Emoji identifiers
 //! (LEX-ID-04) and indentation tokens (LEX-IND-01) are open questions and not
 //! handled yet.
 
@@ -24,6 +25,8 @@ pub enum TokenKind {
     Type,
     Fn,
     When,
+    Alias,
+    Where,
     /// Standalone `_`, reserved as a wildcard.
     Underscore,
     /// `=`
@@ -52,6 +55,10 @@ pub enum TokenKind {
     Star,
     /// `+`
     Plus,
+    /// `/`
+    Slash,
+    /// `as?`, a single indivisible runtime-validation operator.
+    AsQuestion,
     Newline,
     Error,
     Eof,
@@ -388,6 +395,11 @@ impl Lexer<'_> {
         }
 
         let raw = &self.src[start..self.pos];
+        if raw == "as" && self.peek() == Some('?') {
+            self.bump();
+            self.push(TokenKind::AsQuestion, start, start_pos);
+            return;
+        }
         let text: String = if is_nfc(raw) {
             raw.to_string()
         } else {
@@ -401,6 +413,8 @@ impl Lexer<'_> {
             "type" => TokenKind::Type,
             "fn" => TokenKind::Fn,
             "when" => TokenKind::When,
+            "alias" => TokenKind::Alias,
+            "where" => TokenKind::Where,
             "true" => TokenKind::True,
             "false" => TokenKind::False,
             _ => TokenKind::Identifier,
@@ -437,7 +451,6 @@ impl Lexer<'_> {
         match c {
             ' ' | '\n' | '"' | '=' | '0'..='9' => true,
             '\r' => self.peek_second() == Some('\n'),
-            '/' => matches!(self.peek_second(), Some('/' | '*')),
             c => is_identifier_start(c) || punctuation(c).is_some(),
         }
     }
@@ -460,6 +473,7 @@ fn punctuation(c: char) -> Option<TokenKind> {
         '.' => TokenKind::Dot,
         '*' => TokenKind::Star,
         '+' => TokenKind::Plus,
+        '/' => TokenKind::Slash,
         _ => return None,
     })
 }
