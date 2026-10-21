@@ -84,10 +84,18 @@ mod keywords {
     }
 
     #[test]
-    fn declaration_and_match_keywords_are_reserved() {
+    fn declaration_and_when_keywords_are_reserved() {
         assert_clean(
-            "type fn match",
-            &[(Type, "type"), (Fn, "fn"), (Match, "match")],
+            "type fn when",
+            &[(Type, "type"), (Fn, "fn"), (When, "when")],
+        );
+    }
+
+    #[test]
+    fn match_is_an_identifier() {
+        assert_clean(
+            "match = when",
+            &[(Identifier, "match"), (Equals, "="), (When, "when")],
         );
     }
 
@@ -99,7 +107,7 @@ mod keywords {
     #[test]
     fn keywords_are_case_sensitive() {
         assert_clean(
-            "From IMPORT Export True FALSE Type FN Match",
+            "From IMPORT Export True FALSE Type FN When",
             &[
                 (Identifier, "From"),
                 (Identifier, "IMPORT"),
@@ -108,7 +116,7 @@ mod keywords {
                 (Identifier, "FALSE"),
                 (Identifier, "Type"),
                 (Identifier, "FN"),
-                (Identifier, "Match"),
+                (Identifier, "When"),
             ],
         );
     }
@@ -116,7 +124,7 @@ mod keywords {
     #[test]
     fn words_containing_keywords_are_identifiers() {
         assert_clean(
-            "fromage imports exported trueish false_ _from types typeof fnord _fn fn2 matches rematch",
+            "fromage imports exported trueish false_ _from types typeof fnord _fn fn2 whenever somewhen when_",
             &[
                 (Identifier, "fromage"),
                 (Identifier, "imports"),
@@ -129,8 +137,9 @@ mod keywords {
                 (Identifier, "fnord"),
                 (Identifier, "_fn"),
                 (Identifier, "fn2"),
-                (Identifier, "matches"),
-                (Identifier, "rematch"),
+                (Identifier, "whenever"),
+                (Identifier, "somewhen"),
+                (Identifier, "when_"),
             ],
         );
     }
@@ -140,7 +149,7 @@ mod keywords {
         // Property-key and member positions still yield keyword tokens; whether
         // the parser accepts them there is PAR-OBJ-01.
         assert_clean(
-            "{ type: 1, fn: 2 }.match",
+            "{ type: 1, fn: 2 }.when",
             &[
                 (LBrace, "{"),
                 (Type, "type"),
@@ -152,10 +161,10 @@ mod keywords {
                 (Number, "2"),
                 (RBrace, "}"),
                 (Dot, "."),
-                (Match, "match"),
+                (When, "when"),
             ],
         );
-        assert_clean("match = fn", &[(Match, "match"), (Equals, "="), (Fn, "fn")]);
+        assert_clean("when = fn", &[(When, "when"), (Equals, "="), (Fn, "fn")]);
     }
 
     #[test]
