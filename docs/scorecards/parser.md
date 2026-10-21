@@ -249,7 +249,7 @@
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
-- **Done when:** `type Option` with indented `Some(any)` and `None` parses as a nominal algebraic declaration and `Option.Some` resolves as a qualified constructor name.
+- **Done when:** `type Option` with indented `Some(Any)` and `None` parses as a nominal algebraic declaration and `Option.Some` resolves as a qualified constructor name.
 
 ### PAR-TYPE-07 — Constructor restrictions in type expressions
 

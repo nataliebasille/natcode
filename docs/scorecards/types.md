@@ -192,7 +192,7 @@
 
 - **Status:** Approved
 - **Spec:** [evaluation.md — Literal precision](../spec/evaluation.md#literal-precision)
-- **Done when:** Pure constant arithmetic such as `40 + 2` infers the literal type `42` when evaluation succeeds.
+- **Done when:** Supported core constant arithmetic such as `40 + 2` infers literal type `42` as a deterministic typing rule, independent of optional optimization.
 
 ## Constraints
 
@@ -451,7 +451,7 @@
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
-- **Done when:** `type Option` with indented `Some(any)` and `None` introduces a nominal sum-type and constructors accessible as `Option.Some` and `Option.None`; bare unqualified constructors are not introduced automatically.
+- **Done when:** `type Option` with indented `Some(Any)` and `None` introduces a nominal sum-type and constructors accessible as `Option.Some` and `Option.None`; bare unqualified constructors are not introduced automatically.
 
 ### TYP-ADT-02 — Remaining algebraic type semantics
 
@@ -459,7 +459,7 @@
 - **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
 - **Questions:**
   1. What further rules govern generic, recursive, nested and other advanced constructor definitions?
-  2. What are the exact variant narrowing and exhaustiveness rules beyond approved constructor pattern extraction?
+  2. What additional variant narrowing rules apply beyond the approved general `when` exhaustiveness requirement?
 
 ### TYP-GEN-01 — Generics
 

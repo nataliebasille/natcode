@@ -26,7 +26,7 @@ Source text is UTF-8. Positions are reported as byte-offset spans plus 1-based l
 | Comments | `// …` to end of line; `/* … */` block comments, which nest. Comments produce no tokens. Whether line breaks inside a block comment produce newline tokens is LEX-COM-04. |
 | Line breaks | LF or CRLF; each is one newline token. Spaces are insignificant between tokens. |
 
-The reserved words are recognized as keywords regardless of position; they cannot name ordinary bindings. Keyword spellings are permitted as object property names, with details of the object grammar still to be determined (PAR-OBJ-01). `if`, `else`, `elif`, and `case` are not reserved words or language control-flow constructs. `return` is not a control-flow construct or keyword. `try`, `catch`, and `throw` are not reserved or built-in exception constructs (LEX-KW-11). `null` is not a native literal or reserved word; absence is represented using constructors such as `None`. `where` is the refinement-type keyword. `as?` is one indivisible runtime-validation operator token (LEX-OP-05); `as` by itself remains an ordinary identifier, and whitespace-separated `as ?` is not the operator. Further words, including `then` and generator/effect vocabulary, remain open questions (LEX-KW-03).
+The reserved words are recognized as keywords regardless of position; they cannot name ordinary bindings. Keyword spellings are permitted as object property names, with details of the object grammar still to be determined (PAR-OBJ-01). `match`, `if`, `else`, `elif`, and `case` are not reserved words or language control-flow constructs. The unified matching and conditional keyword is `when` (LEX-KW-07). `return` is not a control-flow construct or keyword. `try`, `catch`, and `throw` are not reserved or built-in exception constructs (LEX-KW-11). `null` is not a native literal or reserved word; absence is represented using constructors such as `None`. `where` is the refinement-type keyword. `as?` is one indivisible runtime-validation operator token (LEX-OP-05); `as` by itself remains an ordinary identifier, and whitespace-separated `as ?` is not the operator. Further words, including `then` and generator/effect vocabulary, remain open questions (LEX-KW-03).
 
 ## Identifier normalization
 
@@ -58,7 +58,7 @@ Item status and open questions for this file are tracked in the [parser](scoreca
 ## Code blocks and data structures
 
 - **Code blocks are indentation-defined.** Braces `{}` are for **data structures**, not statement/function control-flow blocks.
-- Match-branch, lambda, function-definition, and data-object grammars are PAR-COND-01, PAR-FN-01, and PAR-OBJ-01; block syntax is PAR-BLK-02.
+- When-branch, lambda, function-definition, and data-object grammars are PAR-COND-01, PAR-FN-01, and PAR-OBJ-01; block syntax is PAR-BLK-02.
 
 The following block is **conceptual**; its lambda form is illustrative:
 
@@ -142,7 +142,7 @@ An algebraic nominal type may declare multiple constructors in an indented const
 
 ```natcode
 type Option
-    Some(any)
+    Some(Any)
     None
 
 present = Option.Some(42)
@@ -636,7 +636,7 @@ Identifiers unsupported by a target language (e.g., emoji) are mapped to generat
 ## Exact type inference
 
 - Direct primitive literals infer their exact literal types: `42`, `"Alice"`, `true`, rather than automatically widening to `number`, `string`, `boolean`.
-- Compile-time constant expressions infer exact literal results when statically evaluable: `40 + 2` may infer `42`.
+- Supported core constant operations infer exact literal results deterministically as part of typing: `40 + 2` infers `42`. Optional evaluation of a user-defined call must not change its inferred type (TYP-LIT-02, TYP-EVAL-01).
 - A binding's optional `:` constraint does not erase this precision.
 - Precise rules for function return inference and evaluation are recorded in [evaluation.md](spec/evaluation.md); they don't affect basic variable syntax.
 
@@ -828,7 +828,7 @@ Item status and open questions for this file are tracked in the [types](scorecar
 ## Literal precision
 
 - Literal expressions have exact literal types by default.
-- Pure constant operations may propagate exact results: `40 + 2` can infer `42`.
+- Supported core constant operations infer exact types deterministically: `40 + 2` infers `42`. This is a static typing rule, not the result of optional optimization.
 - Type constraints (`:`) check assignability without widening.
 
 ## Function return inference: context-independent
