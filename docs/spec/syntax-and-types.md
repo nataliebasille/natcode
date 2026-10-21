@@ -5,7 +5,7 @@ Item status and open questions for this file are tracked in the [parser](../scor
 ## Code blocks and data structures
 
 - **Code blocks are indentation-defined.** Braces `{}` are for **data structures**, not statement/function control-flow blocks.
-- Match-branch, lambda, function-definition, and data-object grammars are PAR-COND-01, PAR-FN-01, and PAR-OBJ-01; block syntax is PAR-BLK-02.
+- When-branch, lambda, function-definition, and data-object grammars are PAR-COND-01, PAR-FN-01, and PAR-OBJ-01; block syntax is PAR-BLK-02.
 
 The following block is **conceptual**; its lambda form is illustrative:
 
@@ -89,7 +89,7 @@ An algebraic nominal type may declare multiple constructors in an indented const
 
 ```natcode
 type Option
-    Some(any)
+    Some(Any)
     None
 
 present = Option.Some(42)

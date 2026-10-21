@@ -74,7 +74,7 @@ Identifiers unsupported by a target language (e.g., emoji) are mapped to generat
 ## Exact type inference
 
 - Direct primitive literals infer their exact literal types: `42`, `"Alice"`, `true`, rather than automatically widening to `number`, `string`, `boolean`.
-- Compile-time constant expressions infer exact literal results when statically evaluable: `40 + 2` may infer `42`.
+- Supported core constant operations infer exact literal results deterministically as part of typing: `40 + 2` infers `42`. Optional evaluation of a user-defined call must not change its inferred type (TYP-LIT-02, TYP-EVAL-01).
 - A binding's optional `:` constraint does not erase this precision.
 - Precise rules for function return inference and evaluation are recorded in [evaluation.md](evaluation.md); they don't affect basic variable syntax.
 

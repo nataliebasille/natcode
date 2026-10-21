@@ -5,7 +5,7 @@ Item status and open questions for this file are tracked in the [types](../score
 ## Literal precision
 
 - Literal expressions have exact literal types by default.
-- Pure constant operations may propagate exact results: `40 + 2` can infer `42`.
+- Supported core constant operations infer exact types deterministically: `40 + 2` infers `42`. This is a static typing rule, not the result of optional optimization.
 - Type constraints (`:`) check assignability without widening.
 
 ## Function return inference: context-independent
