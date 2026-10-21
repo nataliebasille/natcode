@@ -44,6 +44,18 @@
 - **Done when:** `type Sprint(Position, Color)` takes constructed `Position` and `Color` values as ordinary arguments; writing `Position(number, number)` or `Color(string)` where these do not restrict the declared type has the same parameter meaning.
 - **Notes:** No special nominal-combination operator, multiple inheritance, interfaces, classes, or automatic nested-value projection is approved.
 
+### TYP-NOM-07 — Specialized constructor aliases expose remaining parameters
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Specialized aliases and constructors](../spec/syntax-and-types.md#specialized-aliases-and-constructors)
+- **Done when:** `alias XAxis = Position(number, 0)` exposes one constructor parameter and `XAxis(10)` constructs `Position(10, 0)`; `Position(0, 0)` exposes zero parameters.
+
+### TYP-NOM-08 — Optional parentheses for zero-parameter application
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Specialized aliases and constructors](../spec/syntax-and-types.md#specialized-aliases-and-constructors)
+- **Done when:** Zero-parameter applications may omit `()` in both type and value contexts, so `Center` equals `Center()` in type context and nullary constructors such as `Option.None` and `Option.None()` are equivalent in value context.
+
 ### TYP-ALI-01 — Transparent type aliases
 
 - **Status:** Approved
@@ -55,6 +67,118 @@
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
 - **Done when:** `alias Some = Option.Some` refers to the same constructor and can be used in value construction and matching without introducing a new nominal identity.
+
+## Refinement types
+
+### TYP-REF-01 — `where` defines a transparent subset
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Refinement types with `where`](../spec/syntax-and-types.md#refinement-types-with-where)
+- **Done when:** `T where pattern => predicate` denotes exactly the values of `T` selected by the Boolean predicate and creates no new nominal identity.
+
+### TYP-REF-02 — Parameter, constructor, and nominal-type restrictions
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Restrictions in nominal declarations](../spec/syntax-and-types.md#restrictions-in-nominal-declarations)
+- **Done when:** A `where` may restrict one constructor parameter, a constructor as a whole, or a complete nominal/algebraic type; parameter-level restrictions see only that parameter, whole-constructor restrictions may relate parameters, and every applicable restriction must hold.
+
+### TYP-REF-03 — Non-exhaustive filtering branches
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Where patterns and filtering](../spec/syntax-and-types.md#where-patterns-and-filtering)
+- **Done when:** Unmatched values are excluded without requiring exhaustiveness; ordinary branch patterns may not overlap; a matched value whose predicate is false is excluded without falling through; `_` denotes only the remaining unmatched region; explicit true/false branches and bare-constructor inclusion sugar are supported.
+
+### TYP-REF-04 — Restricted aliases preserve surviving constructors
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Specialized aliases and constructors](../spec/syntax-and-types.md#specialized-aliases-and-constructors)
+- **Done when:** A restricted algebraic alias exposes each underlying constructor whose remaining set is not proven `Empty`, removes constructors proven empty, enforces the alias restriction during construction, and does not invent a direct constructor that the original type did not have.
+
+### TYP-REF-05 — Constructibility follows the normalized result
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Constructibility through set algebra](../spec/syntax-and-types.md#constructibility-through-set-algebra)
+- **Done when:** Set operations preserve or produce direct construction only when the normalized result has one effective constructor shape; `XAxis | YAxis` is not directly callable when their free positions differ, while `XAxis & YAxis` may normalize to zero-parameter `Position(0, 0)`.
+
+### TYP-REF-06 — Refinement predicates are pure and deterministic
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Purity and lexical capture](../spec/syntax-and-types.md#purity-and-lexical-capture)
+- **Done when:** Type membership cannot depend on I/O, mutable state, time, randomness, network/database state, or other effects; eligible pure helper functions may be used.
+
+### TYP-REF-07 — Empty refinements are valid
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Where patterns and filtering](../spec/syntax-and-types.md#where-patterns-and-filtering)
+- **Done when:** A restriction that removes every inhabitant resolves to `Empty` without an error, and filtering `Empty` also resolves to `Empty`.
+
+### TYP-REF-08 — Restricted facts survive destructuring and exhaustiveness
+
+- **Status:** Approved
+- **Spec:** [evaluation.md — Flow-sensitive refinement and symbolic reasoning](../spec/evaluation.md#flow-sensitive-refinement-and-symbolic-reasoning)
+- **Done when:** Destructuring a restricted value preserves applicable restrictions on extracted values, and `when` exhaustiveness does not require constructors already eliminated from the subject type.
+
+### TYP-REF-09 — Flow-sensitive refinement
+
+- **Status:** Approved
+- **Spec:** [evaluation.md — Flow-sensitive refinement and symbolic reasoning](../spec/evaluation.md#flow-sensitive-refinement-and-symbolic-reasoning)
+- **Done when:** True and false control-flow paths refine bindings from direct Boolean conditions, Boolean composition, previous failed branches, and pure named predicates whose facts are known to the compiler.
+
+### TYP-REF-10 — Initial symbolic solver supports linear numeric reasoning
+
+- **Status:** Approved
+- **Spec:** [evaluation.md — Flow-sensitive refinement and symbolic reasoning](../spec/evaluation.md#flow-sensitive-refinement-and-symbolic-reasoning)
+- **Done when:** The guaranteed solver handles equality/order relations, Boolean combinations, transitive implications, and linear arithmetic with known constant coefficients; nonlinear relationships between unknown values are valid predicates but need not be symbolically proven.
+
+### TYP-REF-11 — Restricted assignability requires established membership
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Refinement types with `where`](../spec/syntax-and-types.md#refinement-types-with-where)
+- **Done when:** A restricted type is assignable to the type it restricts; a value of the broader type is accepted as the restricted type only when compile-time evaluation, existing refinement facts, or the supported solver establishes membership.
+
+### TYP-REF-12 — Explicit runtime validation with `as?`
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Runtime validation](../spec/syntax-and-types.md#runtime-validation)
+- **Done when:** For a runtime-checkable restricted target `T` with one compatible non-`Empty` validation input type `U`, `x as? T` is accepted only when the static type of `x` is assignable to `U`; success returns the original value typed as `T`, while failure returns designated `ValidationError`. `as?` does not convert, construct, or dynamically discriminate an unrelated underlying type.
+- **Notes:** The right operand is a complete type expression (PAR-VAL-01). A target whose validation input type is `Empty`, or which has no single compatible validation input type, is rejected. Pattern matching is the intended mechanism for discriminating unrelated alternatives.
+
+### TYP-REF-13 — Stable validation signature
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Runtime validation](../spec/syntax-and-types.md#runtime-validation)
+- **Done when:** Every valid `x as? T` has result type `T | ValidationError`, even when compile-time evaluation or symbolic reasoning proves that the particular application must succeed or fail; such proof may remove runtime work or precompute the result but does not collapse the expression type.
+
+### TYP-REF-14 — Validation across compatible restricted subsets
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Runtime validation](../spec/syntax-and-types.md#runtime-validation)
+- **Done when:** Runtime validation accepts `where` refinements, constructor-payload restrictions, sibling refinements with the same validation input type, inherited/nested refinement chains, and compatible union/intersection/difference targets. A union succeeds if any alternative accepts the value; an intersection requires every component; difference uses ordinary set-membership semantics.
+
+### TYP-REF-15 — Validation failure aggregation
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Runtime validation](../spec/syntax-and-types.md#runtime-validation)
+- **Done when:** A failed `as?` produces a designated `ValidationError` that captures every determinable applicable type-level validation failure. Independent checks do not stop after the first failure; union-branch failures are discarded when any union alternative succeeds and are aggregated only when all alternatives fail.
+
+### TYP-REF-16 — Validation-error payloads and type-level messages
+
+- **Status:** Open question
+- **Spec:** [syntax-and-types.md — Runtime validation](../spec/syntax-and-types.md#runtime-validation)
+- **Questions:**
+  1. What is the exact data/constructor shape of `ValidationError`?
+  2. How can a developer attach human-readable messages, machine-readable codes, paths, or other metadata to type-level validation rules?
+  3. How are failures from nested and composite restrictions represented without losing their originating type-level errors?
+- **Notes:** `ValidationError` being a designated error and aggregating determinable failures is already approved in TYP-REF-12 and TYP-REF-15.
+
+### TYP-REF-17 — Validation composition and error short-circuiting
+
+- **Status:** Open question
+- **Spec:** [syntax-and-types.md — Runtime validation](../spec/syntax-and-types.md#runtime-validation)
+- **Questions:**
+  1. How do consecutive validations compose, especially through future pipe syntax?
+  2. Should pipes or another construct short-circuit designated error values automatically, and if so under what typing rules?
+- **Notes:** General pipe syntax remains PAR-PIPE-01; this item does not approve a pipe operator.
 
 ## Literal precision
 
@@ -144,12 +268,19 @@
 - **Spec:** [syntax-and-types.md — Union and intersection types](../spec/syntax-and-types.md#union-and-intersection-types)
 - **Done when:** `UserId & ProductId` resolves to `Empty` for unrelated nominal constructor types, even when they have the same payload representation.
 
-### TYP-UNI-05 — Difference and complement types
+### TYP-UNI-05 — Complement types
 
 - **Status:** Open question
 - **Spec:** [syntax-and-types.md — Union and intersection types](../spec/syntax-and-types.md#union-and-intersection-types)
 - **Questions:**
-  1. Are there difference or complement type operators, and with what syntax?
+  1. Is there a standalone complement type operator, and with what syntax?
+- **Notes:** Binary set difference is approved separately as `/` in TYP-UNI-10.
+
+### TYP-UNI-10 — Set difference with `/`
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Union and intersection types](../spec/syntax-and-types.md#union-and-intersection-types)
+- **Done when:** In type expressions, `A / B` denotes exactly the values in `A` that are not in `B`; normalization may preserve constructibility when the result still has one effective constructor shape.
 
 ## Functions
 
@@ -210,20 +341,18 @@
 - **Spec:** [evaluation.md — Function return inference: context-independent](../spec/evaluation.md#function-return-inference-context-independent)
 - **Done when:** Eligible pure functions with known inputs validate mandatory type constraints; false constraints are compile errors, without silent broadening or fallback.
 
-### TYP-EVAL-04 — Constraint grammar and unknown inputs
+### TYP-EVAL-04 — Unknown mandatory restrictions
 
-- **Status:** Open question
+- **Status:** Approved
 - **Spec:** [evaluation.md — Function return inference: context-independent](../spec/evaluation.md#function-return-inference-context-independent)
-- **Questions:**
-  1. What is the constraint declaration syntax, including validation of entire constructor values?
-  2. Which pure functions qualify and how are unknown inputs handled?
+- **Done when:** A mandatory `where` restriction proven false is a compile error, and a restriction the compiler cannot establish is also rejected rather than treated as true or false.
+- **Notes:** Exact evaluation budgets and the full compile-time function eligibility boundary remain TYP-EVAL-02; explicit runtime validation remains TYP-REF-12.
 
-### TYP-EVAL-05 — Symbolic reasoning and proofs
+### TYP-EVAL-05 — Flow-sensitive symbolic reasoning
 
-- **Status:** Open question
-- **Spec:** [evaluation.md — Function return inference: context-independent](../spec/evaluation.md#function-return-inference-context-independent)
-- **Questions:**
-  1. Should the compiler reason about constraints over unknown values, beyond evaluation?
+- **Status:** Approved
+- **Spec:** [evaluation.md — Flow-sensitive refinement and symbolic reasoning](../spec/evaluation.md#flow-sensitive-refinement-and-symbolic-reasoning)
+- **Done when:** The type checker carries established true and false facts through control flow and uses supported logical implication to establish restricted-type membership; the guaranteed solver boundary is TYP-REF-10.
 
 ### TYP-DIAG-01 — Compile errors versus warnings
 
@@ -231,11 +360,26 @@
 - **Spec:** [evaluation.md — Function return inference: context-independent](../spec/evaluation.md#function-return-inference-context-independent)
 - **Done when:** Missing or disproven mandatory guarantees cause errors; known redundancy in valid code can warn without blocking compilation; optional analysis failure alone has no diagnostic.
 
+### TYP-DIAG-02 — Plain-language actionable diagnostics
+
+- **Status:** Approved
+- **Spec:** [evaluation.md — Diagnostics](../spec/evaluation.md#diagnostics)
+- **Done when:** Compile errors are understandable without compiler/type-theory jargon and, when possible, explain what was written, why Natcode cannot accept it, and a concrete form that would work instead.
+
+### TYP-DIAG-03 — Diagnostics for statically decided runtime validation
+
+- **Status:** Open question
+- **Spec:** [evaluation.md — Diagnostics](../spec/evaluation.md#diagnostics)
+- **Questions:**
+  1. Should a valid `as?` application warn or otherwise report when the compiler can already prove that it must succeed?
+  2. Should it warn or otherwise report when the compiler can already prove that it must fail?
+- **Notes:** Regardless of diagnostics, TYP-REF-13 keeps the stable `T | ValidationError` signature and permits compile-time elimination of runtime work.
+
 ### TYP-PAT-01 — Exhaustiveness and redundant catch-all
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — When expressions](../spec/syntax-and-types.md#when-expressions)
-- **Done when:** Subject-based and subjectless `when` require `_` unless remaining possibilities are provably `Empty`; a provably redundant `_` warns but is valid, and arbitrary predicates alone do not prove exhaustiveness.
+- **Done when:** Subject-based and subjectless `when` require `_` unless remaining possibilities are provably `Empty`; constructors eliminated by a restricted subject type do not require branches; a provably redundant `_` warns but is valid, and arbitrary predicates alone do not prove exhaustiveness.
 
 ## Module export kinds and shapes
 

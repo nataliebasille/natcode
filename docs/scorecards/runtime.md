@@ -81,6 +81,15 @@
   1. Can objects have computed or dynamic keys, and how are they accessed?
 - **Notes:** Dynamic-key objects may be exported only inside a statically named property.
 
+## Runtime validation
+
+### RUN-VAL-01 — Execute restricted-type validation
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Runtime validation](../spec/syntax-and-types.md#runtime-validation)
+- **Done when:** Evaluating a non-precomputed `x as? T` checks all runtime-applicable restrictions needed for membership in `T`, returns the original value on success, returns designated `ValidationError` on failure, and follows the union/intersection/difference and failure-aggregation semantics in TYP-REF-14 and TYP-REF-15.
+- **Notes:** Compile-time proof may eliminate runtime work without changing the stable result type (TYP-REF-13). Error propagation between separate operations remains TYP-REF-17.
+
 ## Entry functions and effects
 
 ### RUN-ENTRY-01 — Entry function contract
