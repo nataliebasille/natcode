@@ -92,6 +92,11 @@ mod keywords {
     }
 
     #[test]
+    fn alias_and_where_keywords_are_reserved() {
+        assert_clean("alias where", &[(Alias, "alias"), (Where, "where")]);
+    }
+
+    #[test]
     fn match_is_an_identifier() {
         assert_clean(
             "match = when",
@@ -107,7 +112,7 @@ mod keywords {
     #[test]
     fn keywords_are_case_sensitive() {
         assert_clean(
-            "From IMPORT Export True FALSE Type FN When",
+            "From IMPORT Export True FALSE Type FN When Alias WHERE",
             &[
                 (Identifier, "From"),
                 (Identifier, "IMPORT"),
@@ -117,6 +122,8 @@ mod keywords {
                 (Identifier, "Type"),
                 (Identifier, "FN"),
                 (Identifier, "When"),
+                (Identifier, "Alias"),
+                (Identifier, "WHERE"),
             ],
         );
     }
@@ -124,7 +131,7 @@ mod keywords {
     #[test]
     fn words_containing_keywords_are_identifiers() {
         assert_clean(
-            "fromage imports exported trueish false_ _from types typeof fnord _fn fn2 whenever somewhen when_",
+            "fromage imports exported trueish false_ _from types typeof fnord _fn fn2 whenever somewhen when_ aliases _alias nowhere wherever where2",
             &[
                 (Identifier, "fromage"),
                 (Identifier, "imports"),
@@ -140,6 +147,11 @@ mod keywords {
                 (Identifier, "whenever"),
                 (Identifier, "somewhen"),
                 (Identifier, "when_"),
+                (Identifier, "aliases"),
+                (Identifier, "_alias"),
+                (Identifier, "nowhere"),
+                (Identifier, "wherever"),
+                (Identifier, "where2"),
             ],
         );
     }
@@ -165,6 +177,16 @@ mod keywords {
             ],
         );
         assert_clean("when = fn", &[(When, "when"), (Equals, "="), (Fn, "fn")]);
+        assert_clean(
+            "x.alias.where",
+            &[
+                (Identifier, "x"),
+                (Dot, "."),
+                (Alias, "alias"),
+                (Dot, "."),
+                (Where, "where"),
+            ],
+        );
     }
 
     #[test]
@@ -193,6 +215,18 @@ mod keywords {
         assert_clean(
             "return = 1",
             &[(Identifier, "return"), (Equals, "="), (Number, "1")],
+        );
+    }
+
+    #[test]
+    fn exception_words_are_identifiers() {
+        assert_clean(
+            "try catch throw",
+            &[
+                (Identifier, "try"),
+                (Identifier, "catch"),
+                (Identifier, "throw"),
+            ],
         );
     }
 
@@ -659,8 +693,7 @@ mod comments {
 
     #[test]
     fn stray_block_comment_close_is_not_a_comment() {
-        assert_tokens("*/", &[(Star, "*"), (Error, "/")]);
-        assert_eq!(diag_kinds("*/"), vec![DiagnosticKind::UnexpectedCharacter]);
+        assert_clean("*/", &[(Star, "*"), (Slash, "/")]);
     }
 }
 
@@ -670,7 +703,7 @@ mod operators {
     #[test]
     fn every_approved_operator_and_punctuation() {
         assert_clean(
-            "= => : | & { } ( ) , . * +",
+            "= => : | & { } ( ) , . * + / as?",
             &[
                 (Equals, "="),
                 (FatArrow, "=>"),
@@ -685,7 +718,99 @@ mod operators {
                 (Dot, "."),
                 (Star, "*"),
                 (Plus, "+"),
+                (Slash, "/"),
+                (AsQuestion, "as?"),
             ],
+        );
+    }
+
+    #[test]
+    fn slash_is_a_token() {
+        assert_clean(
+            "A / B",
+            &[(Identifier, "A"), (Slash, "/"), (Identifier, "B")],
+        );
+        assert_clean("A/B", &[(Identifier, "A"), (Slash, "/"), (Identifier, "B")]);
+    }
+
+    #[test]
+    fn double_slash_and_slash_star_still_start_comments() {
+        assert_clean("A //B", &[(Identifier, "A")]);
+        assert_clean(
+            "A /*B*/ / C",
+            &[(Identifier, "A"), (Slash, "/"), (Identifier, "C")],
+        );
+        assert_clean(
+            "A / / B",
+            &[
+                (Identifier, "A"),
+                (Slash, "/"),
+                (Slash, "/"),
+                (Identifier, "B"),
+            ],
+        );
+    }
+
+    #[test]
+    fn slash_ends_an_unexpected_character_run() {
+        assert_tokens("@/", &[(Error, "@"), (Slash, "/")]);
+        assert_eq!(diag_kinds("@/"), vec![DiagnosticKind::UnexpectedCharacter]);
+    }
+
+    #[test]
+    fn as_question_is_one_token() {
+        assert_clean(
+            "x as? T",
+            &[(Identifier, "x"), (AsQuestion, "as?"), (Identifier, "T")],
+        );
+        assert_clean(
+            "x as?T",
+            &[(Identifier, "x"), (AsQuestion, "as?"), (Identifier, "T")],
+        );
+        let toks = tokenize("x as? T").tokens;
+        assert_eq!(toks[1].span, span(2, 5));
+        assert_eq!(toks[1].start, pos(1, 3));
+    }
+
+    #[test]
+    fn as_alone_is_an_identifier() {
+        assert_clean(
+            "as = 1",
+            &[(Identifier, "as"), (Equals, "="), (Number, "1")],
+        );
+    }
+
+    #[test]
+    fn separated_as_and_question_mark_is_not_the_operator() {
+        assert_tokens(
+            "x as ?",
+            &[(Identifier, "x"), (Identifier, "as"), (Error, "?")],
+        );
+        assert_eq!(
+            diag_kinds("x as ?"),
+            vec![DiagnosticKind::UnexpectedCharacter]
+        );
+    }
+
+    #[test]
+    fn as_question_requires_the_whole_word_as() {
+        for (src, word) in [
+            ("has?", "has"),
+            ("as_?", "as_"),
+            ("As?", "As"),
+            ("AS?", "AS"),
+        ] {
+            assert_tokens(src, &[(Identifier, word), (Error, "?")]);
+        }
+        assert_tokens("alias?", &[(Alias, "alias"), (Error, "?")]);
+    }
+
+    #[test]
+    fn question_mark_after_as_question_is_unexpected() {
+        assert_tokens("as??", &[(AsQuestion, "as?"), (Error, "?")]);
+        assert_eq!(
+            diag_kinds("as??"),
+            vec![DiagnosticKind::UnexpectedCharacter]
         );
     }
 
@@ -719,8 +844,7 @@ mod operators {
     #[test]
     fn unsupported_ascii_characters_are_rejected() {
         for src in [
-            "-", "/", ";", "@", "#", "<", ">", "!", "?", "[", "]", "%", "'", "`", "\\", "$", "~",
-            "^",
+            "-", ";", "@", "#", "<", ">", "!", "?", "[", "]", "%", "'", "`", "\\", "$", "~", "^",
         ] {
             assert_tokens(src, &[(Error, src)]);
             assert_eq!(

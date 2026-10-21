@@ -44,7 +44,7 @@
   1. Which additional words, if any, should be reserved beyond the approved set?
   2. Should generator/effect words such as `yield`, `async`, or `await` become reserved? Their semantics remain open.
   3. Is `then` or any other branch-related word necessary once `when` handles conditionals?
-- **Notes:** The lexer currently recognizes `from`, `import`, `export`, `type`, `fn`, `when`, `true`, and `false`; the approved `alias` keyword (LEX-KW-12) and `where` keyword (LEX-KW-13) are not yet implemented. `match` is no longer reserved (LEX-KW-07). `if`, `else`, `elif`, `case`, `return`, and `null` are explicitly excluded by approved decisions. Other words, such as `then`, `let`, `val`, `var`, `yield`, `async`, and `await`, currently lex as identifiers (`tests/lexer/main.rs::keywords::undecided_words_are_not_reserved_for_now`).
+- **Notes:** The lexer currently recognizes `from`, `import`, `export`, `type`, `alias`, `fn`, `when`, `where`, `true`, and `false`. `match` is no longer reserved (LEX-KW-07). `if`, `else`, `elif`, `case`, `return`, and `null` are explicitly excluded by approved decisions. Other words, such as `then`, `let`, `val`, `var`, `yield`, `async`, and `await`, currently lex as identifiers (`tests/lexer/main.rs::keywords::undecided_words_are_not_reserved_for_now`).
 
 ### LEX-KW-04 — Hard-reserved keyword strategy
 
@@ -101,23 +101,25 @@
 
 ### LEX-KW-12 — Alias declaration keyword
 
-- **Status:** Approved
+- **Status:** Implemented
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
 - **Done when:** `alias` lexes as a case-sensitive, hard-reserved keyword, and longer identifier spellings containing it remain identifiers.
-- **Notes:** Documentation decision only; lexer implementation is future work.
+- **Evidence:** `tests/lexer/main.rs::keywords::alias_and_where_keywords_are_reserved`, `tests/lexer/main.rs::keywords::keywords_are_case_sensitive`, `tests/lexer/main.rs::keywords::words_containing_keywords_are_identifiers`, `tests/lexer/main.rs::keywords::keywords_are_reserved_regardless_of_context`
 
 ### LEX-KW-13 — Refinement `where` keyword
 
-- **Status:** Approved
+- **Status:** Implemented
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
 - **Done when:** `where` lexes as a case-sensitive, hard-reserved keyword, and longer identifier spellings containing it remain identifiers.
-- **Notes:** Required by the approved refinement-type syntax; lexer implementation is future work.
+- **Evidence:** `tests/lexer/main.rs::keywords::alias_and_where_keywords_are_reserved`, `tests/lexer/main.rs::keywords::keywords_are_case_sensitive`, `tests/lexer/main.rs::keywords::words_containing_keywords_are_identifiers`, `tests/lexer/main.rs::keywords::keywords_are_reserved_regardless_of_context`
+- **Notes:** Required by the approved refinement-type syntax.
 
 ### LEX-KW-11 — No exception-handling keywords
 
-- **Status:** Approved
+- **Status:** Implemented
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
 - **Done when:** `try`, `catch`, and `throw` are ordinary identifiers, not exception-related keywords or tokens.
+- **Evidence:** `tests/lexer/main.rs::keywords::exception_words_are_identifiers`
 - **Notes:** The language-level exception mechanism is rejected (RUN-EFF-04).
 
 ## Identifiers
@@ -311,17 +313,19 @@
 
 ### LEX-OP-04 — Slash token for type set difference
 
-- **Status:** Approved
+- **Status:** Implemented
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
 - **Done when:** `/` lexes as its own token so type expressions can use the approved `A / B` set-difference operator.
-- **Notes:** Any future value-expression meaning of `/` is separate from the approved type-expression meaning.
+- **Evidence:** `tests/lexer/main.rs::operators::slash_is_a_token`, `tests/lexer/main.rs::operators::double_slash_and_slash_star_still_start_comments`, `tests/lexer/main.rs::operators::every_approved_operator_and_punctuation`, `tests/lexer/main.rs::comments::stray_block_comment_close_is_not_a_comment`
+- **Notes:** Any future value-expression meaning of `/` is separate from the approved type-expression meaning. `//` and `/*` still begin comments, so `A//B` and `A/*B` start comments rather than producing `/` tokens; a stray `*/` lexes as `*` followed by `/`.
 
 ### LEX-OP-05 — Runtime-validation `as?` token
 
-- **Status:** Approved
+- **Status:** Implemented
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
 - **Done when:** `as?` lexes as one indivisible operator token; `as` alone remains an ordinary identifier, and whitespace-separated `as ?` does not form the operator.
-- **Notes:** Parser and type semantics are PAR-VAL-01 and TYP-REF-12. The lexer implementation is future work.
+- **Evidence:** `tests/lexer/main.rs::operators::as_question_is_one_token`, `tests/lexer/main.rs::operators::as_alone_is_an_identifier`, `tests/lexer/main.rs::operators::separated_as_and_question_mark_is_not_the_operator`, `tests/lexer/main.rs::operators::as_question_requires_the_whole_word_as`, `tests/lexer/main.rs::operators::question_mark_after_as_question_is_unexpected`, `tests/lexer/main.rs::operators::every_approved_operator_and_punctuation`
+- **Notes:** Parser and type semantics are PAR-VAL-01 and TYP-REF-12. The operator forms only when the complete identifier is exactly `as` and is immediately followed by `?`; in `has?`, `As?`, or `alias?`, the `?` remains an unexpected character.
 
 ## Whitespace and indentation
 
@@ -371,8 +375,9 @@
 
 ### LEX-ERR-02 — Unexpected characters
 
-- **Status:** Needs update
+- **Status:** Implemented
 - **Spec:** [lexical.md — Lexical errors](../spec/lexical.md#lexical-errors)
 - **Done when:** A run of characters that cannot start a token (emoji, symbols such as `∑` or `€`, ASCII characters outside the approved operator set) is one error token with one diagnostic; the newly approved `/` token is not rejected.
+- **Evidence:** `tests/lexer/main.rs::operators::unsupported_ascii_characters_are_rejected`, `tests/lexer/main.rs::operators::adjacent_unexpected_characters_form_one_error`, `tests/lexer/main.rs::operators::slash_ends_an_unexpected_character_run`, `tests/lexer/main.rs::identifiers::non_letter_symbols_are_rejected`, `tests/lexer/main.rs::identifiers::rejected_symbol_after_identifier_recovers`
 - **Previous evidence:** `tests/lexer/main.rs::operators::unsupported_ascii_characters_are_rejected`, `tests/lexer/main.rs::operators::adjacent_unexpected_characters_form_one_error`, `tests/lexer/main.rs::identifiers::non_letter_symbols_are_rejected`, `tests/lexer/main.rs::identifiers::rejected_symbol_after_identifier_recovers`
-- **Notes:** The historical unsupported-character test currently includes `/`; it must be updated when LEX-OP-04 is implemented.
+- **Notes:** The unsupported-character test no longer includes `/`, which is a token under LEX-OP-04.
