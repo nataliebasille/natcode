@@ -244,29 +244,29 @@
 - **Questions:**
   1. What additional grammar is needed for generic parameters, named fields, recursive declarations, and advanced variants beyond the approved positional and indented constructor forms?
 
-### PAR-TYPE-03 — Dedicated named type keyword
+### PAR-TYPE-03 — Transparent and nominal type declarations
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Declaration keywords and expression results](../spec/syntax-and-types.md#declaration-keywords-and-expression-results)
-- **Done when:** Named type declarations use the `type` introducer; their remaining grammar is determined by PAR-TYPE-02.
+- **Done when:** `type Name = expression` declares a transparent name; `unique type Name(...)` or `unique type Name` followed by constructor branches introduces a nominal identity. Bare `type Name(...)` and `unique type Name = expression` are invalid. Remaining grammar is PAR-TYPE-02.
 
 ### PAR-TYPE-04 — Positional nominal constructors
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
-- **Done when:** `type UserId(number)` and `type Point(number, number)` parse as nominal type declarations with positional constructor payloads.
+- **Done when:** `unique type UserId(number)` and `unique type Point(number, number)` parse as nominal type declarations with positional constructor payloads.
 
 ### PAR-TYPE-05 — Alias declarations
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
-- **Done when:** `alias Identifier = UserId | ProductId` and `alias Some = Option.Some` parse as transparent aliases, distinguishable from nominal `type` declarations.
+- **Done when:** `type Identifier = UserId | ProductId` and `type Some = Option.Some` parse as transparent declarations, distinguishable from nominal `unique type` declarations. Constructor-symbol names remain callable and valid in constructor patterns.
 
 ### PAR-TYPE-06 — Indented constructors and qualified lookup
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
-- **Done when:** `type Option` with `Some(Any)` and `None` on subsequent constructor-list lines parses as a nominal algebraic declaration regardless of inconsistent leading-space alignment, and `Option.Some` resolves as a qualified constructor name. Structural ambiguity is diagnosed; formatting normalizes the constructor list.
+- **Done when:** `unique type Option` with `Some(Any)` and `None` on subsequent constructor-list lines parses as a nominal algebraic declaration regardless of inconsistent leading-space alignment, and `Option.Some` resolves as a qualified constructor name. Structural ambiguity is diagnosed; formatting normalizes the constructor list.
 
 ### PAR-TYPE-07 — Constructor restrictions in type expressions
 

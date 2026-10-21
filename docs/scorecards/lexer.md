@@ -44,7 +44,7 @@
   1. Which additional words, if any, should be reserved beyond the approved set?
   2. Should generator/effect words such as `yield`, `async`, or `await` become reserved? Their semantics remain open.
   3. Is `then` or any other branch-related word necessary once `when` handles conditionals?
-- **Notes:** The lexer currently recognizes `from`, `import`, `export`, `type`, `alias`, `fn`, `when`, `where`, `true`, and `false`. `match` is no longer reserved (LEX-KW-07). `if`, `else`, `elif`, `case`, `return`, and `null` are explicitly excluded by approved decisions. Other words, such as `then`, `let`, `val`, `var`, `yield`, `async`, and `await`, currently lex as identifiers (`tests/lexer/main.rs::keywords::undecided_words_are_not_reserved_for_now`).
+- **Notes:** The lexer currently recognizes `from`, `import`, `export`, `unique`, `type`, `fn`, `when`, `where`, `true`, and `false`. `match` is no longer reserved (LEX-KW-07). `if`, `else`, `elif`, `case`, `return`, and `null` are explicitly excluded by approved decisions. Other words, such as `then`, `let`, `val`, `var`, `yield`, `async`, and `await`, currently lex as identifiers (`tests/lexer/main.rs::keywords::undecided_words_are_not_reserved_for_now`).
 
 ### LEX-KW-04 — Hard-reserved keyword strategy
 
@@ -99,19 +99,27 @@
 - **Done when:** `return` is not treated as a reserved word or control-flow token; functions return their final expression (PAR-FN-03).
 - **Evidence:** `tests/lexer/main.rs::keywords::return_is_an_identifier`
 
-### LEX-KW-12 — Alias declaration keyword
+### LEX-KW-12 — Unique nominal modifier keyword
 
 - **Status:** Implemented
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
-- **Done when:** `alias` lexes as a case-sensitive, hard-reserved keyword, and longer identifier spellings containing it remain identifiers.
-- **Evidence:** `tests/lexer/main.rs::keywords::alias_and_where_keywords_are_reserved`, `tests/lexer/main.rs::keywords::keywords_are_case_sensitive`, `tests/lexer/main.rs::keywords::words_containing_keywords_are_identifiers`, `tests/lexer/main.rs::keywords::keywords_are_reserved_regardless_of_context`
+- **Done when:** `unique` lexes as a case-sensitive, hard-reserved keyword, and longer identifiers containing it remain identifiers. The approved nominal introducer is `unique type` (PAR-TYPE-03).
+- **Evidence:** `tests/lexer/main.rs::keywords::unique_and_where_keywords_are_reserved`, `tests/lexer/main.rs::keywords::keywords_are_case_sensitive`, `tests/lexer/main.rs::keywords::words_containing_keywords_are_identifiers`, `tests/lexer/main.rs::keywords::keywords_are_reserved_regardless_of_context`
+- **Previous evidence:** `tests/lexer/main.rs::keywords::alias_and_where_keywords_are_reserved`
+
+### LEX-KW-14 — `alias` is an ordinary identifier
+
+- **Status:** Implemented
+- **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
+- **Done when:** `alias` is not a reserved keyword and lexes as an identifier; it cannot introduce a type declaration.
+- **Evidence:** `tests/lexer/main.rs::keywords::alias_is_an_identifier`
 
 ### LEX-KW-13 — Refinement `where` keyword
 
 - **Status:** Implemented
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
 - **Done when:** `where` lexes as a case-sensitive, hard-reserved keyword, and longer identifier spellings containing it remain identifiers.
-- **Evidence:** `tests/lexer/main.rs::keywords::alias_and_where_keywords_are_reserved`, `tests/lexer/main.rs::keywords::keywords_are_case_sensitive`, `tests/lexer/main.rs::keywords::words_containing_keywords_are_identifiers`, `tests/lexer/main.rs::keywords::keywords_are_reserved_regardless_of_context`
+- **Evidence:** `tests/lexer/main.rs::keywords::unique_and_where_keywords_are_reserved`, `tests/lexer/main.rs::keywords::keywords_are_case_sensitive`, `tests/lexer/main.rs::keywords::words_containing_keywords_are_identifiers`, `tests/lexer/main.rs::keywords::keywords_are_reserved_regardless_of_context`
 - **Notes:** Required by the approved refinement-type syntax.
 
 ### LEX-KW-11 — No exception-handling keywords

@@ -89,9 +89,9 @@ Both forms must be exhaustive (TYP-PAT-01). The remaining possible value set mus
 
 - `fn` introduces named function declarations (PAR-FN-02). Parameter and body syntax remain open (PAR-FN-01).
 - Functions return the value of their final expression; there is no `return` statement or explicit early return (PAR-FN-03).
-- `type` introduces a new **nominal** type identity (PAR-TYPE-03, TYP-NOM-01); it never declares a transparent alias.
-- `alias` names an existing type expression or a constructor symbol without creating a new nominal identity (PAR-TYPE-05, TYP-ALI-01, TYP-ALI-02). The right-hand side is introduced by `=`. The full expression grammar remains PAR-TYPE-01.
-- Positional nominal constructor declarations and algebraic variants have approved forms (PAR-TYPE-04, PAR-TYPE-06). Further declaration and generic grammar remains open (PAR-TYPE-02).
+- `unique type` introduces a fresh **nominal** type identity (PAR-TYPE-03, TYP-NOM-01), even when its constructor payload types match another type.
+- `type Name = expression` names an existing type expression or constructor symbol transparently, without creating a new nominal identity (PAR-TYPE-05, TYP-ALI-01, TYP-ALI-02). Constructor-symbol names retain construction and pattern behavior. The full expression grammar remains PAR-TYPE-01.
+- `unique type Name(...)` and `unique type Name` with constructor branches introduce nominal constructors (PAR-TYPE-04, PAR-TYPE-06). Bare `type Name(...)` and `unique type Name = expression` are invalid. Further declaration and generic grammar remains open (PAR-TYPE-02).
 - Ordinary variable bindings continue to use keyword-free `name = expression` declarations (PAR-DECL-01).
 
 ## Inference-first philosophy
@@ -102,11 +102,11 @@ Ordinary variable types and function return types are intended to be inferred. T
 
 ## Nominal types, constructors, and aliases
 
-A `type` declaration creates a fresh nominal identity. Constructing values of two independently declared nominal types does not make those values interchangeable, even when their payload types coincide (TYP-NOM-01).
+A `unique type` declaration creates a fresh nominal identity. Constructing values of two independently declared nominal types does not make those values interchangeable, even when their payload types coincide (TYP-NOM-01).
 
 ```natcode
-type UserId(number)
-type ProductId(number)
+unique type UserId(number)
+unique type ProductId(number)
 
 userId = UserId(123)
 productId = ProductId(123)
@@ -117,7 +117,7 @@ Nominal wrappers do **not** implicitly convert to their payload types or automat
 A constructor can have multiple positional parameters. The constructor form is also a pattern that binds the contents of its fields; there is no automatically generated `.value` accessor (TYP-NOM-03, TYP-NOM-04, PAR-PAT-01).
 
 ```natcode
-type Point(number, number)
+unique type Point(number, number)
 
 point = Point(10, 20)
 coordinates = when point
@@ -129,7 +129,7 @@ The `when` branch and record literal syntax in these examples is illustrative; t
 An algebraic nominal type may declare multiple constructors in a constructor list; its indentation is normalized by the formatter and does not independently establish semantic nesting. A constructor is qualified by its declaring type by default; the constructor's unqualified name is **not** automatically in scope (TYP-ADT-01, PAR-TYPE-06, RES-NAME-06).
 
 ```natcode
-type Option
+unique type Option
     Some(Any)
     None
 
@@ -137,10 +137,10 @@ present = Option.Some(42)
 absent = Option.None
 ```
 
-A transparent alias can name a type expression or an existing constructor symbol. Constructor aliases preserve the original constructor identity and are usable in value construction and constructor patterns (TYP-ALI-01, TYP-ALI-02).
+A transparent `type Name = ...` declaration can name a type expression or an existing constructor symbol. Constructor aliases preserve the original constructor identity and are usable in value construction and constructor patterns (TYP-ALI-01, TYP-ALI-02).
 
 ```natcode
-alias Some = Option.Some
+type Some = Option.Some
 
 value = Some(42)
 unwrapped = when value
@@ -150,11 +150,11 @@ unwrapped = when value
 In **type-expression context**, applying an existing nominal constructor to type arguments describes a subset of that nominal type constrained by its payload values; in **value-expression context**, applying it constructs a value (TYP-NOM-05). Omitting the arguments names the entire nominal type with no further restriction.
 
 ```natcode
-type Value(string)
-type Value2(number)
+unique type Value(string)
+unique type Value2(number)
 
-alias Z = Value("one" | "two") | Value2(1 | 2)
-alias Unrestricted = Value | Value2
+type Z = Value("one" | "two") | Value2(1 | 2)
+type Unrestricted = Value | Value2
 ```
 
 For a single-payload constructor, `Value(A | B)` represents the same set of possible values as `Value(A) | Value(B)`. For multiple arguments, correlations must be preserved: `Point(1 | 2, 3 | 4)` represents four combinations, while `Point(1, 3) | Point(2, 4)` represents only two. The complete grammar for literal type expressions is PAR-TYPE-01.
@@ -162,12 +162,12 @@ For a single-payload constructor, `Value(A | B)` represents the same set of poss
 Nominal types may contain other nominal types through ordinary constructor parameters (TYP-NOM-06).
 
 ```natcode
-type Position(number, number)
-type Color(string)
+unique type Position(number, number)
+unique type Color(string)
 
-type Sprint(Position, Color)
+unique type Sprint(Position, Color)
 // Equivalent unrestricted parameter types:
-// type Sprint(Position(number, number), Color(string))
+// unique type Sprint(Position(number, number), Color(string))
 
 sprint = Sprint(Position(10, 20), Color("red"))
 ```
@@ -179,10 +179,10 @@ These nested values are constructor arguments; this declaration **does not imply
 `where` is a postfix type operator that describes a **subset** of the type expression on its left (TYP-REF-01, PAR-REF-01). It does not create a nominal identity. A branch predicate is Boolean: values for which the predicate is true remain in the type, and values for which it is false are excluded.
 
 ```natcode
-alias Positive = number where
+type Positive = number where
     x => x > 0
 
-alias AboveDiagonal = Position where
+type AboveDiagonal = Position where
     (x, y) => x > y
 ```
 
@@ -195,11 +195,11 @@ A restricted alias remains assignable to the type it restricts. The reverse assi
 A pattern claims the part of the input type that it matches. Its Boolean result decides which values from that matched part remain. A value whose pattern matched but whose predicate is false is excluded; it does not fall through to a later branch. Values not matched by any branch are also excluded.
 
 ```natcode
-type Option
+unique type Option
     Some(number)
     None
 
-alias PositiveOption = Option where
+type PositiveOption = Option where
     Some(x) => x > 0
 ```
 
@@ -208,7 +208,7 @@ Here positive `Some` values remain, negative and zero `Some` values are excluded
 Ordinary branch patterns must describe disjoint regions. If two ordinary branches could match the same value, that is a compile error. `_` is special: it denotes only the region not matched by earlier branches. Consequently it must be final whenever it consumes the entire remaining region, and any branch after the remaining region is already `Empty` is a compile error.
 
 ```natcode
-alias KeepOtherCases = Option where
+type KeepOtherCases = Option where
     Some(x) => x > 0
     _ => true
 ```
@@ -218,18 +218,18 @@ In this example, `Some(-1)` is still excluded: it matched `Some(x)` and failed t
 Explicit `true` and `false` branches are valid. A bare constructor is sugar for including that entire constructor:
 
 ```natcode
-type Result
+unique type Result
     Success(number)
     Failure(string)
 
-alias Successful = Result where
+type Successful = Result where
     Success
 
 // Equivalent ways to include every Success value:
-alias Successful2 = Result where
+type Successful2 = Result where
     Success => true
 
-alias Successful3 = Result where
+type Successful3 = Result where
     Success(_) => true
 ```
 
@@ -249,10 +249,10 @@ A single binder may bind the entire candidate value regardless of how many const
 Positional destructuring without a constructor name is available only when the complete type on the left has one unambiguous constructor shape (PAR-REF-02). One exposed parameter may omit parentheses; two or more require parentheses.
 
 ```natcode
-alias Positive = number where
+type Positive = number where
     x => x > 0
 
-alias AboveDiagonal = Position where
+type AboveDiagonal = Position where
     (x, y) => x > y
 ```
 
@@ -296,23 +296,23 @@ Directly chaining `where` operators is rejected. Combine conditions in one restr
 number where x => x > 0 where x => x < 10
 
 // Valid:
-alias Positive = number where
+type Positive = number where
     x => x > 0
 
-alias SmallPositive = Positive where
+type SmallPositive = Positive where
     x => x < 10
 ```
 
 A `where` may not be written directly after an already-applied constructor type such as `Position(0, number)` or `Position(number, number)` (PAR-REF-03). Restrict an individual parameter inside the constructor application, or name the specialized type and refine that name:
 
 ```natcode
-alias PositiveXAxis = Position(
+type PositiveXAxis = Position(
     0,
     number where y => y > 0
 )
 
-alias XAxis = Position(0, number)
-alias PositiveXAxis2 = XAxis where
+type XAxis = Position(0, number)
+type PositiveXAxis2 = XAxis where
     y => y > 0
 ```
 
@@ -321,7 +321,7 @@ The second form sees the constructor shape exposed by `XAxis`: only its one rema
 A qualified constructor symbol may be refined directly:
 
 ```natcode
-alias PositiveSome = Option.Some where
+type PositiveSome = Option.Some where
     x => x > 0
 ```
 
@@ -330,7 +330,7 @@ alias PositiveSome = Option.Some where
 Restrictions in a nominal declaration may be attached to individual constructor parameters or to the whole single constructor (TYP-REF-02):
 
 ```natcode
-type Response
+unique type Response
     Success(number where code => code >= 200 && code < 300)
     Failure(string)
 ```
@@ -340,14 +340,14 @@ The inner `where` can reference only that single parameter. It cannot reference 
 A restriction may instead apply to a constructor as a whole, allowing relationships between that constructor's parameters:
 
 ```natcode
-type Range(number, number) where
+unique type Range(number, number) where
     (start, end) => start < end
 ```
 
 For algebraic types, individual constructors may have whole-constructor restrictions:
 
 ```natcode
-type Response
+unique type Response
     Success(number) where
         code => code >= 200 && code < 300
     Failure(string) where
@@ -358,7 +358,7 @@ A declaration-wide `where` on a nominal type with multiple constructors is **not
 
 ```natcode
 // Invalid: a declaration-wide `where` cannot follow a multi-constructor type.
-type Response
+unique type Response
     Success(number)
     Failure(string)
 where
@@ -366,10 +366,10 @@ where
     Failure(message) => message != ""
 ```
 
-To filter an existing algebraic nominal type as a whole, use an alias instead:
+To filter an existing algebraic nominal type as a whole, use a transparent `type` declaration instead:
 
 ```natcode
-alias FilteredResponse = Response where
+type FilteredResponse = Response where
     Success(code) => code >= 200 && code < 300
     Failure(message) => message != ""
 ```
@@ -383,10 +383,10 @@ When more than one restriction applies, all of them must hold; their effect is i
 Applying a constructor in a type expression fixes any literal positions and leaves the remaining positions as the parameters exposed by the resulting specialized type (TYP-NOM-07):
 
 ```natcode
-type Position(number, number)
+unique type Position(number, number)
 
-alias XAxis = Position(number, 0)
-alias Center = Position(0, 0)
+type XAxis = Position(number, 0)
+type Center = Position(0, 0)
 
 x = XAxis(10)    // constructs Position(10, 0)
 center = Center  // zero-parameter application
@@ -398,11 +398,11 @@ A zero-parameter application may omit `()` in both type and value contexts (TYP-
 A restricted alias preserves the constructor structure of what it restricts rather than inventing new constructor shortcuts (TYP-REF-04). For an algebraic type, every constructor whose restricted set is not proven `Empty` is exposed under the alias namespace:
 
 ```natcode
-type Option
+unique type Option
     Some(number)
     None
 
-alias PositiveOption = Option where
+type PositiveOption = Option where
     Some(x) => x > 0
 
 value = PositiveOption.Some(5)
@@ -411,7 +411,7 @@ value = PositiveOption.Some(5)
 `PositiveOption.None` is absent because `None` was eliminated. `PositiveOption(5)` is not introduced, because `Option` itself was never a constructor. If the developer wants a directly callable constructor alias, the constructor itself can be restricted:
 
 ```natcode
-alias PositiveSome = Option.Some(number where x => x > 0)
+type PositiveSome = Option.Some(number where x => x > 0)
 value = PositiveSome(5)
 ```
 
@@ -426,16 +426,16 @@ Constructibility is determined from the **normalized resulting type**, not mecha
 If a union or intersection still exposes one common effective constructor shape, the resulting alias remains directly constructible:
 
 ```natcode
-type Vector3(number, number, number)
+unique type Vector3(number, number, number)
 
-alias PositiveX = Vector3 where
+type PositiveX = Vector3 where
     (x, y, z) => x > 0
 
-alias PositiveY = Vector3 where
+type PositiveY = Vector3 where
     (x, y, z) => y > 0
 
-alias EitherPositive = PositiveX | PositiveY
-alias BothPositive = PositiveX & PositiveY
+type EitherPositive = PositiveX | PositiveY
+type BothPositive = PositiveX & PositiveY
 ```
 
 Both aliases still expose the same three `Vector3` parameter positions, with their combined restrictions.
@@ -443,16 +443,16 @@ Both aliases still expose the same three `Vector3` parameter positions, with the
 Sharing only the same nominal origin is not enough:
 
 ```natcode
-alias XAxis = Position(number, 0)
-alias YAxis = Position(0, number)
+type XAxis = Position(number, 0)
+type YAxis = Position(0, number)
 
-alias Axis = XAxis | YAxis
+type Axis = XAxis | YAxis
 ```
 
 `Axis` is a valid type but is not directly callable: `XAxis` and `YAxis` expose different parameter positions. By contrast:
 
 ```natcode
-alias Center = XAxis & YAxis
+type Center = XAxis & YAxis
 ```
 
 normalizes to `Position(0, 0)`, so `Center` has the resulting zero-parameter constructor.
@@ -468,7 +468,7 @@ A predicate may call eligible pure functions. It may also close over earlier imm
 ```natcode
 minimum = 10
 
-alias AboveMinimum = number where
+type AboveMinimum = number where
     x => x > minimum
 ```
 
@@ -477,10 +477,10 @@ The captured binding is the specific earlier binding, consistent with Natcode's 
 Restricted constructors are not themselves Boolean membership tests. Compose restrictions through types instead:
 
 ```natcode
-alias Positive = number where
+type Positive = number where
     x => x > 0
 
-alias SmallerPositive = Positive where
+type SmallerPositive = Positive where
     x => x < 10
 ```
 
@@ -491,7 +491,7 @@ The infix operator `as?` explicitly validates membership in a restricted type at
 Every runtime-validatable restricted target `T` has a **validation input type** `U`: the compatible unrestricted type whose values can safely be checked by `T`'s restrictions. For example, the validation input type of `number where x => x > 0` is `number`, and the validation input type of `Value("one" | "two")` is `Value`. A source expression in `x as? T` must already be statically assignable to `U`; `as?` does not perform dynamic discrimination between unrelated underlying types. Use `when` for that. A target whose validation input type is `Empty` is invalid for `as?`, because no value can be supplied to such a validator.
 
 ```natcode
-alias Positive = number where
+type Positive = number where
     x => x > 0
 
 n: number = getNumber()

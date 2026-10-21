@@ -2,7 +2,7 @@
 //!
 //! Implements the Implemented `LEX-*` items: UAX #31 identifiers (XID_Start
 //! or `_`, then XID_Continue) normalized to NFC, the hard-reserved
-//! `from`/`import`/`export`/`type`/`alias`/`fn`/`when`/`where` keywords,
+//! `from`/`import`/`export`/`unique`/`type`/`fn`/`when`/`where` keywords,
 //! boolean literals, decimal numbers, escape-free double-quoted strings,
 //! line/nested block comments, the core operator set (including `/` and the
 //! indivisible `as?`), and newline tokens. Emoji identifiers
@@ -25,7 +25,7 @@ pub enum TokenKind {
     Type,
     Fn,
     When,
-    Alias,
+    Unique,
     Where,
     /// Standalone `_`, reserved as a wildcard.
     Underscore,
@@ -413,7 +413,7 @@ impl Lexer<'_> {
             "type" => TokenKind::Type,
             "fn" => TokenKind::Fn,
             "when" => TokenKind::When,
-            "alias" => TokenKind::Alias,
+            "unique" => TokenKind::Unique,
             "where" => TokenKind::Where,
             "true" => TokenKind::True,
             "false" => TokenKind::False,

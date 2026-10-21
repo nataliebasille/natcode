@@ -24,6 +24,7 @@ python docs/tools/scorecard_status.py --check   # validate scorecards, links, ev
 ## Design snapshot
 
 - Natcode is a functional language with immutable bindings and persistent-value updates.
+- `unique type` creates a new nominal identity; `type Name = ...` names a type expression or constructor symbol transparently. `alias` is no longer a declaration keyword.
 - A source file defines exactly one module; modules are logical, scoped namespaces.
 - Top-level source contains imports, declarations, and one final `export`, not standalone statements.
 - Module exports are either an object-shaped library interface or an executable function. Export kind is statically decidable.

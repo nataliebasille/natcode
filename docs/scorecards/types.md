@@ -9,7 +9,7 @@
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
-- **Done when:** `type UserId(number)` and `type ProductId(number)` introduce distinct identities; values of one are not interchangeable with the other merely because both wrap `number`.
+- **Done when:** `unique type UserId(number)` and `unique type ProductId(number)` introduce distinct identities; values of one are not interchangeable with the other merely because both wrap `number`.
 
 ### TYP-NOM-02 — Strict nominal payload boundary
 
@@ -21,7 +21,7 @@
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
-- **Done when:** `type Point(number, number)` allows `Point(10, 20)` and each parameter is typed independently.
+- **Done when:** `unique type Point(number, number)` allows `Point(10, 20)` and each parameter is typed independently.
 
 ### TYP-NOM-04 — Destructuring constructor patterns, no automatic value property
 
@@ -41,14 +41,14 @@
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
-- **Done when:** `type Sprint(Position, Color)` takes constructed `Position` and `Color` values as ordinary arguments; writing `Position(number, number)` or `Color(string)` where these do not restrict the declared type has the same parameter meaning.
+- **Done when:** `unique type Sprint(Position, Color)` takes constructed `Position` and `Color` values as ordinary arguments; writing `Position(number, number)` or `Color(string)` where these do not restrict the declared type has the same parameter meaning.
 - **Notes:** No special nominal-combination operator, multiple inheritance, interfaces, classes, or automatic nested-value projection is approved.
 
 ### TYP-NOM-07 — Specialized constructor aliases expose remaining parameters
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Specialized aliases and constructors](../spec/syntax-and-types.md#specialized-aliases-and-constructors)
-- **Done when:** `alias XAxis = Position(number, 0)` exposes one constructor parameter and `XAxis(10)` constructs `Position(10, 0)`; `Position(0, 0)` exposes zero parameters.
+- **Done when:** `type XAxis = Position(number, 0)` exposes one constructor parameter and `XAxis(10)` constructs `Position(10, 0)`; `Position(0, 0)` exposes zero parameters.
 
 ### TYP-NOM-08 — Optional parentheses for zero-parameter application
 
@@ -60,13 +60,13 @@
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
-- **Done when:** `alias Identifier = UserId | ProductId` names exactly the union without a new nominal identity. Only `type` creates nominal identities.
+- **Done when:** `type Identifier = UserId | ProductId` names exactly the union without a new nominal identity. Only `unique type` creates nominal identities.
 
 ### TYP-ALI-02 — Constructor symbol aliases
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
-- **Done when:** `alias Some = Option.Some` refers to the same constructor and can be used in value construction and matching without introducing a new nominal identity.
+- **Done when:** `type Some = Option.Some` refers to the same constructor and can be used in value construction and matching without introducing a new nominal identity.
 
 ## Refinement types
 
@@ -451,7 +451,7 @@
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
-- **Done when:** `type Option` with indented `Some(Any)` and `None` introduces a nominal sum-type and constructors accessible as `Option.Some` and `Option.None`; bare unqualified constructors are not introduced automatically.
+- **Done when:** `unique type Option` with indented `Some(Any)` and `None` introduces a nominal sum-type and constructors accessible as `Option.Some` and `Option.None`; bare unqualified constructors are not introduced automatically.
 
 ### TYP-ADT-02 — Remaining algebraic type semantics
 
