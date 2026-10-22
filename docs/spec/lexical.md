@@ -35,7 +35,7 @@ Identifiers are normalized to Unicode **NFC**, so visually identical spellings (
 - A digit separator `_` may appear only **between two digits**: `1_000` and `3.141_59` are valid; `1__0`, `1_`, `1_.5`, `1._5`, and `1.5_` are errors.
 - A fraction requires a digit (or a misplaced `_`) immediately after the `.`. Otherwise the number ends before the `.`: `1.` is the number `1` followed by `.`, and `1.foo` is `1`, `.`, `foo`.
 - A number cannot begin with `.`: `.5` is `.` followed by `5`.
-- A leading `-` is not part of a number literal, and `-` is not an operator (see LEX-OP-03).
+- A leading `-` is not part of a number literal; it is the separate `-` operator token (LEX-OP-03), so `-1` is `-` followed by `1`.
 - A number may not be directly followed by identifier characters. `42abc`, `1_a`, and `3.14x` are each a single error, as are `1e10` and `0x1F` (see LEX-NUM-05 and LEX-NUM-06).
 
 ## Strings
@@ -45,4 +45,4 @@ Identifiers are normalized to Unicode **NFC**, so visually identical spellings (
 
 ## Lexical errors
 
-Any character that cannot begin a token is an error, including emoji, non-identifier symbols such as `∑` or `€`, and ASCII characters outside the operator set (for example `-`, `;`, `@`). An unterminated block comment is an error. Lexing recovers after every error and reports all diagnostics in source order.
+Any character that cannot begin a token is an error, including emoji, non-identifier symbols such as `∑` or `€`, and ASCII characters outside the operator set (for example `;`, `@`, `?`). An unterminated block comment is an error. Lexing recovers after every error and reports all diagnostics in source order.

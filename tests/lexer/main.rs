@@ -87,7 +87,12 @@ mod keywords {
     fn declaration_and_when_keywords_are_reserved() {
         assert_clean(
             "type unique fn when",
-            &[(Type, "type"), (Unique, "unique"), (Fn, "fn"), (When, "when")],
+            &[
+                (Type, "type"),
+                (Unique, "unique"),
+                (Fn, "fn"),
+                (When, "when"),
+            ],
         );
     }
 
@@ -98,7 +103,10 @@ mod keywords {
 
     #[test]
     fn alias_is_an_identifier() {
-        assert_clean("alias = 1", &[(Identifier, "alias"), (Equals, "="), (Number, "1")]);
+        assert_clean(
+            "alias = 1",
+            &[(Identifier, "alias"), (Equals, "="), (Number, "1")],
+        );
     }
 
     #[test]
@@ -536,8 +544,9 @@ mod numbers {
 
     #[test]
     fn minus_is_not_part_of_a_number() {
-        assert_tokens("-1", &[(Error, "-"), (Number, "1")]);
-        assert_eq!(diag_kinds("-1"), vec![DiagnosticKind::UnexpectedCharacter]);
+        assert_clean("-1", &[(Minus, "-"), (Number, "1")]);
+        assert_clean("-3.5", &[(Minus, "-"), (Number, "3.5")]);
+        assert_clean("1-2", &[(Number, "1"), (Minus, "-"), (Number, "2")]);
     }
 }
 
@@ -823,14 +832,117 @@ mod operators {
     }
 
     #[test]
-    fn fat_arrow_uses_maximal_munch() {
-        assert_clean("=>=", &[(FatArrow, "=>"), (Equals, "=")]);
-        assert_clean("==", &[(Equals, "="), (Equals, "=")]);
+    fn value_expression_operators() {
+        assert_clean(
+            "- ! < <= > >= == != && ||",
+            &[
+                (Minus, "-"),
+                (Not, "!"),
+                (LessThan, "<"),
+                (LessThanOrEqual, "<="),
+                (GreaterThan, ">"),
+                (GreaterThanOrEqual, ">="),
+                (EqualTo, "=="),
+                (NotEqualTo, "!="),
+                (And, "&&"),
+                (Or, "||"),
+            ],
+        );
     }
 
     #[test]
-    fn separated_equals_and_greater_than_is_not_an_arrow() {
-        assert_tokens("= >", &[(Equals, "="), (Error, ">")]);
+    fn value_expression_operators_without_whitespace() {
+        assert_clean(
+            "!a&&b||-c<=d",
+            &[
+                (Not, "!"),
+                (Identifier, "a"),
+                (And, "&&"),
+                (Identifier, "b"),
+                (Or, "||"),
+                (Minus, "-"),
+                (Identifier, "c"),
+                (LessThanOrEqual, "<="),
+                (Identifier, "d"),
+            ],
+        );
+        assert_clean(
+            "a<b>c==d!=e>=f",
+            &[
+                (Identifier, "a"),
+                (LessThan, "<"),
+                (Identifier, "b"),
+                (GreaterThan, ">"),
+                (Identifier, "c"),
+                (EqualTo, "=="),
+                (Identifier, "d"),
+                (NotEqualTo, "!="),
+                (Identifier, "e"),
+                (GreaterThanOrEqual, ">="),
+                (Identifier, "f"),
+            ],
+        );
+    }
+
+    #[test]
+    fn multi_character_operators_are_single_tokens() {
+        for (src, kind) in [
+            ("=>", FatArrow),
+            ("<=", LessThanOrEqual),
+            (">=", GreaterThanOrEqual),
+            ("==", EqualTo),
+            ("!=", NotEqualTo),
+            ("&&", And),
+            ("||", Or),
+        ] {
+            assert_clean(src, &[(kind, src)]);
+            assert_eq!(token(src, 0).span, span(0, 2), "span for {src:?}");
+        }
+    }
+
+    #[test]
+    fn maximal_munch_takes_the_longest_operator_first() {
+        assert_clean("=>=", &[(FatArrow, "=>"), (Equals, "=")]);
+        assert_clean("===", &[(EqualTo, "=="), (Equals, "=")]);
+        assert_clean("!==", &[(NotEqualTo, "!="), (Equals, "=")]);
+        assert_clean("<=>", &[(LessThanOrEqual, "<="), (GreaterThan, ">")]);
+        assert_clean(">==", &[(GreaterThanOrEqual, ">="), (Equals, "=")]);
+        assert_clean("&&&", &[(And, "&&"), (Ampersand, "&")]);
+        assert_clean("|||", &[(Or, "||"), (Pipe, "|")]);
+        assert_clean("!!", &[(Not, "!"), (Not, "!")]);
+        assert_clean("--", &[(Minus, "-"), (Minus, "-")]);
+        assert_clean("=<", &[(Equals, "="), (LessThan, "<")]);
+        assert_clean("->", &[(Minus, "-"), (GreaterThan, ">")]);
+    }
+
+    #[test]
+    fn separated_characters_do_not_form_an_operator() {
+        assert_clean("= >", &[(Equals, "="), (GreaterThan, ">")]);
+        assert_clean("= =", &[(Equals, "="), (Equals, "=")]);
+        assert_clean("< =", &[(LessThan, "<"), (Equals, "=")]);
+        assert_clean("> =", &[(GreaterThan, ">"), (Equals, "=")]);
+        assert_clean("! =", &[(Not, "!"), (Equals, "=")]);
+        assert_clean("& &", &[(Ampersand, "&"), (Ampersand, "&")]);
+        assert_clean("| |", &[(Pipe, "|"), (Pipe, "|")]);
+        assert_clean("=/**/=", &[(Equals, "="), (Equals, "=")]);
+        assert_clean(
+            "=\n>",
+            &[(Equals, "="), (Newline, "\n"), (GreaterThan, ">")],
+        );
+    }
+
+    #[test]
+    fn value_operator_ends_an_unexpected_character_run() {
+        for (src, op, kind) in [
+            ("@-", "-", Minus),
+            ("@!", "!", Not),
+            ("@<", "<", LessThan),
+            ("@>", ">", GreaterThan),
+            ("@==", "==", EqualTo),
+        ] {
+            assert_tokens(src, &[(Error, "@"), (kind, op)]);
+            assert_eq!(diag_kinds(src), vec![DiagnosticKind::UnexpectedCharacter]);
+        }
     }
 
     #[test]
@@ -852,7 +964,7 @@ mod operators {
     #[test]
     fn unsupported_ascii_characters_are_rejected() {
         for src in [
-            "-", ";", "@", "#", "<", ">", "!", "?", "[", "]", "%", "'", "`", "\\", "$", "~", "^",
+            ";", "@", "#", "?", "[", "]", "%", "'", "`", "\\", "$", "~", "^",
         ] {
             assert_tokens(src, &[(Error, src)]);
             assert_eq!(
@@ -872,8 +984,8 @@ mod operators {
     #[test]
     fn lexing_recovers_after_unexpected_characters() {
         assert_tokens(
-            "x - y",
-            &[(Identifier, "x"), (Error, "-"), (Identifier, "y")],
+            "x ; y",
+            &[(Identifier, "x"), (Error, ";"), (Identifier, "y")],
         );
         assert_tokens("a@b", &[(Identifier, "a"), (Error, "@"), (Identifier, "b")]);
     }

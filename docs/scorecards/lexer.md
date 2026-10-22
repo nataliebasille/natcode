@@ -303,17 +303,20 @@
 
 ### LEX-OP-02 — Multi-character operators by maximal munch
 
-- **Status:** Approved
+- **Status:** Implemented
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
 - **Done when:** `=>`, `<=`, `>=`, `==`, `!=`, `&&`, and `||` each lex as one token by maximal munch; whitespace-separated characters do not combine into an operator.
-- **Notes:** The current lexer implementation predates the approved comparison operators and still tokenizes `==` as two `=` tokens. Its previous evidence no longer establishes conformance and must be updated with the lexer implementation.
+- **Evidence:** `tests/lexer/main.rs::operators::multi_character_operators_are_single_tokens`, `tests/lexer/main.rs::operators::maximal_munch_takes_the_longest_operator_first`, `tests/lexer/main.rs::operators::separated_characters_do_not_form_an_operator`
+- **Previous evidence:** `tests/lexer/main.rs::operators::fat_arrow_uses_maximal_munch`, `tests/lexer/main.rs::operators::separated_equals_and_greater_than_is_not_an_arrow`
+- **Notes:** Maximal munch applies left to right, so `===` is `==` `=`, `<=>` is `<=` `>`, `&&&` is `&&` `&`, and `|||` is `||` `|`. Characters separated by whitespace, a line break, or a block comment never combine. The previous tests pinned the superseded rule that `==` is two `=` tokens.
 
 ### LEX-OP-03 — Value-expression operators
 
-- **Status:** Approved
+- **Status:** Implemented
 - **Spec:** [syntax-and-types.md — Value expression grammar and precedence](../spec/syntax-and-types.md#value-expression-grammar-and-precedence)
 - **Done when:** `-`, `!`, `<`, `<=`, `>`, `>=`, `==`, `!=`, `&&`, and `||` are recognized as operator tokens in addition to the existing core set. Prefix `!` and `-` are unary value operators; `&&` and `||` are Boolean value operators. Their parser precedence is PAR-EXPR-01.
-- **Notes:** A future pipe operator remains open under PAR-PIPE-01 and is not approved here. Leading `-` remains an operator rather than part of a number literal (LEX-NUM-03).
+- **Evidence:** `tests/lexer/main.rs::operators::value_expression_operators`, `tests/lexer/main.rs::operators::value_expression_operators_without_whitespace`, `tests/lexer/main.rs::operators::value_operator_ends_an_unexpected_character_run`, `tests/lexer/main.rs::numbers::minus_is_not_part_of_a_number`
+- **Notes:** A future pipe operator remains open under PAR-PIPE-01 and is not approved here. Leading `-` remains an operator rather than part of a number literal (LEX-NUM-03). The lexer only produces the tokens; unary/binary roles and precedence belong to the parser (PAR-EXPR-01).
 
 ### LEX-OP-04 — Slash token for type set difference
 
@@ -381,4 +384,4 @@
 - **Done when:** A run of characters that cannot start a token (emoji, symbols such as `∑` or `€`, ASCII characters outside the approved operator set) is one error token with one diagnostic; the newly approved `/` token is not rejected.
 - **Evidence:** `tests/lexer/main.rs::operators::unsupported_ascii_characters_are_rejected`, `tests/lexer/main.rs::operators::adjacent_unexpected_characters_form_one_error`, `tests/lexer/main.rs::operators::slash_ends_an_unexpected_character_run`, `tests/lexer/main.rs::identifiers::non_letter_symbols_are_rejected`, `tests/lexer/main.rs::identifiers::rejected_symbol_after_identifier_recovers`
 - **Previous evidence:** `tests/lexer/main.rs::operators::unsupported_ascii_characters_are_rejected`, `tests/lexer/main.rs::operators::adjacent_unexpected_characters_form_one_error`, `tests/lexer/main.rs::identifiers::non_letter_symbols_are_rejected`, `tests/lexer/main.rs::identifiers::rejected_symbol_after_identifier_recovers`
-- **Notes:** The unsupported-character test no longer includes `/`, which is a token under LEX-OP-04.
+- **Notes:** The unsupported-character test no longer includes `/`, which is a token under LEX-OP-04, or `-`, `!`, `<`, and `>`, which are tokens under LEX-OP-03. `tests/lexer/main.rs::operators::lexing_recovers_after_unexpected_characters` now uses `;` instead of `-`, and `tests/lexer/main.rs::numbers::minus_is_not_part_of_a_number` now expects a `-` token rather than an error.
