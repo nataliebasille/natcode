@@ -487,3 +487,123 @@
 - **Spec:** [modules.md — First-class namespaces and persistent updates](../spec/modules.md#first-class-namespaces-and-persistent-updates)
 - **Questions:**
   1. How are types represented at runtime when they are members of a first-class namespace value?
+
+## Built-in value types
+
+Each built-in type is an independent scorecard item. Each type also has a distinct refinement item, even when it currently inherits only the general `where` semantics of TYP-REF-01 through TYP-REF-11. A refinement item does not imply new syntax, conversion behavior, or a dedicated constructor.
+
+### TYP-BLT-01 — `Any` built-in
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Union and intersection types](../spec/syntax-and-types.md#union-and-intersection-types)
+- **Done when:** `Any` denotes the universal type as established by TYP-UNI-07.
+- **Notes:** Existing type-lattice rule; tracked independently here as a built-in.
+
+### TYP-BLT-02 — `Empty` built-in
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Union and intersection types](../spec/syntax-and-types.md#union-and-intersection-types)
+- **Done when:** `Empty` denotes a type with no inhabitants as established by TYP-UNI-07.
+- **Notes:** Function termination, successful return guarantees, and whether functions may declare `Empty` returns are outside built-in type scope and remain open in the function semantics work.
+
+### TYP-BLT-03 — `Unit` built-in
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Union and intersection types](../spec/syntax-and-types.md#union-and-intersection-types)
+- **Done when:** `Unit` has exactly one value, `()`, distinct from the uninhabited `Empty` type; `(): Unit` is valid.
+- **Notes:** This does not decide implicit function returns, effects, termination, or function return guarantees.
+
+### TYP-BLT-04 — `Boolean` built-in
+
+- **Status:** Approved
+- **Spec:** [variables.md — Exact type inference](../spec/variables.md#exact-type-inference)
+- **Done when:** `Boolean` contains exactly `true` and `false`; both have their exact literal types, assignable to `Boolean`.
+- **Notes:** No separate Boolean wrapper type.
+
+### TYP-BLT-05 — `Number` built-in semantics
+
+- **Status:** Open question
+- **Spec:** [variables.md — Exact type inference](../spec/variables.md#exact-type-inference)
+- **Questions:**
+  1. Is `Number` a concrete representation or a general numeric supertype, and how does it relate to `Integer`?
+  2. What arithmetic representation, exactness, numeric literal classification, and rounding rules apply?
+  3. Does `Number` include non-finite values such as NaN or infinities?
+  4. Are precision/scale-aware numeric types expressible with the existing type system, or is additional capability needed?
+- **Notes:** The language owner approved having `Number` as a built-in. Only its remaining semantics are open. `Float`, `Decimal`, and parameterized numeric precision are not approved as built-ins.
+
+### TYP-BLT-06 — `Integer` built-in semantics
+
+- **Status:** Open question
+- **Spec:** [variables.md — Exact type inference](../spec/variables.md#exact-type-inference)
+- **Questions:**
+  1. Are integers arbitrary-precision or fixed-width?
+  2. How does `Integer` relate to `Number` (subtyping, numeric family, or distinct representation)?
+  3. What are integer division, overflow, and coercion rules?
+- **Notes:** The language owner approved having `Integer` as a built-in; only its remaining semantics are open.
+
+### TYP-BLT-07 — `String` built-in
+
+- **Status:** Approved
+- **Spec:** [variables.md — Exact type inference](../spec/variables.md#exact-type-inference)
+- **Done when:** `String` is a built-in Unicode text type; exact string literals retain literal types. Default character-oriented string operations use Unicode grapheme clusters rather than Unicode code-point counts.
+- **Notes:** Precise Unicode versioning, indexing API and slicing API remain string-library/operation design details, not prerequisites to the built-in decision.
+
+### TYP-BLT-08 — No built-in `Char`
+
+- **Status:** Approved
+- **Spec:** [variables.md — Exact type inference](../spec/variables.md#exact-type-inference)
+- **Done when:** The built-in type inventory does not contain a `Char` type; a single user-perceived character is representable as a `String`.
+- **Notes:** Explicit rejection of `Char` as a built-in, not a deferred decision. A user-defined refinement alias does not make it a built-in.
+
+### Built-in refinements: individual items
+
+### TYP-BRF-01 — `Any where ...`
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Refinement types with `where`](../spec/syntax-and-types.md#refinement-types-with-where)
+- **Done when:** A refinement over `Any` follows the ordinary transparent-subset and proof rules, without introducing a new nominal identity.
+
+### TYP-BRF-02 — `Empty where ...`
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Where patterns and filtering](../spec/syntax-and-types.md#where-patterns-and-filtering)
+- **Done when:** A refinement over `Empty` remains `Empty`, following TYP-REF-07.
+
+### TYP-BRF-03 — `Unit where ...`
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Refinement types with `where`](../spec/syntax-and-types.md#refinement-types-with-where)
+- **Done when:** A `Unit` refinement obeys the general `where` rules, selecting `()` or yielding `Empty` depending on its established predicate; no distinct refinement syntax is introduced.
+
+### TYP-BRF-04 — `Boolean where ...`
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Refinement types with `where`](../spec/syntax-and-types.md#refinement-types-with-where)
+- **Done when:** A `Boolean` refinement follows the general `where` rules and can select either, both, or neither Boolean value without introducing nominal identity.
+
+### TYP-BRF-05 — `Number where ...`
+
+- **Status:** Open question
+- **Spec:** [syntax-and-types.md — Refinement types with `where`](../spec/syntax-and-types.md#refinement-types-with-where)
+- **Questions:**
+  1. Once the `Number` representation and arithmetic semantics are chosen, which numeric predicates have guaranteed decidable/provable membership?
+  2. How do precision/scale constraints interact with `Number where ...`, and what cannot be represented by refinements alone?
+- **Notes:** General `where` semantics are already approved by TYP-REF-01 through TYP-REF-11; this item tracks only numeric-specific semantics.
+
+### TYP-BRF-06 — `Integer where ...`
+
+- **Status:** Open question
+- **Spec:** [syntax-and-types.md — Refinement types with `where`](../spec/syntax-and-types.md#refinement-types-with-where)
+- **Questions:**
+  1. Given the chosen integer representation, which integer-specific predicates and ranges have guaranteed compile-time proof?
+  2. How are integer-only restrictions interpreted relative to `Number` and its refinements?
+- **Notes:** General `where` behavior is not reopened. This is independent of TYP-BRF-05.
+
+### TYP-BRF-07 — `String where ...`
+
+- **Status:** Open question
+- **Spec:** [syntax-and-types.md — Refinement types with `where`](../spec/syntax-and-types.md#refinement-types-with-where)
+- **Questions:**
+  1. Which string predicates, including grapheme-cluster length, have guaranteed compile-time support?
+  2. How are Unicode normalization and Unicode-version-dependent predicates treated in string refinements?
+- **Notes:** The `String` built-in and grapheme-based default operations are approved independently in TYP-BLT-07. String refinement capability was previously left for future design.
