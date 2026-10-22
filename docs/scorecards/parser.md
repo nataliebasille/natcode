@@ -147,12 +147,10 @@
 
 ### PAR-EXPR-01 — Expression grammar and precedence
 
-- **Status:** Open question
-- **Spec:** [variables.md — Declaration grammar (schematic)](../spec/variables.md#declaration-grammar-schematic)
-- **Questions:**
-  1. What are the precedence and associativity of `+`, `*`, `|`, `&`, `.`, calls, and `=>`?
-  2. What is the function call syntax (`f(x)`, `f x`, both)?
-- **Notes:** Approved examples rely on `x + 5`, `PI * 5 * 5`, `f()`, and `Math.PI` without a fixed grammar.
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Value expression grammar and precedence](../spec/syntax-and-types.md#value-expression-grammar-and-precedence)
+- **Done when:** Ordinary value expressions parse with this precedence from highest to lowest: postfix member access/call (`.`, `()`), prefix unary (`!`, `-`), multiplication (`*`), addition (`+`), comparisons (`<`, `<=`, `>`, `>=`, `==`, `!=`), `&&`, `||`, then right-associative `=>`. Postfix operations chain left-to-right; `*`, `+`, `&&`, and `||` are left-associative; comparisons are non-associative. Calls use parentheses only: `f(x)` and `f()` are valid, while whitespace application `f x` is invalid.
+- **Notes:** `&&` and `||` short-circuit. Type-expression `|` and `&` are not value operators and remain PAR-TYPE-01. Pipe syntax and precedence remain PAR-PIPE-01. The dedicated `as?` validation form keeps its own PAR-VAL-01 grammar rather than becoming a general binary value operator.
 
 ### PAR-EXPR-02 — Expression placeholders and partial application
 
