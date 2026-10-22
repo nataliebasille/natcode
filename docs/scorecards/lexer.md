@@ -303,21 +303,19 @@
 - **Done when:** `=` `=>` `:` `|` `&` `{` `}` `(` `)` `,` `.` `*` `+` each lex as their own token, with or without surrounding spaces.
 - **Evidence:** `tests/lexer/main.rs::operators::every_approved_operator_and_punctuation`, `tests/lexer/main.rs::operators::operators_without_whitespace`
 
-### LEX-OP-02 — Fat arrow by maximal munch
+### LEX-OP-02 — Multi-character operators by maximal munch
 
-- **Status:** Implemented
+- **Status:** Approved
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
-- **Done when:** `=>` is one token, `==` is two `=` tokens, and `= >` is not an arrow.
-- **Evidence:** `tests/lexer/main.rs::operators::fat_arrow_uses_maximal_munch`, `tests/lexer/main.rs::operators::separated_equals_and_greater_than_is_not_an_arrow`
+- **Done when:** `=>`, `<=`, `>=`, `==`, `!=`, `&&`, and `||` each lex as one token by maximal munch; whitespace-separated characters do not combine into an operator.
+- **Notes:** The current lexer implementation predates the approved comparison operators and still tokenizes `==` as two `=` tokens. Its previous evidence no longer establishes conformance and must be updated with the lexer implementation.
 
-### LEX-OP-03 — Additional operators
+### LEX-OP-03 — Value-expression operators
 
-- **Status:** Open question
-- **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
-- **Questions:**
-  1. Which further operators exist (`-`, comparisons, logical operators, a pipe operator)?
-  2. Is negation a unary operator or part of number literals?
-- **Notes:** Currently any other ASCII character is an error (LEX-ERR-02).
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Value expression grammar and precedence](../spec/syntax-and-types.md#value-expression-grammar-and-precedence)
+- **Done when:** `-`, `!`, `<`, `<=`, `>`, `>=`, `==`, `!=`, `&&`, and `||` are recognized as operator tokens in addition to the existing core set. Prefix `!` and `-` are unary value operators; `&&` and `||` are Boolean value operators. Their parser precedence is PAR-EXPR-01.
+- **Notes:** A future pipe operator remains open under PAR-PIPE-01 and is not approved here. Leading `-` remains an operator rather than part of a number literal (LEX-NUM-03).
 
 ### LEX-OP-04 — Slash token for type set difference
 
