@@ -211,14 +211,12 @@
 - **Spec:** [syntax-and-types.md — When expressions](../spec/syntax-and-types.md#when-expressions)
 - **Done when:** `=>` separates a `when` branch pattern or condition from its result and is shared with predicate-bearing `where` branches.
 
-### PAR-OBJ-01 — Remaining object literal grammar
+### PAR-OBJ-01 — Object literal grammar
 
-- **Status:** Open question
-- **Spec:** [modules.md — Exported kind: object library or function executable](../spec/modules.md#exported-kind-object-library-or-function-executable)
-- **Questions:**
-  1. What is the complete object literal grammar beyond the approved `key: value` property form (including separators and shorthand)?
-  2. Are computed or dynamic keys written in literals?
-- **Notes:** Ordinary object properties use `:` rather than `=` (PAR-OBJ-02). The distinct export-alias syntax `export { publicName = localName }` remains unchanged.
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Code blocks and data structures](../spec/syntax-and-types.md#code-blocks-and-data-structures)
+- **Done when:** Object literals support `{}`; comma-separated properties with an optional trailing comma; explicit `key: expression` properties; identifier shorthand such as `{ name }`; static identifier, string-literal, and numeric-literal keys; and computed `[expression]: expression` keys. Commas are required between entries even across line breaks. Shorthand is identifier-only. Repeating the same written static key in one literal is a compile error.
+- **Notes:** Ordinary object properties use `:` rather than `=` (PAR-OBJ-02). Dynamic-key type representation and collision-sensitive inference are TYP-OBJ-01. Object spread is PAR-OBJ-03. The distinct export-alias syntax `export { publicName = localName }` remains unchanged.
 
 ### PAR-OBJ-02 — Object property colons and arrow-body disambiguation
 
@@ -226,6 +224,15 @@
 - **Spec:** [syntax-and-types.md — Code blocks and data structures](../spec/syntax-and-types.md#code-blocks-and-data-structures)
 - **Done when:** Object literal properties use `name: expression`, not `name = expression`. An unparenthesized `{}` immediately following `=>` is an executable block; to return an anonymous object directly, use `=> ({ name: expression })`. Object literals in ordinary expression positions, such as `user = { name: "Ada" }`, do not require parentheses.
 - **Notes:** Approved 2026-10-21. Does not change the separate named-import/export alias grammar (PAR-IMP-07, PAR-EXP-02).
+
+### PAR-OBJ-03 — Object spread syntax
+
+- **Status:** Open question
+- **Spec:** [syntax-and-types.md — Code blocks and data structures](../spec/syntax-and-types.md#code-blocks-and-data-structures)
+- **Questions:**
+  1. Does Natcode support object spread syntax such as `{ ...user, name: "Grace" }`?
+  2. If supported, where may spread entries appear, may multiple spreads occur, and do they use the same comma-separation rules as ordinary object entries?
+- **Notes:** Object-spread typing and overwrite semantics should be tracked separately from parser syntax if spread is approved.
 
 ### PAR-TYPE-01 — Type expression grammar
 

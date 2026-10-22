@@ -381,6 +381,19 @@
 - **Spec:** [syntax-and-types.md — When expressions](../spec/syntax-and-types.md#when-expressions)
 - **Done when:** Subject-based and subjectless `when` are exhaustive: remaining possibilities must be provably `Empty` or a final `_` branch must cover them. `_` represents the remaining `Any` case, occurs at most once and only as the final branch, and is a compile error if redundant. Every provably unreachable branch is a compile error (not a warning). Constructors eliminated by a restricted subject type need no branch, and arbitrary predicates alone do not prove exhaustiveness.
 
+## Object types
+
+### TYP-OBJ-01 — Dynamic object key typing
+
+- **Status:** Open question
+- **Spec:** [syntax-and-types.md — Code blocks and data structures](../spec/syntax-and-types.md#code-blocks-and-data-structures)
+- **Questions:**
+  1. How closely are object types related to `Map`, if at all?
+  2. How should the type system represent an object literal containing a computed key whose runtime value is not statically known?
+  3. When a computed key may collide with a statically known property, how is the final property type inferred while preserving source-order overwrite behavior and precise access to known properties?
+  4. When a computed key is known exactly, or is provably disjoint from a static property, how is that knowledge reflected in the resulting object type?
+- **Notes:** Computed-key syntax itself is approved by PAR-OBJ-01. The representation is intentionally unresolved. For example, with `key: String`, `{ name: "Ada", [key]: 1234 }` must remain type-safe even though `key` may be `"name"`; a future design may relate the dynamic portion to `Map`, use intersections, or choose another representation without committing to any of those here.
+
 ## Module export kinds and shapes
 
 ### TYP-EXP-01 — Export kind classification
