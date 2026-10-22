@@ -22,11 +22,11 @@ Source text is UTF-8. Positions are reported as byte-offset spans plus 1-based l
 | Wildcard | A standalone `_` is its own token, never an identifier. `_x`, `__`, and `x_` are identifiers. |
 | Numbers | Decimal integers (`42`) and decimal fractions (`3.14159`), using ASCII digits only. |
 | Strings | Double-quoted, single-line: `"Alice"`, `"./math"`. Any character except a line break is allowed, including non-ASCII. |
-| Operators and punctuation | `=` `=>` `:` `\|` `&` `/` `as?` `{` `}` `(` `)` `,` `.` `*` `+` |
+| Operators and punctuation | `=` `=>` `:` `\|` `&` `/` `as?` `{` `}` `(` `)` `,` `.` `*` `+` `-` `!` `<` `<=` `>` `>=` `==` `!=` `&&` `||` |
 | Comments | `// …` to end of line; `/* … */` block comments, which nest. Comments produce no tokens. Whether line breaks inside a block comment produce newline tokens is LEX-COM-04. |
 | Line breaks | LF or CRLF; each is one newline token. Spaces are insignificant between tokens. |
 
-The reserved words are recognized as keywords regardless of position; they cannot name ordinary bindings. `unique` is the hard-reserved modifier in nominal declarations written `unique type`. `alias` is an ordinary identifier, not a declaration keyword. Keyword spellings are permitted as object property names, with details of the object grammar still to be determined (PAR-OBJ-01). `match`, `if`, `else`, `elif`, and `case` are not reserved words or language control-flow constructs. The unified matching and conditional keyword is `when` (LEX-KW-07). `return` is not a control-flow construct or keyword. `try`, `catch`, and `throw` are not reserved or built-in exception constructs (LEX-KW-11). `null` is not a native literal or reserved word; absence is represented using constructors such as `None`. `where` is the refinement-type keyword. `as?` is one indivisible runtime-validation operator token (LEX-OP-05); `as` by itself remains an ordinary identifier, and whitespace-separated `as ?` is not the operator. Further words, including `then` and generator/effect vocabulary, remain open questions (LEX-KW-03).
+The reserved words are recognized as keywords regardless of position; they cannot name ordinary bindings. `unique` is the hard-reserved modifier in nominal declarations written `unique type`. `alias` is an ordinary identifier, not a declaration keyword. Keyword spellings are permitted as object property names, with details of the object grammar still to be determined (PAR-OBJ-01). `match`, `if`, `else`, `elif`, and `case` are not reserved words or language control-flow constructs. The unified matching and conditional keyword is `when` (LEX-KW-07). `return` is not a control-flow construct or keyword. `try`, `catch`, and `throw` are not reserved or built-in exception constructs (LEX-KW-11). `null` is not a native literal or reserved word; absence is represented using constructors such as `None`. `where` is the refinement-type keyword. `as?` is one indivisible runtime-validation operator token (LEX-OP-05); `as` by itself remains an ordinary identifier, and whitespace-separated `as ?` is not the operator. Value-expression operators `-`, `!`, `<`, `<=`, `>`, `>=`, `==`, `!=`, `&&`, and `||` are approved by LEX-OP-03; multi-character operators use maximal munch (LEX-OP-02). A future pipe operator remains open under PAR-PIPE-01. Further words, including `then` and generator/effect vocabulary, remain open questions (LEX-KW-03).
 
 ## Layout and indentation
 
@@ -118,6 +118,27 @@ Result.Success(value) => {
 ```
 
 When syntax unambiguously determines constructor or branch membership, the formatter corrects alignment. If multiple interpretations remain and the compiler cannot safely determine ownership, it reports a compilation error with actionable diagnostics; it does not apply a speculative fix. Full proof of indentation safety and remaining error-recovery details are tracked separately (PAR-LAYOUT-01, LEX-IND-02).
+
+## Value expression grammar and precedence
+
+Natcode uses parenthesized function calls only: `f(x)`, `f()`, and chained forms such as `foo.bar(x).baz()` are valid. Whitespace application such as `f x` is invalid.
+
+Ordinary value-expression operators bind from highest to lowest as follows:
+
+| Precedence | Form | Associativity |
+| --- | --- | --- |
+| 1 | member access `.`, call `()` | postfix, chained left-to-right |
+| 2 | unary `!`, unary `-` | prefix |
+| 3 | `*` | left |
+| 4 | `+` | left |
+| 5 | `<`, `<=`, `>`, `>=`, `==`, `!=` | non-associative |
+| 6 | `&&` | left, short-circuiting |
+| 7 | `||` | left, short-circuiting |
+| 8 | `=>` | right |
+
+Thus `a + b * c` means `a + (b * c)`, `!ready && enabled` means `(!ready) && enabled`, and `x => y => x + y` means `x => (y => x + y)`. Comparison operators do not chain: `a < b < c` is invalid; write `a < b && b < c`.
+
+Member access and calls form one postfix layer, so `foo.bar(x).baz()` groups as `(((foo.bar)(x)).baz)()`. Type-expression `|` and `&` are separate union/intersection operators and are not ordinary value operators. Pipe syntax and precedence remain open under PAR-PIPE-01. The dedicated runtime-validation form `as?` keeps the grammar defined by PAR-VAL-01 rather than becoming a general binary value operator.
 
 ## When expressions
 
