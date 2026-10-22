@@ -287,12 +287,10 @@
 
 ### LEX-COM-04 — Line breaks inside block comments
 
-- **Status:** Open question
+- **Status:** Approved
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
-- **Questions:**
-  1. Do line breaks inside a multi-line block comment produce newline tokens, or does the comment join the two physical lines into one logical line?
-  2. How does this interact with indentation (LEX-IND-01) and the broader comment design?
-- **Notes:** Provisionally no newline tokens are produced (`tests/lexer/main.rs::comments::multiline_block_comment_emits_no_newlines`). Regardless of token representation, a comment-only physical line does not change layout ownership (LEX-IND-01).
+- **Done when:** Block comments preserve the physical line boundaries they contain for layout analysis. Removing comment text must never join physically separate lines into one logical line. Blank or comment-only physical lines are layout-neutral and do not establish or change indentation ownership; code following a comment is interpreted using its own physical line and indentation. The front end may represent retained boundaries as newline tokens or source-position/layout metadata.
+- **Notes:** Approved 2026-10-22. The current lexer emits no newline tokens for multi-line block comments (`tests/lexer/main.rs::comments::multiline_block_comment_emits_no_newlines`); this is acceptable only if the parser/layout analysis retains the physical boundaries by other means. Implementation conformance and layout integration remain to be established under LEX-IND-01/PAR-LAYOUT-01.
 
 ## Operators and punctuation
 
