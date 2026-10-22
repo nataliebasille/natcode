@@ -86,14 +86,19 @@ mod keywords {
     #[test]
     fn declaration_and_when_keywords_are_reserved() {
         assert_clean(
-            "type fn when",
-            &[(Type, "type"), (Fn, "fn"), (When, "when")],
+            "type unique fn when",
+            &[(Type, "type"), (Unique, "unique"), (Fn, "fn"), (When, "when")],
         );
     }
 
     #[test]
-    fn alias_and_where_keywords_are_reserved() {
-        assert_clean("alias where", &[(Alias, "alias"), (Where, "where")]);
+    fn unique_and_where_keywords_are_reserved() {
+        assert_clean("unique where", &[(Unique, "unique"), (Where, "where")]);
+    }
+
+    #[test]
+    fn alias_is_an_identifier() {
+        assert_clean("alias = 1", &[(Identifier, "alias"), (Equals, "="), (Number, "1")]);
     }
 
     #[test]
@@ -112,7 +117,7 @@ mod keywords {
     #[test]
     fn keywords_are_case_sensitive() {
         assert_clean(
-            "From IMPORT Export True FALSE Type FN When Alias WHERE",
+            "From IMPORT Export True FALSE Type FN When Unique WHERE",
             &[
                 (Identifier, "From"),
                 (Identifier, "IMPORT"),
@@ -122,7 +127,7 @@ mod keywords {
                 (Identifier, "Type"),
                 (Identifier, "FN"),
                 (Identifier, "When"),
-                (Identifier, "Alias"),
+                (Identifier, "Unique"),
                 (Identifier, "WHERE"),
             ],
         );
@@ -131,7 +136,7 @@ mod keywords {
     #[test]
     fn words_containing_keywords_are_identifiers() {
         assert_clean(
-            "fromage imports exported trueish false_ _from types typeof fnord _fn fn2 whenever somewhen when_ aliases _alias nowhere wherever where2",
+            "fromage imports exported trueish false_ _from types typeof fnord _fn fn2 whenever somewhen when_ uniqueness _unique aliases _alias nowhere wherever where2",
             &[
                 (Identifier, "fromage"),
                 (Identifier, "imports"),
@@ -147,6 +152,8 @@ mod keywords {
                 (Identifier, "whenever"),
                 (Identifier, "somewhen"),
                 (Identifier, "when_"),
+                (Identifier, "uniqueness"),
+                (Identifier, "_unique"),
                 (Identifier, "aliases"),
                 (Identifier, "_alias"),
                 (Identifier, "nowhere"),
@@ -178,11 +185,11 @@ mod keywords {
         );
         assert_clean("when = fn", &[(When, "when"), (Equals, "="), (Fn, "fn")]);
         assert_clean(
-            "x.alias.where",
+            "x.unique.where",
             &[
                 (Identifier, "x"),
                 (Dot, "."),
-                (Alias, "alias"),
+                (Unique, "unique"),
                 (Dot, "."),
                 (Where, "where"),
             ],
@@ -802,7 +809,8 @@ mod operators {
         ] {
             assert_tokens(src, &[(Identifier, word), (Error, "?")]);
         }
-        assert_tokens("alias?", &[(Alias, "alias"), (Error, "?")]);
+        assert_tokens("unique?", &[(Unique, "unique"), (Error, "?")]);
+        assert_tokens("alias?", &[(Identifier, "alias"), (Error, "?")]);
     }
 
     #[test]

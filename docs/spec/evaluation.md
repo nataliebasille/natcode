@@ -29,7 +29,7 @@ Natcode carries facts established by control flow into type checking (TYP-EVAL-0
 For example, with:
 
 ```natcode
-alias Positive = number where
+type Positive = number where
     x => x > 0
 ```
 

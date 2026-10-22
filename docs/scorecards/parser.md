@@ -122,28 +122,35 @@
 
 ## Expressions, blocks, and other grammar
 
-### PAR-BLK-01 — Braces are not statement blocks
+### PAR-BLK-01 — Braces delimit executable blocks
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Code blocks and data structures](../spec/syntax-and-types.md#code-blocks-and-data-structures)
-- **Done when:** Nested scopes are delimited by indentation, and `{ … }` is only ever parsed as a data construct.
+- **Done when:** Named function bodies and multi-expression arrow/`when` branch bodies use `{ … }` as explicit executable blocks; the final expression supplies the block value without `return`. A single-expression arrow or branch body may omit braces. A block written with braces remains a block even when it contains only one expression.
+- **Notes:** Replaces the earlier approved rule that `{}` could only denote data. Indentation does not establish arbitrary executable scopes. Immediately after `=>`, `{ … }` is a block; an anonymous object value uses `=> ({ key: value })` (PAR-OBJ-02).
 
-### PAR-BLK-02 — Statement and block syntax
+### PAR-BLK-02 — Remaining statement and block grammar
 
 - **Status:** Open question
 - **Spec:** [syntax-and-types.md — Code blocks and data structures](../spec/syntax-and-types.md#code-blocks-and-data-structures)
 - **Questions:**
-  1. Which constructs introduce an indented block?
-  2. What may a block contain, and what is its value?
+  1. What is the full grammar for executable block contents, statement separation, and expression continuation?
+  2. Which additional constructs, if any, allow executable blocks, beyond the approved function and arrow/branch forms?
+- **Notes:** The brace boundary and final-expression value are approved (PAR-BLK-01, PAR-FN-03); no semicolon or general continuation grammar is inferred from these decisions. Explicit backslash continuation is rejected (LEX-IND-01).
+
+### PAR-LAYOUT-01 — Recognize recoverable declarative layout
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Code blocks and data structures](../spec/syntax-and-types.md#code-blocks-and-data-structures)
+- **Done when:** Nominal constructor lists and `when`/`where` branch lists are parsed using syntactic structure, type/pattern constraints when applicable, and layout without requiring a fixed number of leading spaces. Inconsistent indentation is normalized by the formatter when ownership is unique. If multiple plausible interpretations remain and cannot be safely resolved, compilation reports the ambiguity and explains the invalid interpretations rather than selecting one or automatically modifying source.
+- **Notes:** Approved 2026-10-21. Full grammar and proof of the indentation-safety property remain implementation work; does not claim every possible layout issue is already characterized (LEX-IND-02).
 
 ### PAR-EXPR-01 — Expression grammar and precedence
 
-- **Status:** Open question
-- **Spec:** [variables.md — Declaration grammar (schematic)](../spec/variables.md#declaration-grammar-schematic)
-- **Questions:**
-  1. What are the precedence and associativity of `+`, `*`, `|`, `&`, `.`, calls, and `=>`?
-  2. What is the function call syntax (`f(x)`, `f x`, both)?
-- **Notes:** Approved examples rely on `x + 5`, `PI * 5 * 5`, `f()`, and `Math.PI` without a fixed grammar.
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Value expression grammar and precedence](../spec/syntax-and-types.md#value-expression-grammar-and-precedence)
+- **Done when:** Ordinary value expressions parse with this precedence from highest to lowest: postfix member access/call (`.`, `()`), prefix unary (`!`, `-`), multiplication (`*`), addition (`+`), comparisons (`<`, `<=`, `>`, `>=`, `==`, `!=`), `&&`, `||`, then right-associative `=>`. Postfix operations chain left-to-right; `*`, `+`, `&&`, and `||` are left-associative; comparisons are non-associative. Calls use parentheses only: `f(x)` and `f()` are valid, while whitespace application `f x` is invalid.
+- **Notes:** `&&` and `||` short-circuit. Type-expression `|` and `&` are not value operators and remain PAR-TYPE-01. Pipe syntax and precedence remain PAR-PIPE-01. The dedicated `as?` validation form keeps its own PAR-VAL-01 grammar rather than becoming a general binary value operator.
 
 ### PAR-EXPR-02 — Expression placeholders and partial application
 
@@ -182,9 +189,9 @@
 - **Status:** Open question
 - **Spec:** [syntax-and-types.md — When expressions](../spec/syntax-and-types.md#when-expressions)
 - **Questions:**
-  1. What is the exact grammar for indented branch bodies beyond the approved `=>` separator?
+  1. What additional details govern branch list boundaries, nested expression parsing, and syntax-error recovery?
   2. Are pattern guards supported and how are they spelled?
-- **Notes:** The branch separator itself is approved as `=>` in PAR-COND-04.
+- **Notes:** Approved body forms are `pattern => expression` and `pattern => { … }`; blocks contain multiple expressions/declarations and yield the final expression. A nested `when` remains one expression without requiring braces (PAR-BLK-01). `=> ({ key: value })` disambiguates an anonymous object (PAR-OBJ-02).
 
 ### PAR-COND-02 — Unified `when` form
 
@@ -204,13 +211,21 @@
 - **Spec:** [syntax-and-types.md — When expressions](../spec/syntax-and-types.md#when-expressions)
 - **Done when:** `=>` separates a `when` branch pattern or condition from its result and is shared with predicate-bearing `where` branches.
 
-### PAR-OBJ-01 — Object literal grammar
+### PAR-OBJ-01 — Remaining object literal grammar
 
 - **Status:** Open question
 - **Spec:** [modules.md — Exported kind: object library or function executable](../spec/modules.md#exported-kind-object-library-or-function-executable)
 - **Questions:**
-  1. What is the object literal grammar? `{ PI = 3.14159, square = x => x * x }` is illustrative.
+  1. What is the complete object literal grammar beyond the approved `key: value` property form (including separators and shorthand)?
   2. Are computed or dynamic keys written in literals?
+- **Notes:** Ordinary object properties use `:` rather than `=` (PAR-OBJ-02). The distinct export-alias syntax `export { publicName = localName }` remains unchanged.
+
+### PAR-OBJ-02 — Object property colons and arrow-body disambiguation
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Code blocks and data structures](../spec/syntax-and-types.md#code-blocks-and-data-structures)
+- **Done when:** Object literal properties use `name: expression`, not `name = expression`. An unparenthesized `{}` immediately following `=>` is an executable block; to return an anonymous object directly, use `=> ({ name: expression })`. Object literals in ordinary expression positions, such as `user = { name: "Ada" }`, do not require parentheses.
+- **Notes:** Approved 2026-10-21. Does not change the separate named-import/export alias grammar (PAR-IMP-07, PAR-EXP-02).
 
 ### PAR-TYPE-01 — Type expression grammar
 
@@ -227,29 +242,29 @@
 - **Questions:**
   1. What additional grammar is needed for generic parameters, named fields, recursive declarations, and advanced variants beyond the approved positional and indented constructor forms?
 
-### PAR-TYPE-03 — Dedicated named type keyword
+### PAR-TYPE-03 — Transparent and nominal type declarations
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Declaration keywords and expression results](../spec/syntax-and-types.md#declaration-keywords-and-expression-results)
-- **Done when:** Named type declarations use the `type` introducer; their remaining grammar is determined by PAR-TYPE-02.
+- **Done when:** `type Name = expression` declares a transparent name; `unique type Name(...)` or `unique type Name` followed by constructor branches introduces a nominal identity. Bare `type Name(...)` and `unique type Name = expression` are invalid. Remaining grammar is PAR-TYPE-02.
 
 ### PAR-TYPE-04 — Positional nominal constructors
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
-- **Done when:** `type UserId(number)` and `type Point(number, number)` parse as nominal type declarations with positional constructor payloads.
+- **Done when:** `unique type UserId(number)` and `unique type Point(number, number)` parse as nominal type declarations with positional constructor payloads.
 
 ### PAR-TYPE-05 — Alias declarations
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
-- **Done when:** `alias Identifier = UserId | ProductId` and `alias Some = Option.Some` parse as transparent aliases, distinguishable from nominal `type` declarations.
+- **Done when:** `type Identifier = UserId | ProductId` and `type Some = Option.Some` parse as transparent declarations, distinguishable from nominal `unique type` declarations. Constructor-symbol names remain callable and valid in constructor patterns.
 
 ### PAR-TYPE-06 — Indented constructors and qualified lookup
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
-- **Done when:** `type Option` with indented `Some(Any)` and `None` parses as a nominal algebraic declaration and `Option.Some` resolves as a qualified constructor name.
+- **Done when:** `unique type Option` with `Some(Any)` and `None` on subsequent constructor-list lines parses as a nominal algebraic declaration regardless of inconsistent leading-space alignment, and `Option.Some` resolves as a qualified constructor name. Structural ambiguity is diagnosed; formatting normalizes the constructor list.
 
 ### PAR-TYPE-07 — Constructor restrictions in type expressions
 
@@ -312,7 +327,7 @@
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Where placement and precedence](../spec/syntax-and-types.md#where-placement-and-precedence)
-- **Done when:** `where` is accepted wherever a type expression is accepted, binds tighter than `|`, `&`, and `/`, parentheses can select a larger left operand, and a direct chain such as `T where ... where ...` is rejected.
+- **Done when:** `where` is accepted wherever a type expression is accepted, binds tighter than `|`, `&`, and `/`, parentheses can select a larger left operand, and a direct chain such as `T where ... where ...` is rejected. Each postfix `where` must begin on the same physical line as the type expression or constructor it restricts.
 
 ### PAR-REF-02 — Refinement binding and destructuring forms
 
@@ -336,7 +351,7 @@
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Restrictions in nominal declarations](../spec/syntax-and-types.md#restrictions-in-nominal-declarations)
-- **Done when:** `where` can appear inside an individual constructor parameter type, after a positional or algebraic constructor declaration, and after an algebraic constructor list to restrict the nominal type as a whole.
+- **Done when:** `where` can appear inside an individual constructor parameter type or after a positional or algebraic constructor declaration to restrict that constructor; a `where` on a nominal declaration with multiple constructors as a whole is rejected. Alias-level `where` filtering of an existing algebraic type remains valid.
 
 ## Errors
 

@@ -9,7 +9,7 @@
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
-- **Done when:** `type UserId(number)` and `type ProductId(number)` introduce distinct identities; values of one are not interchangeable with the other merely because both wrap `number`.
+- **Done when:** `unique type UserId(number)` and `unique type ProductId(number)` introduce distinct identities; values of one are not interchangeable with the other merely because both wrap `number`.
 
 ### TYP-NOM-02 — Strict nominal payload boundary
 
@@ -21,7 +21,7 @@
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
-- **Done when:** `type Point(number, number)` allows `Point(10, 20)` and each parameter is typed independently.
+- **Done when:** `unique type Point(number, number)` allows `Point(10, 20)` and each parameter is typed independently.
 
 ### TYP-NOM-04 — Destructuring constructor patterns, no automatic value property
 
@@ -41,14 +41,14 @@
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
-- **Done when:** `type Sprint(Position, Color)` takes constructed `Position` and `Color` values as ordinary arguments; writing `Position(number, number)` or `Color(string)` where these do not restrict the declared type has the same parameter meaning.
+- **Done when:** `unique type Sprint(Position, Color)` takes constructed `Position` and `Color` values as ordinary arguments; writing `Position(number, number)` or `Color(string)` where these do not restrict the declared type has the same parameter meaning.
 - **Notes:** No special nominal-combination operator, multiple inheritance, interfaces, classes, or automatic nested-value projection is approved.
 
 ### TYP-NOM-07 — Specialized constructor aliases expose remaining parameters
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Specialized aliases and constructors](../spec/syntax-and-types.md#specialized-aliases-and-constructors)
-- **Done when:** `alias XAxis = Position(number, 0)` exposes one constructor parameter and `XAxis(10)` constructs `Position(10, 0)`; `Position(0, 0)` exposes zero parameters.
+- **Done when:** `type XAxis = Position(number, 0)` exposes one constructor parameter and `XAxis(10)` constructs `Position(10, 0)`; `Position(0, 0)` exposes zero parameters.
 
 ### TYP-NOM-08 — Optional parentheses for zero-parameter application
 
@@ -60,13 +60,13 @@
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
-- **Done when:** `alias Identifier = UserId | ProductId` names exactly the union without a new nominal identity. Only `type` creates nominal identities.
+- **Done when:** `type Identifier = UserId | ProductId` names exactly the union without a new nominal identity. Only `unique type` creates nominal identities.
 
 ### TYP-ALI-02 — Constructor symbol aliases
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
-- **Done when:** `alias Some = Option.Some` refers to the same constructor and can be used in value construction and matching without introducing a new nominal identity.
+- **Done when:** `type Some = Option.Some` refers to the same constructor and can be used in value construction and matching without introducing a new nominal identity.
 
 ## Refinement types
 
@@ -76,11 +76,11 @@
 - **Spec:** [syntax-and-types.md — Refinement types with `where`](../spec/syntax-and-types.md#refinement-types-with-where)
 - **Done when:** `T where pattern => predicate` denotes exactly the values of `T` selected by the Boolean predicate and creates no new nominal identity.
 
-### TYP-REF-02 — Parameter, constructor, and nominal-type restrictions
+### TYP-REF-02 — Parameter and constructor restrictions
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Restrictions in nominal declarations](../spec/syntax-and-types.md#restrictions-in-nominal-declarations)
-- **Done when:** A `where` may restrict one constructor parameter, a constructor as a whole, or a complete nominal/algebraic type; parameter-level restrictions see only that parameter, whole-constructor restrictions may relate parameters, and every applicable restriction must hold.
+- **Done when:** A `where` may restrict one constructor parameter or a single whole nominal constructor, including constructors of algebraic types; parameter-level restrictions see only that parameter, whole-constructor restrictions may relate parameters, and every applicable restriction must hold. A nominal declaration containing multiple constructors cannot receive a single declaration-wide `where`; alias-level filtering of an existing algebraic type remains available.
 
 ### TYP-REF-03 — Non-exhaustive filtering branches
 
@@ -358,7 +358,7 @@
 
 - **Status:** Approved
 - **Spec:** [evaluation.md — Function return inference: context-independent](../spec/evaluation.md#function-return-inference-context-independent)
-- **Done when:** Missing or disproven mandatory guarantees cause errors; known redundancy in valid code can warn without blocking compilation; optional analysis failure alone has no diagnostic.
+- **Done when:** Missing or disproven mandatory guarantees cause errors; known redundancy in otherwise valid code can warn, except provably unreachable `when` branches (including redundant `_`) which are compilation errors under TYP-PAT-01; optional analysis failure alone has no diagnostic.
 
 ### TYP-DIAG-02 — Plain-language actionable diagnostics
 
@@ -379,7 +379,7 @@
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — When expressions](../spec/syntax-and-types.md#when-expressions)
-- **Done when:** Subject-based and subjectless `when` require `_` unless remaining possibilities are provably `Empty`; constructors eliminated by a restricted subject type do not require branches; a provably redundant `_` warns but is valid, and arbitrary predicates alone do not prove exhaustiveness.
+- **Done when:** Subject-based and subjectless `when` are exhaustive: remaining possibilities must be provably `Empty` or a final `_` branch must cover them. `_` represents the remaining `Any` case, occurs at most once and only as the final branch, and is a compile error if redundant. Every provably unreachable branch is a compile error (not a warning). Constructors eliminated by a restricted subject type need no branch, and arbitrary predicates alone do not prove exhaustiveness.
 
 ## Module export kinds and shapes
 
@@ -451,7 +451,7 @@
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
-- **Done when:** `type Option` with indented `Some(Any)` and `None` introduces a nominal sum-type and constructors accessible as `Option.Some` and `Option.None`; bare unqualified constructors are not introduced automatically.
+- **Done when:** `unique type Option` with indented `Some(Any)` and `None` introduces a nominal sum-type and constructors accessible as `Option.Some` and `Option.None`; bare unqualified constructors are not introduced automatically.
 
 ### TYP-ADT-02 — Remaining algebraic type semantics
 

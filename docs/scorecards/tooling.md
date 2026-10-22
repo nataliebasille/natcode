@@ -39,6 +39,15 @@
 - **Questions:**
   1. What are the command names and options? `natcode run src/main.nat` is illustrative.
 
+## Built-in formatting
+
+### TOOL-FMT-01 — Canonical formatting included in Natcode
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Canonical formatting](../spec/syntax-and-types.md#canonical-formatting)
+- **Done when:** Natcode ships a built-in `natcode fmt` and a non-mutating `natcode fmt --check` mode, requiring no third-party linter or formatter. It produces canonical four-space indentation from valid, unambiguous parsed structure without changing semantics; input indentation widths may vary. It preserves explicitly written executable braces, expands one-line braced executable bodies into multiline blocks, and aligns `when`, `where`, and constructor lists. It never silently fixes ambiguous ownership or changes a program's meaning.
+- **Notes:** Approved 2026-10-21. Ordinary compilation does not rewrite source. CLI details beyond the specifically approved formatter commands remain TOOL-CLI-02; this item is not yet implemented.
+
 ## Build and architecture
 
 ### TOOL-BUILD-01 — Package layout and build system

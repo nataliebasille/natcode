@@ -48,7 +48,7 @@
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
-- **Done when:** `alias Some = Option.Some` binds the same constructor for construction and pattern matching without introducing another nominal identity.
+- **Done when:** `type Some = Option.Some` binds the same constructor for construction and pattern matching without introducing another nominal identity.
 
 ## Refinement resolution
 

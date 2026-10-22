@@ -44,7 +44,7 @@
   1. Which additional words, if any, should be reserved beyond the approved set?
   2. Should generator/effect words such as `yield`, `async`, or `await` become reserved? Their semantics remain open.
   3. Is `then` or any other branch-related word necessary once `when` handles conditionals?
-- **Notes:** The lexer currently recognizes `from`, `import`, `export`, `type`, `alias`, `fn`, `when`, `where`, `true`, and `false`. `match` is no longer reserved (LEX-KW-07). `if`, `else`, `elif`, `case`, `return`, and `null` are explicitly excluded by approved decisions. Other words, such as `then`, `let`, `val`, `var`, `yield`, `async`, and `await`, currently lex as identifiers (`tests/lexer/main.rs::keywords::undecided_words_are_not_reserved_for_now`).
+- **Notes:** The lexer currently recognizes `from`, `import`, `export`, `unique`, `type`, `fn`, `when`, `where`, `true`, and `false`. `match` is no longer reserved (LEX-KW-07). `if`, `else`, `elif`, `case`, `return`, and `null` are explicitly excluded by approved decisions. Other words, such as `then`, `let`, `val`, `var`, `yield`, `async`, and `await`, currently lex as identifiers (`tests/lexer/main.rs::keywords::undecided_words_are_not_reserved_for_now`).
 
 ### LEX-KW-04 — Hard-reserved keyword strategy
 
@@ -99,19 +99,27 @@
 - **Done when:** `return` is not treated as a reserved word or control-flow token; functions return their final expression (PAR-FN-03).
 - **Evidence:** `tests/lexer/main.rs::keywords::return_is_an_identifier`
 
-### LEX-KW-12 — Alias declaration keyword
+### LEX-KW-12 — Unique nominal modifier keyword
 
 - **Status:** Implemented
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
-- **Done when:** `alias` lexes as a case-sensitive, hard-reserved keyword, and longer identifier spellings containing it remain identifiers.
-- **Evidence:** `tests/lexer/main.rs::keywords::alias_and_where_keywords_are_reserved`, `tests/lexer/main.rs::keywords::keywords_are_case_sensitive`, `tests/lexer/main.rs::keywords::words_containing_keywords_are_identifiers`, `tests/lexer/main.rs::keywords::keywords_are_reserved_regardless_of_context`
+- **Done when:** `unique` lexes as a case-sensitive, hard-reserved keyword, and longer identifiers containing it remain identifiers. The approved nominal introducer is `unique type` (PAR-TYPE-03).
+- **Evidence:** `tests/lexer/main.rs::keywords::unique_and_where_keywords_are_reserved`, `tests/lexer/main.rs::keywords::keywords_are_case_sensitive`, `tests/lexer/main.rs::keywords::words_containing_keywords_are_identifiers`, `tests/lexer/main.rs::keywords::keywords_are_reserved_regardless_of_context`
+- **Previous evidence:** `tests/lexer/main.rs::keywords::alias_and_where_keywords_are_reserved`
+
+### LEX-KW-14 — `alias` is an ordinary identifier
+
+- **Status:** Implemented
+- **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
+- **Done when:** `alias` is not a reserved keyword and lexes as an identifier; it cannot introduce a type declaration.
+- **Evidence:** `tests/lexer/main.rs::keywords::alias_is_an_identifier`
 
 ### LEX-KW-13 — Refinement `where` keyword
 
 - **Status:** Implemented
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
 - **Done when:** `where` lexes as a case-sensitive, hard-reserved keyword, and longer identifier spellings containing it remain identifiers.
-- **Evidence:** `tests/lexer/main.rs::keywords::alias_and_where_keywords_are_reserved`, `tests/lexer/main.rs::keywords::keywords_are_case_sensitive`, `tests/lexer/main.rs::keywords::words_containing_keywords_are_identifiers`, `tests/lexer/main.rs::keywords::keywords_are_reserved_regardless_of_context`
+- **Evidence:** `tests/lexer/main.rs::keywords::unique_and_where_keywords_are_reserved`, `tests/lexer/main.rs::keywords::keywords_are_case_sensitive`, `tests/lexer/main.rs::keywords::words_containing_keywords_are_identifiers`, `tests/lexer/main.rs::keywords::keywords_are_reserved_regardless_of_context`
 - **Notes:** Required by the approved refinement-type syntax.
 
 ### LEX-KW-11 — No exception-handling keywords
@@ -284,7 +292,7 @@
 - **Questions:**
   1. Do line breaks inside a multi-line block comment produce newline tokens, or does the comment join the two physical lines into one logical line?
   2. How does this interact with indentation (LEX-IND-01) and the broader comment design?
-- **Notes:** Provisionally no newline tokens are produced (`tests/lexer/main.rs::comments::multiline_block_comment_emits_no_newlines`).
+- **Notes:** Provisionally no newline tokens are produced (`tests/lexer/main.rs::comments::multiline_block_comment_emits_no_newlines`). Regardless of token representation, a comment-only physical line does not change layout ownership (LEX-IND-01).
 
 ## Operators and punctuation
 
@@ -295,21 +303,19 @@
 - **Done when:** `=` `=>` `:` `|` `&` `{` `}` `(` `)` `,` `.` `*` `+` each lex as their own token, with or without surrounding spaces.
 - **Evidence:** `tests/lexer/main.rs::operators::every_approved_operator_and_punctuation`, `tests/lexer/main.rs::operators::operators_without_whitespace`
 
-### LEX-OP-02 — Fat arrow by maximal munch
+### LEX-OP-02 — Multi-character operators by maximal munch
 
-- **Status:** Implemented
+- **Status:** Approved
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
-- **Done when:** `=>` is one token, `==` is two `=` tokens, and `= >` is not an arrow.
-- **Evidence:** `tests/lexer/main.rs::operators::fat_arrow_uses_maximal_munch`, `tests/lexer/main.rs::operators::separated_equals_and_greater_than_is_not_an_arrow`
+- **Done when:** `=>`, `<=`, `>=`, `==`, `!=`, `&&`, and `||` each lex as one token by maximal munch; whitespace-separated characters do not combine into an operator.
+- **Notes:** The current lexer implementation predates the approved comparison operators and still tokenizes `==` as two `=` tokens. Its previous evidence no longer establishes conformance and must be updated with the lexer implementation.
 
-### LEX-OP-03 — Additional operators
+### LEX-OP-03 — Value-expression operators
 
-- **Status:** Open question
-- **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
-- **Questions:**
-  1. Which further operators exist (`-`, comparisons, logical operators, a pipe operator)?
-  2. Is negation a unary operator or part of number literals?
-- **Notes:** Currently any other ASCII character is an error (LEX-ERR-02).
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Value expression grammar and precedence](../spec/syntax-and-types.md#value-expression-grammar-and-precedence)
+- **Done when:** `-`, `!`, `<`, `<=`, `>`, `>=`, `==`, `!=`, `&&`, and `||` are recognized as operator tokens in addition to the existing core set. Prefix `!` and `-` are unary value operators; `&&` and `||` are Boolean value operators. Their parser precedence is PAR-EXPR-01.
+- **Notes:** A future pipe operator remains open under PAR-PIPE-01 and is not approved here. Leading `-` remains an operator rather than part of a number literal (LEX-NUM-03).
 
 ### LEX-OP-04 — Slash token for type set difference
 
@@ -346,16 +352,12 @@
   3. Are non-ASCII spaces (for example U+00A0) whitespace or errors?
 - **Notes:** All three are currently lexed as unexpected characters. Untested.
 
-### LEX-IND-01 — Indentation tokens
+### LEX-IND-01 — Context-sensitive layout and indentation
 
-- **Status:** Open question
-- **Spec:** [syntax-and-types.md — Code blocks and data structures](../spec/syntax-and-types.md#code-blocks-and-data-structures)
-- **Questions:**
-  1. How is the indentation unit defined (any consistent number of spaces, or a fixed width)?
-  2. Are blank and comment-only lines ignored for indentation?
-  3. Is indentation ignored inside `{}` and `()` (implicit line continuation)?
-  4. Is there an explicit line-continuation form?
-- **Notes:** Indentation-defined code blocks are part of the language; how they are tokenized is undecided. Depends on statement and block syntax (PAR-BLK-02).
+- **Status:** Approved
+- **Spec:** [lexical.md — Layout and indentation](../spec/lexical.md#layout-and-indentation)
+- **Done when:** The front end retains enough source positions, line breaks, and leading whitespace to recognize layout-sensitive `when`, `where`, and nominal constructor lists, including within `{}` and `()`, without requiring a fixed indentation width. Blank and comment-only lines do not alter branch ownership. Syntactically unambiguous structures are accepted regardless of indentation width or alignment, while unresolved layout ambiguity is a compile error rather than silently guessed. No explicit backslash line continuation is supported.
+- **Notes:** Approved 2026-10-21. Braces delimit executable scopes, while branch and constructor lists have their own layout-sensitive structure. Exact token representation and malformed-layout recovery are implementation concerns (LEX-IND-02, PAR-LAYOUT-01). Canonical formatting uses four spaces (TOOL-FMT-01). Whether newlines internal to block comments emit tokens remains LEX-COM-04; tab acceptance remains LEX-WS-02. This is a design approval, not an implementation claim.
 
 ### LEX-IND-02 — Malformed indentation errors
 
