@@ -40,7 +40,22 @@ getName = () => {
 }
 ```
 
-Exported-object forms such as `export { value }` and export aliases with `=` are separate grammar, unaffected by the object-literal property rule. Object separators, shorthands, and computed keys remain PAR-OBJ-01.
+Object literals may be empty. Non-empty entries are comma-separated even when written on separate lines, and a trailing comma is optional. Static keys may be identifiers, string literals, or numeric literals. Identifier shorthand is supported, so `{ name }` means `{ name: name }`. Computed keys use `[expression]: value`:
+
+```natcode
+key = getKey()
+
+user = {
+    name: "Ada",
+    "display-name": "Ada",
+    123: "numeric key",
+    [key]: 36,
+}
+```
+
+Repeating the same written static key in one object literal is a compile error. The type representation of dynamic computed keys, including possible collisions with statically known properties and the relationship between objects and `Map`, remains TYP-OBJ-01. Object spread syntax is tracked separately by PAR-OBJ-03.
+
+Exported-object forms such as `export { value }` and export aliases with `=` are separate grammar, unaffected by the object-literal property rule.
 
 ## Canonical formatting
 
