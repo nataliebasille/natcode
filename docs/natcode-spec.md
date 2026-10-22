@@ -148,7 +148,7 @@ Natcode uses one `when` keyword for both structural pattern matching and conditi
 - **Subjectless** `when` evaluates Boolean branch conditions in source order and selects the first true condition.
 - Both forms are expressions that produce the selected branch's value.
 
-The fat arrow `=>` is the approved separator between a branch pattern or condition and its result (PAR-COND-04). The complete pattern and branch-body grammar remains open (PAR-COND-01, PAR-PAT-01):
+The fat arrow `=>` is the approved separator between a branch pattern or condition and its result (PAR-COND-04). Each branch may produce a single expression without braces, including another `when`; branches with multiple declarations or expressions use `{}` and yield the final expression. Explicit braces around a single expression remain valid (PAR-BLK-01). The full pattern and guard grammar remains open (PAR-COND-01, PAR-PAT-01):
 
 ```natcode
 result = when option
@@ -270,7 +270,7 @@ A restricted alias remains assignable to the type it restricts. The reverse assi
 
 ### Where patterns and filtering
 
-`where` and subjectful `when` use the same pattern language (PAR-PAT-02). Literal patterns, constructor patterns, wildcards, and constructor destructuring therefore mean the same thing in both constructs. Unlike `when`, however, `where` is a filter and **does not require exhaustive branches** (TYP-REF-03).
+`where` and subjectful `when` use the same pattern language (PAR-PAT-02). Literal patterns, constructor patterns, wildcards, and constructor destructuring therefore mean the same thing in both constructs. Unlike `when`, however, `where` is a filter and **does not require exhaustive branches** (TYP-REF-03). Its branch list is indentation-insensitive when branch ownership is unambiguous; ambiguous ownership is a compile error rather than a guessed autofix (PAR-LAYOUT-01).
 
 A pattern claims the part of the input type that it matches. Its Boolean result decides which values from that matched part remain. A value whose pattern matched but whose predicate is false is excluded; it does not fall through to a later branch. Values not matched by any branch are also excluded.
 
@@ -353,7 +353,7 @@ Within `Option where ...`, unqualified constructor names such as `Some` and `Non
 
 ### Where placement and precedence
 
-`where` is a normal type operator and may appear wherever a type expression is already permitted (PAR-REF-01). The `where` keyword must start on the **same physical line** as the type or constructor it restricts; moving it to the next line is invalid. Its branch indentation can be normalized when ownership is unambiguous (LEX-IND-01). It binds more tightly than the set operators `|`, `&`, and `/`:
+`where` is a normal type operator and may appear wherever a type expression is already permitted (PAR-REF-01). The `where` keyword must start on the **same physical line** as the type or constructor it restricts (for a parenthesized expression, the line of its closing `)`); moving it to the next line is invalid. Its branch indentation can be normalized when ownership is unambiguous (LEX-IND-01). It binds more tightly than the set operators `|`, `&`, and `/`:
 
 ```natcode
 A | B where x => predicate(x)

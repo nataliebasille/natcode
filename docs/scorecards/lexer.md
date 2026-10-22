@@ -364,7 +364,8 @@
 - **Status:** Open question
 - **Spec:** [syntax-and-types.md — Code blocks and data structures](../spec/syntax-and-types.md#code-blocks-and-data-structures)
 - **Questions:**
-  1. Which indentation errors exist (dedent to a level never opened, inconsistent units, mixed tabs and spaces) and how does lexing recover?
+  1. Which invalid or ambiguous layout cases require diagnostics after grammar-based recovery, and how does the lexer/parser recover to report subsequent errors?
+  2. How should diagnostics describe each plausible invalid branch grouping without silently changing meaning? Tabs and non-ASCII whitespace remain LEX-WS-02.
 
 ## Errors
 

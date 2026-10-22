@@ -240,7 +240,7 @@
 - **Status:** Open question
 - **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
 - **Questions:**
-  1. What additional grammar is needed for generic parameters, named fields, recursive declarations, and advanced variants beyond the approved positional and indented constructor forms?
+  1. What additional grammar is needed for generic parameters, named fields, recursive declarations, and advanced variants beyond the approved positional and algebraic constructor-list forms?
 
 ### PAR-TYPE-03 — Transparent and nominal type declarations
 
@@ -327,7 +327,7 @@
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Where placement and precedence](../spec/syntax-and-types.md#where-placement-and-precedence)
-- **Done when:** `where` is accepted wherever a type expression is accepted, binds tighter than `|`, `&`, and `/`, parentheses can select a larger left operand, and a direct chain such as `T where ... where ...` is rejected. Each postfix `where` must begin on the same physical line as the type expression or constructor it restricts.
+- **Done when:** `where` is accepted wherever a type expression is accepted, binds tighter than `|`, `&`, and `/`, parentheses can select a larger left operand, and a direct chain such as `T where ... where ...` is rejected. Each postfix `where` must begin on the same physical line as the type expression or constructor it restricts (including that expression's closing `)` when parenthesized).
 
 ### PAR-REF-02 — Refinement binding and destructuring forms
 
