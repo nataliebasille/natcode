@@ -149,8 +149,8 @@
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Value expression grammar and precedence](../spec/syntax-and-types.md#value-expression-grammar-and-precedence)
-- **Done when:** Ordinary value expressions parse with this precedence from highest to lowest: postfix member access/call (`.`, `()`), prefix unary (`!`, `-`), multiplication (`*`), addition (`+`), comparisons (`<`, `<=`, `>`, `>=`, `==`, `!=`), `&&`, `||`, then right-associative `=>`. Postfix operations chain left-to-right; `*`, `+`, `&&`, and `||` are left-associative; comparisons are non-associative. Calls use parentheses only: `f(x)` and `f()` are valid, while whitespace application `f x` is invalid.
-- **Notes:** `&&` and `||` short-circuit. Type-expression `|` and `&` are not value operators and remain PAR-TYPE-01. Pipe syntax and precedence remain PAR-PIPE-01. The dedicated `as?` validation form keeps its own PAR-VAL-01 grammar rather than becoming a general binary value operator.
+- **Done when:** Ordinary value expressions parse with this precedence from highest to lowest: postfix member access/call (`.`, `()`), prefix unary (`!`, `-`), multiplicative (`*`, `/`, `%`), additive (`+`, binary `-`), comparisons (`<`, `<=`, `>`, `>=`, `==`, `!=`), `&&`, `||`, then right-associative `=>`. Postfix operations chain left-to-right; `*`, `/`, `%`, `+`, binary `-`, `&&`, and `||` are left-associative; comparisons are non-associative. Calls use parentheses only: `f(x)` and `f()` are valid, while whitespace application `f x` is invalid.
+- **Notes:** `&&` and `||` short-circuit. Type-expression `|` and `&` are not value operators and remain PAR-TYPE-01; `/` is division in value expressions and set difference in type expressions (PAR-TYPE-08). Euclidean modulo is separately approved but its operator spelling is still open (PAR-EXPR-03); when introduced, it uses the multiplicative tier and left associativity. Pipe syntax and precedence remain PAR-PIPE-01. Validation `as?` applies after ordinary arithmetic unless its expression is parenthesized (PAR-VAL-01); its other grammar remains dedicated.
 
 ### PAR-EXPR-02 — Expression placeholders and partial application
 
@@ -161,6 +161,14 @@
   2. If so, what expression owns a placeholder, and how do multiple or nested placeholders introduce parameters?
   3. How does placeholder application interact with future pipe syntax?
 - **Notes:** Standalone `_` already has a lexical token and wildcard meanings in patterns. Those existing meanings do not decide its ordinary-expression semantics.
+
+### PAR-EXPR-03 — Euclidean modulo operator spelling
+
+- **Status:** Open question
+- **Spec:** [syntax-and-types.md — Numeric arithmetic operators](../spec/syntax-and-types.md#numeric-arithmetic-operators)
+- **Questions:**
+  1. What spelling should the approved Euclidean modulo operator use, distinct from truncated-remainder `%` and existing syntax?
+- **Notes:** The operation's numeric behavior is approved in TYP-ARITH-03, including fractional operands and a nonnegative result for nonzero positive or negative divisors. Its precedence and left associativity match `*`, `/`, and `%` (PAR-EXPR-01). `MOD` in explanatory examples is only a placeholder, not a token or keyword.
 
 ### PAR-FN-01 — Function and lambda syntax
 
@@ -314,7 +322,7 @@
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Runtime validation](../spec/syntax-and-types.md#runtime-validation)
-- **Done when:** `value as? TypeExpression` parses as a runtime-validation expression whose right operand is one complete type expression; for example, `x as? number where n => n > 0` takes the whole refinement as its target. `as?` is the single token defined by LEX-OP-05.
+- **Done when:** `value as? TypeExpression` parses as a runtime-validation expression whose right operand is one complete type expression; for example, `x as? number where n => n > 0` takes the whole refinement as its target. Arithmetic binds before validation: `a / b as? T` validates the division expression, while `a / (b as? T)` and `(a as? T) / b` require parentheses to use validation as an arithmetic operand. `as?` is the single token defined by LEX-OP-05.
 - **Notes:** The remaining precedence of ordinary value operators stays PAR-EXPR-01. General `_` partial-application grammar is PAR-EXPR-02.
 
 ### PAR-PAT-01 — Pattern matching syntax

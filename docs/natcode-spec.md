@@ -22,11 +22,11 @@ Source text is UTF-8. Positions are reported as byte-offset spans plus 1-based l
 | Wildcard | A standalone `_` is its own token, never an identifier. `_x`, `__`, and `x_` are identifiers. |
 | Numbers | Decimal integers (`42`) and decimal fractions (`3.14159`), using ASCII digits only. |
 | Strings | Double-quoted, single-line: `"Alice"`, `"./math"`. Any character except a line break is allowed, including non-ASCII. |
-| Operators and punctuation | `=` `=>` `:` `\|` `&` `/` `as?` `{` `}` `(` `)` `,` `.` `*` `+` `-` `!` `<` `<=` `>` `>=` `==` `!=` `&&` `||` |
+| Operators and punctuation | `=` `=>` `:` `\|` `&` `/` `as?` `{` `}` `(` `)` `,` `.` `*` `+` `-` `%` `!` `<` `<=` `>` `>=` `==` `!=` `&&` `||` |
 | Comments | `// …` to end of line; `/* … */` block comments, which nest. Comment text produces no ordinary tokens. Physical line breaks inside block comments must remain visible to layout analysis (LEX-COM-04), whether through newline tokens or source-position/layout metadata. |
 | Line breaks | LF or CRLF; each is one newline token. Spaces are insignificant between tokens. |
 
-The reserved words are recognized as keywords regardless of position; they cannot name ordinary bindings. `unique` is the hard-reserved modifier in nominal declarations written `unique type`. `alias` is an ordinary identifier, not a declaration keyword. Keyword spellings are permitted as object property names, with details of the object grammar still to be determined (PAR-OBJ-01). `match`, `if`, `else`, `elif`, and `case` are not reserved words or language control-flow constructs. The unified matching and conditional keyword is `when` (LEX-KW-07). `return` is not a control-flow construct or keyword. `try`, `catch`, and `throw` are not reserved or built-in exception constructs (LEX-KW-11). `null` is not a native literal or reserved word; absence is represented using constructors such as `None`. `where` is the refinement-type keyword. `as` is a hard-reserved renaming keyword (LEX-KW-15) used in imports, exports, and function parameter aliases (PAR-IMP-07, PAR-EXP-02, PAR-FN-01). It cannot name a value, and it is not a type assertion or conversion. `as?` is one indivisible, distinct runtime-validation operator token (LEX-OP-05); whitespace-separated `as ?` is not the operator. Value-expression operators `-`, `!`, `<`, `<=`, `>`, `>=`, `==`, `!=`, `&&`, and `||` are approved by LEX-OP-03; multi-character operators use maximal munch (LEX-OP-02). A future pipe operator remains open under PAR-PIPE-01. Further words, including `then` and generator/effect vocabulary, remain open questions (LEX-KW-03).
+The reserved words are recognized as keywords regardless of position; they cannot name ordinary bindings. `unique` is the hard-reserved modifier in nominal declarations written `unique type`. `alias` is an ordinary identifier, not a declaration keyword. Keyword spellings are permitted as object property names, with details of the object grammar still to be determined (PAR-OBJ-01). `match`, `if`, `else`, `elif`, and `case` are not reserved words or language control-flow constructs. The unified matching and conditional keyword is `when` (LEX-KW-07). `return` is not a control-flow construct or keyword. `try`, `catch`, and `throw` are not reserved or built-in exception constructs (LEX-KW-11). `null` is not a native literal or reserved word; absence is represented using constructors such as `None`. `where` is the refinement-type keyword. `as` is a hard-reserved renaming keyword (LEX-KW-15) used in imports, exports, and function parameter aliases (PAR-IMP-07, PAR-EXP-02, PAR-FN-01). It cannot name a value, and it is not a type assertion or conversion. `as?` is one indivisible, distinct runtime-validation operator token (LEX-OP-05); whitespace-separated `as ?` is not the operator. Value-expression operators `-`, `!`, `<`, `<=`, `>`, `>=`, `==`, `!=`, `&&`, and `||` are tokenized per LEX-OP-03; `-` has both unary and binary parser roles. `/` is a token for both numeric division and type set difference (LEX-OP-04). `%` is newly approved for truncated remainder and needs lexer implementation (LEX-OP-06). Euclidean modulo is approved semantically, but no spelling or token is yet approved (PAR-EXPR-03). Multi-character operators use maximal munch (LEX-OP-02). A future pipe operator remains open under PAR-PIPE-01. Further words, including `then` and generator/effect vocabulary, remain open questions (LEX-KW-03).
 
 ## Layout and indentation
 
@@ -144,16 +144,28 @@ Ordinary value-expression operators bind from highest to lowest as follows:
 | --- | --- | --- |
 | 1 | member access `.`, call `()` | postfix, chained left-to-right |
 | 2 | unary `!`, unary `-` | prefix |
-| 3 | `*` | left |
-| 4 | `+` | left |
+| 3 | `*`, `/`, `%` | left |
+| 4 | `+`, binary `-` | left |
 | 5 | `<`, `<=`, `>`, `>=`, `==`, `!=` | non-associative |
 | 6 | `&&` | left, short-circuiting |
 | 7 | `||` | left, short-circuiting |
 | 8 | `=>` | right |
 
-Thus `a + b * c` means `a + (b * c)`, `!ready && enabled` means `(!ready) && enabled`, and `x => y => x + y` means `x => (y => x + y)`. Comparison operators do not chain: `a < b < c` is invalid; write `a < b && b < c`.
+Thus `a + b * c` means `a + (b * c)`, `a - b - c` means `(a - b) - c`, `a * b / c` means `(a * b) / c`, `!ready && enabled` means `(!ready) && enabled`, and `x => y => x + y` means `x => (y => x + y)`. Comparison operators do not chain: `a < b < c` is invalid; write `a < b && b < c`.
 
-Member access and calls form one postfix layer, so `foo.bar(x).baz()` groups as `(((foo.bar)(x)).baz)()`. Type-expression `|` and `&` are separate union/intersection operators and are not ordinary value operators. Pipe syntax and precedence remain open under PAR-PIPE-01. The dedicated runtime-validation form `as?` keeps the grammar defined by PAR-VAL-01 rather than becoming a general binary value operator.
+Member access and calls form one postfix layer, so `foo.bar(x).baz()` groups as `(((foo.bar)(x)).baz)()`. Type-expression `|` and `&` are separate union/intersection operators and are not ordinary value operators. Pipe syntax and precedence remain open under PAR-PIPE-01. `/` is numeric division here and set difference in type expressions (PAR-TYPE-08). Validation with `as?` applies to the complete preceding arithmetic expression unless parenthesized as an operand (PAR-VAL-01); its right-hand type expression retains its own grammar.
+
+## Numeric arithmetic operators
+
+- Binary `-` subtracts numbers, with the same precedence as `+` and left associativity (PAR-EXPR-01).
+- Value-level `/` performs **true division**, so `5 / 2` produces `2.5` rather than `2` (TYP-ARITH-01). It is distinct from type-level set difference, which shares its token.
+- `%` is **truncated remainder**, with quotient rounded toward zero, including fractional operands: `-5 % 3` is `-2`, `5 % -3` is `2`, and `5.5 % 2` is `1.5` (TYP-ARITH-02).
+- A **second infix operator** computes **Euclidean modulo** on fractional as well as integer operands. For a nonzero divisor `b`, its result is nonnegative and smaller than `abs(b)`, even when `b` is negative. This operator is left-associative at the same precedence as `*`, `/`, and `%` (TYP-ARITH-03).
+- The Euclidean operator's **spelling is not yet chosen** (PAR-EXPR-03); the notation `MOD` in examples is illustrative and is not a lexer token or keyword.
+
+Division, truncated remainder, and Euclidean modulo require a **provably nonzero divisor** (TYP-ARITH-04). A zero literal is rejected at compile time; an unknown numeric divisor is rejected unless the compiler has established that it cannot be zero, for example through a refinement or a successful runtime `as?` check. That validator's possible `ValidationError` is propagated through otherwise valid arithmetic under the approved error-propagation principle (TYP-ERR-03); exact propagation mechanics remain open in TYP-ERR-01. A proof failure is not silently treated as false.
+
+The numeric representation, result type when combining `Integer` and `Number`, rounding, overflow, and non-finite-value behavior remain open in TYP-BLT-05 and TYP-BLT-06.
 
 ## When expressions
 
@@ -623,7 +635,7 @@ text: string = getString()
 invalid = text as? Positive      // compile error: string is not a number
 ```
 
-The right operand of `as?` is a complete type expression. Thus:
+Arithmetic binds before `as?` validation. To apply validation *inside* an arithmetic expression, parentheses are required: `a / (b as? NonZero)` validates `b` first, whereas `a / b as? NonZero` attempts division first and then validates that result (which requires the divisor already be proved nonzero). The right operand of `as?` is a complete type expression. Thus:
 
 ```natcode
 x as? number where n => n > 0
@@ -986,7 +998,7 @@ The initial symbolic solver must guarantee a practical decidable subset of numer
 - transitive implications such as `x > y` and `y > 0` implying `x > 0`;
 - linear arithmetic with known constant coefficients, such as `x + 5 > y`, `x - y <= 10`, and `2 * x > y`.
 
-Predicates outside that guaranteed symbolic subset remain valid. Multiplication or division between two unknown values, powers, and other nonlinear relationships are not required to be proven symbolically in the initial solver. When all relevant inputs are statically known, ordinary pure compile-time evaluation may still validate such a predicate directly.
+Predicates outside that guaranteed symbolic subset remain valid. Multiplication or division between two unknown values, powers, and other nonlinear relationships are not required to be proven symbolically in the initial solver. When all relevant inputs are statically known, ordinary pure compile-time evaluation may still validate such a predicate directly. Separately, successful `/`, `%`, and Euclidean modulo arithmetic require proof that the divisor is nonzero; an unknown divisor without such a proof is rejected (TYP-ARITH-04). This is a required operand guarantee, not a claim that the full quotient or remainder must be symbolically computed.
 
 A failure to prove a fact outside the supported solver is **not** proof that the fact is false. It simply cannot satisfy a mandatory static restriction unless another known fact establishes it. When the source value is already statically compatible with a restricted target's validation input type, `as?` may explicitly perform the remaining membership check as runtime validation (TYP-REF-12). Its result type remains `Target | ValidationError` even if compile-time evaluation or symbolic reasoning can prove the particular application will succeed or fail; such proof may eliminate runtime work but does not alter the validator's stable signature (TYP-REF-13).
 
@@ -1004,7 +1016,7 @@ Error values are ordinary first-class values, but their types are designated as 
 
 `ValidationError` is the designated error alternative produced by explicit restricted-type validation with `as?`; it captures type-level validation failures while preserving the requested target as the success alternative (TYP-REF-12, TYP-REF-15). Its exact payload/message representation remains open (TYP-REF-16).
 
-How types receive the general error designation, how possible errors are inferred in other signatures, and how errors are propagated and handled remain open (TYP-ERR-01). Unrecoverable runtime faults and failures in lazy computations remain a separate question (RUN-EFF-02).
+Built-in arithmetic operators automatically propagate designated error operands rather than attempting arithmetic on them (TYP-ERR-03); the broader principle of propagating errors through other suitable operators is approved in principle. Exact error designation, type-inference mechanics, evaluation order, multiple-error handling, and other operator coverage remain open (TYP-ERR-01). Unrecoverable runtime faults and failures in lazy computations remain a separate question (RUN-EFF-02).
 
 ## Laziness
 

@@ -323,17 +323,17 @@
 
 - **Status:** Implemented
 - **Spec:** [syntax-and-types.md — Value expression grammar and precedence](../spec/syntax-and-types.md#value-expression-grammar-and-precedence)
-- **Done when:** `-`, `!`, `<`, `<=`, `>`, `>=`, `==`, `!=`, `&&`, and `||` are recognized as operator tokens in addition to the existing core set. Prefix `!` and `-` are unary value operators; `&&` and `||` are Boolean value operators. Their parser precedence is PAR-EXPR-01.
+- **Done when:** `-`, `!`, `<`, `<=`, `>`, `>=`, `==`, `!=`, `&&`, and `||` are recognized as operator tokens in addition to the existing core set. `!` is a prefix value operator; `-` has both prefix and binary roles, determined by the parser; `&&` and `||` are Boolean value operators. Their parser precedence is PAR-EXPR-01.
 - **Evidence:** `tests/lexer/main.rs::operators::value_expression_operators`, `tests/lexer/main.rs::operators::value_expression_operators_without_whitespace`, `tests/lexer/main.rs::operators::value_operator_ends_an_unexpected_character_run`, `tests/lexer/main.rs::numbers::minus_is_not_part_of_a_number`
 - **Notes:** A future pipe operator remains open under PAR-PIPE-01 and is not approved here. Leading `-` remains an operator rather than part of a number literal (LEX-NUM-03). The lexer only produces the tokens; unary/binary roles and precedence belong to the parser (PAR-EXPR-01).
 
-### LEX-OP-04 — Slash token for type set difference
+### LEX-OP-04 — Slash token for division and type set difference
 
 - **Status:** Implemented
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
-- **Done when:** `/` lexes as its own token so type expressions can use the approved `A / B` set-difference operator.
+- **Done when:** `/` lexes as its own token for approved value division and type-expression `A / B` set difference; the parser determines the role.
 - **Evidence:** `tests/lexer/main.rs::operators::slash_is_a_token`, `tests/lexer/main.rs::operators::double_slash_and_slash_star_still_start_comments`, `tests/lexer/main.rs::operators::every_approved_operator_and_punctuation`, `tests/lexer/main.rs::comments::stray_block_comment_close_is_not_a_comment`
-- **Notes:** Any future value-expression meaning of `/` is separate from the approved type-expression meaning. `//` and `/*` still begin comments, so `A//B` and `A/*B` start comments rather than producing `/` tokens; a stray `*/` lexes as `*` followed by `/`.
+- **Notes:** Value-expression division (PAR-EXPR-01) and type-expression difference (PAR-TYPE-08) share the same token. `//` and `/*` still begin comments, so `A//B` and `A/*B` start comments rather than producing `/` tokens; a stray `*/` lexes as `*` followed by `/`.
 
 ### LEX-OP-05 — Runtime-validation `as?` token
 
@@ -343,6 +343,13 @@
 - **Evidence:** `tests/lexer/main.rs::operators::as_question_is_one_token`, `tests/lexer/main.rs::operators::as_alone_is_a_keyword`, `tests/lexer/main.rs::operators::separated_as_and_question_mark_is_not_the_operator`, `tests/lexer/main.rs::operators::as_question_requires_the_whole_word_as`, `tests/lexer/main.rs::operators::question_mark_after_as_question_is_unexpected`, `tests/lexer/main.rs::operators::every_approved_operator_and_punctuation`
 - **Previous evidence:** `tests/lexer/main.rs::operators::as_question_is_one_token`, `tests/lexer/main.rs::operators::as_alone_is_an_identifier`, `tests/lexer/main.rs::operators::separated_as_and_question_mark_is_not_the_operator`, `tests/lexer/main.rs::operators::as_question_requires_the_whole_word_as`, `tests/lexer/main.rs::operators::question_mark_after_as_question_is_unexpected`, `tests/lexer/main.rs::operators::every_approved_operator_and_punctuation`
 - **Notes:** Parser and type semantics are PAR-VAL-01 and TYP-REF-12. The operator forms only when the complete identifier is exactly `as` and is immediately followed by `?`; in `has?`, `As?`, or `alias?`, the `?` remains an unexpected character. The former `as_alone_is_an_identifier` test was replaced by `as_alone_is_a_keyword`. Plain `as` is hard-reserved; it is not a type assertion or conversion.
+
+### LEX-OP-06 — Percent token for truncated remainder
+
+- **Status:** Approved
+- **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
+- **Done when:** `%` lexes as a single operator token for value-expression truncated remainder (PAR-EXPR-01, TYP-ARITH-02), with ordinary surrounding tokens lexed separately. Its lexer implementation has not yet been completed.
+- **Notes:** Do not infer a token for Euclidean modulo; its spelling remains open (PAR-EXPR-03).
 
 ## Whitespace and indentation
 

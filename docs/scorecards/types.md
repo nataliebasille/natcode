@@ -443,7 +443,7 @@
   1. How does a type receive the error designation (declaration syntax, marker type, protocol, or another mechanism)?
   2. How are possible errors reflected in type inference, union types, and function return types?
   3. How do callers handle, transform, and propagate error values without exceptions?
-- **Notes:** Explicit, unwrapped error values and compiler-recognized designated error types are approved in TYP-ERR-02. Language-level exceptions are rejected (RUN-EFF-04). **Defer all remaining error designation, typing, and propagation decisions until the foundational type model is worked through**, especially TYP-ADT-02 (remaining algebraic type questions), TYP-CON-03 (subtyping), and PAR-TYPE-02 (remaining declaration grammar). Do not assume marker types, structural inheritance, or nominal branding.
+- **Notes:** Explicit, unwrapped error values and compiler-recognized designated error types are approved in TYP-ERR-02; automatic propagation of designated error operands through otherwise valid built-in arithmetic is approved in TYP-ERR-03. Language-level exceptions are rejected (RUN-EFF-04). **Defer remaining error designation, evaluation order, multiple-error behavior, general operator coverage, typing, and propagation details until the foundational type model is worked through**, especially TYP-ADT-02, TYP-CON-03, and PAR-TYPE-02. Do not assume marker types, structural inheritance, or nominal branding.
 
 ### TYP-ERR-02 — Designated first-class error types
 
@@ -451,6 +451,13 @@
 - **Spec:** [evaluation.md — Error handling](../spec/evaluation.md#error-handling)
 - **Done when:** Error values are ordinary first-class values; success values and designated error values may be returned directly as alternatives in a union, without obligatory `Ok`/`Err` wrappers. The type checker recognizes designated error types as distinct from ordinary non-error types.
 - **Notes:** The mechanism of designating an error type, exact return-type inference, and propagation rules remain open in TYP-ERR-01.
+
+### TYP-ERR-03 — Automatic propagation through arithmetic operators
+
+- **Status:** Approved
+- **Spec:** [evaluation.md — Error handling](../spec/evaluation.md#error-handling)
+- **Done when:** For an otherwise valid built-in arithmetic operation with a designated error value as an operand, the original error is propagated instead of performing arithmetic on it; possible error outcomes remain in the expression's result type. For example, `Number | ValidationError` combined with `Number` may produce `Number | ValidationError` rather than a mandatory wrapper.
+- **Notes:** Extending this principle to other applicable built-in operators is approved in principle, but exact coverage, evaluation order, short-circuiting, precedence among multiple errors, and precise typing remain open in TYP-ERR-01. This item does not determine how error types are designated. It also does not override the statically provable nonzero divisor requirement for successful division/modulo paths (TYP-ARITH-04).
 
 ### TYP-NONE-01 — Representation of `None`
 
@@ -487,6 +494,36 @@
 - **Spec:** [modules.md — First-class namespaces and persistent updates](../spec/modules.md#first-class-namespaces-and-persistent-updates)
 - **Questions:**
   1. How are types represented at runtime when they are members of a first-class namespace value?
+
+## Built-in arithmetic operators
+
+### TYP-ARITH-01 — True numeric division
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Numeric arithmetic operators](../spec/syntax-and-types.md#numeric-arithmetic-operators)
+- **Done when:** Value-expression `/` computes true division, rather than truncating the quotient: `5 / 2` evaluates to `2.5` and `6 / 2` evaluates to `3`, subject to the required nonzero divisor proof (TYP-ARITH-04).
+- **Notes:** Numeric representation, precision/rounding, and static result types involving `Number` and `Integer` remain open in TYP-BLT-05 and TYP-BLT-06.
+
+### TYP-ARITH-02 — Truncated remainder for numeric and fractional operands
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Numeric arithmetic operators](../spec/syntax-and-types.md#numeric-arithmetic-operators)
+- **Done when:** `%` computes the remainder associated with quotient truncation toward zero for finite numeric operands, including fractional operands: `-5 % 3` is `-2`, `5 % -3` is `2`, `5.5 % 2` is `1.5`, and `5 % 2.5` is `0`. The divisor must be provably nonzero (TYP-ARITH-04).
+- **Notes:** This is the JavaScript/TypeScript remainder convention, not Euclidean modulo. Edge cases involving numeric representation, rounding, and non-finite values remain open in TYP-BLT-05/06.
+
+### TYP-ARITH-03 — Euclidean modulo for numeric and fractional operands
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Numeric arithmetic operators](../spec/syntax-and-types.md#numeric-arithmetic-operators)
+- **Done when:** A second built-in infix arithmetic operator computes Euclidean modulo on finite numeric operands, including fractional operands. For any nonzero divisor `b`, the result `r` satisfies `0 <= r < abs(b)`; examples include `-5.5 MOD 2 == 0.5` and `5.5 MOD -2 == 1.5`. The operation is left-associative, at the `*`/`/`/`%` precedence tier, and requires a provably nonzero divisor.
+- **Notes:** `MOD` is a placeholder in examples, **not approved source syntax**. The actual token spelling is an open parser decision in PAR-EXPR-03. Representation-specific precision/rounding details remain open in TYP-BLT-05/06.
+
+### TYP-ARITH-04 — Divisors must be provably nonzero
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Numeric arithmetic operators](../spec/syntax-and-types.md#numeric-arithmetic-operators)
+- **Done when:** Numeric `/`, `%`, and Euclidean modulo require the divisor to be provably nonzero for the successful arithmetic path. Statically zero divisors and unknown divisors without established nonzero evidence cannot be used in arithmetic. A known nonzero literal or an established `where` refinement can supply the proof; explicit runtime validation with `as?` can establish the successful nonzero alternative and propagate its `ValidationError` alternative through arithmetic as approved in TYP-ERR-03.
+- **Notes:** Runtime-validation result signatures remain stable unions under TYP-REF-13; details of error-aware evaluation and typing remain TYP-ERR-01. Exact numeric proof limits remain TYP-REF-10 and TYP-BRF-05/06.
 
 ## Built-in value types
 
@@ -529,7 +566,7 @@ Each built-in type is an independent scorecard item. Each type also has a distin
   2. What arithmetic representation, exactness, numeric literal classification, and rounding rules apply?
   3. Does `Number` include non-finite values such as NaN or infinities?
   4. Are precision/scale-aware numeric types expressible with the existing type system, or is additional capability needed?
-- **Notes:** The language owner approved having `Number` as a built-in. Only its remaining semantics are open. `Float`, `Decimal`, and parameterized numeric precision are not approved as built-ins.
+- **Notes:** The language owner approved having `Number` as a built-in. True `/`, truncated `%` (including fractional operands), and Euclidean modulo (including fractional operands) are separately approved in TYP-ARITH-01 through TYP-ARITH-04. This item's representation, rounding, and precision questions remain open. `Float`, `Decimal`, and parameterized numeric precision are not approved as built-ins.
 
 ### TYP-BLT-06 — `Integer` built-in semantics
 
@@ -538,8 +575,8 @@ Each built-in type is an independent scorecard item. Each type also has a distin
 - **Questions:**
   1. Are integers arbitrary-precision or fixed-width?
   2. How does `Integer` relate to `Number` (subtyping, numeric family, or distinct representation)?
-  3. What are integer division, overflow, and coercion rules?
-- **Notes:** The language owner approved having `Integer` as a built-in; only its remaining semantics are open.
+  3. What are overflow, coercion, and static result-type rules for mixed `Integer`/`Number` arithmetic and true division?
+- **Notes:** The language owner approved having `Integer` as a built-in. Division is true rather than truncating (`5 / 2` gives `2.5`); numeric representation, static result types, overflow, and coercion remain open. Remainder/modulo semantics are separately approved in TYP-ARITH-02/03.
 
 ### TYP-BLT-07 — `String` built-in
 
