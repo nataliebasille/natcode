@@ -7,7 +7,10 @@ Item status and open questions for this file are tracked in the [parser](../scor
 - **Arbitrary executable scopes use braces `{}`**, including named function bodies and multi-expression arrow and `when` branch bodies (PAR-BLK-01). Indentation alone does not create an executable scope.
 - A single-expression arrow or `when` branch body can omit braces. Braced blocks yield their final expression; no explicit `return` is required or supported (PAR-FN-03).
 - **Algebraic constructor lists and `when`/`where` branch lists** retain newline-based, layout-sensitive presentation. Exact indentation width is not a syntax requirement: the parser recovers unambiguous ownership from grammar and applicable constraints, and rejects unresolved ambiguity rather than guessing (LEX-IND-01, PAR-LAYOUT-01). These lists can occur inside braces and parentheses.
-- Blank and comment-only lines never change ownership. Explicit backslash line continuation is not supported. The full statement/newline grammar and malformed-layout error recovery remain PAR-BLK-02 and LEX-IND-02.
+- **Executable statement separation (PAR-BLK-02):** Within an executable body, local bindings and expressions are separate statements. Each statement begins on a new physical line; two complete statements cannot share a physical line. Semicolons are not supported. The final expression supplies the block value, without `return` (PAR-FN-03).
+- **Expression continuation (PAR-BLK-02):** A statement may span physical lines when a trailing binary operator still needs its right operand (for example, `first +\n    second`) or when an expression is explicitly grouped in parentheses. A complete expression ends at the newline; an operator at the start of the following line cannot retroactively continue it. No explicit backslash continuation exists. Continuation cannot change ownership of a `when`/`where` branch or a nominal constructor; unresolved ambiguity is a compile error (LEX-IND-02).
+- **Block placement (PAR-BLK-02):** Executable braces are permitted only as approved named-function bodies, lambda bodies, and `when` branch bodies. Standalone `{ ... }` executable expressions are not supported. In ordinary expression positions, braces follow object literal grammar (PAR-OBJ-01/02). A possible immediately invoked lambda form is future PAR-FN-01 work, not an approved substitute.
+- Blank and comment-only lines never change ownership.
 
 The following body form is approved; complete named-function parameter grammar remains PAR-FN-01:
 
@@ -72,6 +75,8 @@ Result.Success(value) => {
     value + 1
 }
 ```
+
+For continued expressions (PAR-BLK-02), formatting is based on the parsed expression: short expressions collapse onto one line, and long expressions wrap after binary operators, with continued operands indented four spaces beyond their containing statement. Explicit grouping parentheses are preserved even if their contents fit on one line. The exact wrap-width threshold remains a formatter implementation choice. Formatting must not join or split statements, reassign branches, or change expression meaning.
 
 When syntax unambiguously determines constructor or branch membership, the formatter corrects alignment. If multiple interpretations remain and the compiler cannot safely determine ownership, it reports a compilation error with actionable diagnostics; it does not apply a speculative fix. Full proof of indentation safety and remaining error-recovery details are tracked separately (PAR-LAYOUT-01, LEX-IND-02).
 
