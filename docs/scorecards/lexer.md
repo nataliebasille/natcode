@@ -332,7 +332,7 @@
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
 - **Done when:** `as?` lexes as one indivisible operator token; `as` alone remains an ordinary identifier, and whitespace-separated `as ?` does not form the operator.
 - **Evidence:** `tests/lexer/main.rs::operators::as_question_is_one_token`, `tests/lexer/main.rs::operators::as_alone_is_an_identifier`, `tests/lexer/main.rs::operators::separated_as_and_question_mark_is_not_the_operator`, `tests/lexer/main.rs::operators::as_question_requires_the_whole_word_as`, `tests/lexer/main.rs::operators::question_mark_after_as_question_is_unexpected`, `tests/lexer/main.rs::operators::every_approved_operator_and_punctuation`
-- **Notes:** Parser and type semantics are PAR-VAL-01 and TYP-REF-12. The operator forms only when the complete identifier is exactly `as` and is immediately followed by `?`; in `has?`, `As?`, or `alias?`, the `?` remains an unexpected character.
+- **Notes:** Parser and type semantics are PAR-VAL-01 and TYP-REF-12. The operator forms only when the complete identifier is exactly `as` and is immediately followed by `?`; in `has?`, `As?`, or `alias?`, the `?` remains an unexpected character. Plain `as` remains an identifier token; the parser recognizes it as the renaming separator in imports, exports, and function parameter declarations (PAR-IMP-07, PAR-EXP-02, PAR-FN-01). No plain-`as` type assertion or conversion is supported.
 
 ## Whitespace and indentation
 
