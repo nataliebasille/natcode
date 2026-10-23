@@ -131,12 +131,10 @@
 
 ### PAR-BLK-02 — Remaining statement and block grammar
 
-- **Status:** Open question
+- **Status:** Approved
 - **Spec:** [syntax-and-types.md — Code blocks and data structures](../spec/syntax-and-types.md#code-blocks-and-data-structures)
-- **Questions:**
-  1. What is the full grammar for executable block contents, statement separation, and expression continuation?
-  2. Which additional constructs, if any, allow executable blocks, beyond the approved function and arrow/branch forms?
-- **Notes:** The brace boundary and final-expression value are approved (PAR-BLK-01, PAR-FN-03); no semicolon or general continuation grammar is inferred from these decisions. Explicit backslash continuation is rejected (LEX-IND-01).
+- **Done when:** Executable bodies parse newline-separated local bindings and expressions, with the final expression supplying the block result; two complete statements on one physical line and semicolons are rejected. An expression can continue across lines after a trailing binary operator requiring a right operand, or inside explicit parentheses; a leading operator alone never continues a completed preceding line, and backslash continuation is invalid. Continuations do not change `when`/`where`/constructor branch ownership, and ambiguous layouts are rejected. Standalone `{ ... }` executable block expressions are invalid; executable braces remain limited to named-function bodies and approved lambda/`when` branch bodies.
+- **Notes:** Approved 2026-10-23. Preserves PAR-BLK-01 and PAR-FN-03, including one-expression braced blocks and implicit final-expression results. Semicolons remain invalid per the lexical grammar. The formatter's wrapping and parentheses policy is TOOL-FMT-01. Self-invoking anonymous functions are a possible future alternative to standalone blocks under PAR-FN-01, not approved here.
 
 ### PAR-LAYOUT-01 — Recognize recoverable declarative layout
 
