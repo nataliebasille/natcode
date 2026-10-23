@@ -5,7 +5,9 @@
 //! `from`/`import`/`export`/`unique`/`type`/`fn`/`when`/`where` keywords,
 //! boolean literals, decimal numbers, escape-free double-quoted strings,
 //! line/nested block comments, the core operator set (including `/` and the
-//! indivisible `as?`), and newline tokens. Emoji identifiers
+//! indivisible `as?`), the value-expression operators `-` `!` `<` `<=` `>`
+//! `>=` `==` `!=` `&&` `||` (multi-character operators by maximal munch),
+//! and newline tokens. Emoji identifiers
 //! (LEX-ID-04) and indentation tokens (LEX-IND-01) are open questions and not
 //! handled yet.
 
@@ -27,38 +29,32 @@ pub enum TokenKind {
     When,
     Unique,
     Where,
-    /// Standalone `_`, reserved as a wildcard.
-    Underscore,
-    /// `=`
-    Equals,
-    /// `=>`
-    FatArrow,
-    /// `:`
-    Colon,
-    /// `|`
-    Pipe,
-    /// `&`
-    Ampersand,
-    /// `{`
-    LBrace,
-    /// `}`
-    RBrace,
-    /// `(`
-    LParen,
-    /// `)`
-    RParen,
-    /// `,`
-    Comma,
-    /// `.`
-    Dot,
-    /// `*`
-    Star,
-    /// `+`
-    Plus,
-    /// `/`
-    Slash,
-    /// `as?`, a single indivisible runtime-validation operator.
-    AsQuestion,
+    Underscore,         // Standalone `_`, reserved as a wildcard.
+    Equals,             // `=`
+    FatArrow,           // `=>`
+    Colon,              // `:`
+    Pipe,               // `|`
+    Ampersand,          // `&`
+    LBrace,             // `{`
+    RBrace,             // `}`
+    LParen,             // `(`
+    RParen,             // `)`
+    Comma,              // `,`
+    Dot,                // `.`
+    Star,               // `*`
+    Plus,               // `+`
+    Slash,              // `/`
+    Minus,              // `-`
+    Not,                // `!`
+    LessThan,           // `<`
+    LessThanOrEqual,    // `<=`
+    GreaterThan,        // `>`
+    GreaterThanOrEqual, // `>=`
+    EqualTo,            // `==`
+    NotEqualTo,         // `!=`
+    And,                // `&&`
+    Or,                 // `||`
+    AsQuestion,         // `as?`, a single indivisible runtime-validation operator.
     Newline,
     Error,
     Eof,
@@ -162,18 +158,11 @@ impl Lexer<'_> {
                 '"' => self.string(start, start_pos),
                 '0'..='9' => self.number(start, start_pos),
                 c if is_identifier_start(c) => self.identifier(start, start_pos),
-                '=' => {
-                    self.bump();
-                    if self.peek() == Some('>') {
-                        self.bump();
-                        self.push(TokenKind::FatArrow, start, start_pos);
-                    } else {
-                        self.push(TokenKind::Equals, start, start_pos);
-                    }
-                }
-                c => match punctuation(c) {
-                    Some(kind) => {
-                        self.bump();
+                c => match operator(c, self.peek_second()) {
+                    Some((kind, len)) => {
+                        for _ in 0..len {
+                            self.bump();
+                        }
                         self.push(kind, start, start_pos);
                     }
                     None => self.unexpected(start, start_pos),
@@ -449,9 +438,9 @@ impl Lexer<'_> {
     /// than report an unexpected character.
     fn can_start_token(&self, c: char) -> bool {
         match c {
-            ' ' | '\n' | '"' | '=' | '0'..='9' => true,
+            ' ' | '\n' | '"' | '0'..='9' => true,
             '\r' => self.peek_second() == Some('\n'),
-            c => is_identifier_start(c) || punctuation(c).is_some(),
+            c => is_identifier_start(c) || operator(c, None).is_some(),
         }
     }
 }
@@ -460,8 +449,25 @@ fn is_identifier_start(c: char) -> bool {
     c == '_' || is_xid_start(c)
 }
 
-fn punctuation(c: char) -> Option<TokenKind> {
-    Some(match c {
+/// The operator or punctuation token starting with `c` and its length in
+/// characters, choosing the longest match (maximal munch, LEX-OP-02).
+/// Every two-character operator begins with a one-character operator.
+fn operator(c: char, next: Option<char>) -> Option<(TokenKind, usize)> {
+    let double = match (c, next) {
+        ('=', Some('>')) => Some(TokenKind::FatArrow),
+        ('=', Some('=')) => Some(TokenKind::EqualTo),
+        ('!', Some('=')) => Some(TokenKind::NotEqualTo),
+        ('<', Some('=')) => Some(TokenKind::LessThanOrEqual),
+        ('>', Some('=')) => Some(TokenKind::GreaterThanOrEqual),
+        ('&', Some('&')) => Some(TokenKind::And),
+        ('|', Some('|')) => Some(TokenKind::Or),
+        _ => None,
+    };
+    if let Some(kind) = double {
+        return Some((kind, 2));
+    }
+    let single = match c {
+        '=' => TokenKind::Equals,
         ':' => TokenKind::Colon,
         '|' => TokenKind::Pipe,
         '&' => TokenKind::Ampersand,
@@ -474,8 +480,13 @@ fn punctuation(c: char) -> Option<TokenKind> {
         '*' => TokenKind::Star,
         '+' => TokenKind::Plus,
         '/' => TokenKind::Slash,
+        '-' => TokenKind::Minus,
+        '!' => TokenKind::Not,
+        '<' => TokenKind::LessThan,
+        '>' => TokenKind::GreaterThan,
         _ => return None,
-    })
+    };
+    Some((single, 1))
 }
 
 /// Every `_` in a numeric lexeme must sit between two ASCII digits.

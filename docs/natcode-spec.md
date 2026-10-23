@@ -23,7 +23,7 @@ Source text is UTF-8. Positions are reported as byte-offset spans plus 1-based l
 | Numbers | Decimal integers (`42`) and decimal fractions (`3.14159`), using ASCII digits only. |
 | Strings | Double-quoted, single-line: `"Alice"`, `"./math"`. Any character except a line break is allowed, including non-ASCII. |
 | Operators and punctuation | `=` `=>` `:` `\|` `&` `/` `as?` `{` `}` `(` `)` `,` `.` `*` `+` `-` `!` `<` `<=` `>` `>=` `==` `!=` `&&` `||` |
-| Comments | `// …` to end of line; `/* … */` block comments, which nest. Comments produce no tokens. Whether line breaks inside a block comment produce newline tokens is LEX-COM-04. |
+| Comments | `// …` to end of line; `/* … */` block comments, which nest. Comment text produces no ordinary tokens. Physical line breaks inside block comments must remain visible to layout analysis (LEX-COM-04), whether through newline tokens or source-position/layout metadata. |
 | Line breaks | LF or CRLF; each is one newline token. Spaces are insignificant between tokens. |
 
 The reserved words are recognized as keywords regardless of position; they cannot name ordinary bindings. `unique` is the hard-reserved modifier in nominal declarations written `unique type`. `alias` is an ordinary identifier, not a declaration keyword. Keyword spellings are permitted as object property names, with details of the object grammar still to be determined (PAR-OBJ-01). `match`, `if`, `else`, `elif`, and `case` are not reserved words or language control-flow constructs. The unified matching and conditional keyword is `when` (LEX-KW-07). `return` is not a control-flow construct or keyword. `try`, `catch`, and `throw` are not reserved or built-in exception constructs (LEX-KW-11). `null` is not a native literal or reserved word; absence is represented using constructors such as `None`. `where` is the refinement-type keyword. `as?` is one indivisible runtime-validation operator token (LEX-OP-05); `as` by itself remains an ordinary identifier, and whitespace-separated `as ?` is not the operator. Value-expression operators `-`, `!`, `<`, `<=`, `>`, `>=`, `==`, `!=`, `&&`, and `||` are approved by LEX-OP-03; multi-character operators use maximal munch (LEX-OP-02). A future pipe operator remains open under PAR-PIPE-01. Further words, including `then` and generator/effect vocabulary, remain open questions (LEX-KW-03).
@@ -32,7 +32,7 @@ The reserved words are recognized as keywords regardless of position; they canno
 
 Source indentation has **no fixed required width**. Explicit executable blocks are delimited by braces. Leading whitespace remains available for parsing `when` and `where` branch lists and nominal constructor lists, even when those constructs occur inside `{}` or `()`. These lists use their grammar and applicable branch constraints to establish membership: differing indentation alone is not a compile error when ownership is unambiguous. Blank lines and comment-only lines do not change grouping. An unresolved ambiguous grouping is a compilation error; the compiler must not guess or automatically reindent it.
 
-Natcode has **no explicit line-continuation marker**, including backslash continuation. Parentheses and other expression delimiters may allow multiline expressions; their complete newline grammar is still to be specified (PAR-BLK-02, PAR-EXPR-01). Canonical formatting uses four spaces and is part of the Natcode toolchain (TOOL-FMT-01). Tabs and other whitespace categories remain separately open in LEX-WS-02. Multiline block-comment token behavior remains LEX-COM-04.
+Natcode has **no explicit line-continuation marker**, including backslash continuation. Parentheses and other expression delimiters may allow multiline expressions; their complete newline grammar is still to be specified (PAR-BLK-02, PAR-EXPR-01). Canonical formatting uses four spaces and is part of the Natcode toolchain (TOOL-FMT-01). Tabs and other whitespace categories remain separately open in LEX-WS-02. Under LEX-COM-04, block comments preserve physical line boundaries for layout: removing comment text never joins two physical lines into one logical line. Comment-only lines remain layout-neutral, and following code retains the layout of its own physical line. The representation of these boundaries as newline tokens or source-position/layout metadata is an implementation choice.
 
 ## Identifier normalization
 
@@ -43,7 +43,7 @@ Identifiers are normalized to Unicode **NFC**, so visually identical spellings (
 - A digit separator `_` may appear only **between two digits**: `1_000` and `3.141_59` are valid; `1__0`, `1_`, `1_.5`, `1._5`, and `1.5_` are errors.
 - A fraction requires a digit (or a misplaced `_`) immediately after the `.`. Otherwise the number ends before the `.`: `1.` is the number `1` followed by `.`, and `1.foo` is `1`, `.`, `foo`.
 - A number cannot begin with `.`: `.5` is `.` followed by `5`.
-- A leading `-` is not part of a number literal, and `-` is not an operator (see LEX-OP-03).
+- A leading `-` is not part of a number literal; it is the separate `-` operator token (LEX-OP-03), so `-1` is `-` followed by `1`.
 - A number may not be directly followed by identifier characters. `42abc`, `1_a`, and `3.14x` are each a single error, as are `1e10` and `0x1F` (see LEX-NUM-05 and LEX-NUM-06).
 
 ## Strings
@@ -53,7 +53,7 @@ Identifiers are normalized to Unicode **NFC**, so visually identical spellings (
 
 ## Lexical errors
 
-Any character that cannot begin a token is an error, including emoji, non-identifier symbols such as `∑` or `€`, and ASCII characters outside the operator set (for example `-`, `;`, `@`). An unterminated block comment is an error. Lexing recovers after every error and reports all diagnostics in source order.
+Any character that cannot begin a token is an error, including emoji, non-identifier symbols such as `∑` or `€`, and ASCII characters outside the operator set (for example `;`, `@`, `?`). An unterminated block comment is an error. Lexing recovers after every error and reports all diagnostics in source order.
 
 ---
 
@@ -99,7 +99,22 @@ getName = () => {
 }
 ```
 
-Exported-object forms such as `export { value }` and export aliases with `=` are separate grammar, unaffected by the object-literal property rule. Object separators, shorthands, and computed keys remain PAR-OBJ-01.
+Object literals may be empty. Non-empty entries are comma-separated even when written on separate lines, and a trailing comma is optional. Static keys may be identifiers, string literals, or numeric literals. Identifier shorthand is supported, so `{ name }` means `{ name: name }`. Computed keys use `[expression]: value`:
+
+```natcode
+key = getKey()
+
+user = {
+    name: "Ada",
+    "display-name": "Ada",
+    123: "numeric key",
+    [key]: 36,
+}
+```
+
+Repeating the same written static key in one object literal is a compile error. The type representation of dynamic computed keys, including possible collisions with statically known properties and the relationship between objects and `Map`, remains TYP-OBJ-01. Object spread syntax is tracked separately by PAR-OBJ-03.
+
+Exported-object forms such as `export { value }` and export aliases with `=` are separate grammar, unaffected by the object-literal property rule.
 
 ## Canonical formatting
 

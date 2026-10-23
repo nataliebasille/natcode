@@ -123,12 +123,39 @@ Both forms must be exhaustive (TYP-PAT-01). The remaining possible value set mus
 
 ## Declaration keywords and expression results
 
-- `fn` introduces named function declarations (PAR-FN-02). Parameter and body syntax remain open (PAR-FN-01).
+- `fn` introduces named function declarations (PAR-FN-02). Core parameter, label, and default forms are approved below; remaining grammar stays PAR-FN-01.
 - Functions return the value of their final expression; there is no `return` statement or explicit early return (PAR-FN-03).
 - `unique type` introduces a fresh **nominal** type identity (PAR-TYPE-03, TYP-NOM-01), even when its constructor payload types match another type.
 - `type Name = expression` names an existing type expression or constructor symbol transparently, without creating a new nominal identity (PAR-TYPE-05, TYP-ALI-01, TYP-ALI-02). Constructor-symbol names retain construction and pattern behavior. The full expression grammar remains PAR-TYPE-01.
 - `unique type Name(...)` and `unique type Name` with constructor branches introduce nominal constructors (PAR-TYPE-04, PAR-TYPE-06). Bare `type Name(...)` and `unique type Name = expression` are invalid. Further declaration and generic grammar remains open (PAR-TYPE-02).
 - Ordinary variable bindings continue to use keyword-free `name = expression` declarations (PAR-DECL-01).
+
+## Function parameters and labeled calls
+
+Named functions declare parameter bindings with TypeScript-like type annotations. Calls to a named `fn` declaration use `label: expression` (not `label = expression`), and labeled arguments may appear in any order. Parameter defaults use `=` and may precede required parameters (PAR-FN-01).
+
+```natcode
+fn greet(first: String = "Ada", last: String) {
+    first + " " + last
+}
+
+greet(last: "Lovelace")
+greet(last: "Lovelace", first: "Grace")
+```
+
+A parameter may have distinct external and internal names via `external as internal: Type`, with an optional `= default`. Callers use the external label; the body uses the internal binding. Without an alias, one parameter name serves both purposes.
+
+```natcode
+fn greet(person as name: String = "Guest") {
+    "Hello, " + name
+}
+
+greet(person: "Ada")
+```
+
+Plain `as` is for renaming only, consistent with import/export aliases (PAR-IMP-07, PAR-EXP-02). It does not assert a type or convert a value. The distinct `as?` token remains the runtime-validation operator (PAR-VAL-01, LEX-OP-05).
+
+Lambda parameters remain positional and cannot have inline type annotations. Valid parameter forms include `x => x * 2`, `(x) => x * 2`, `(x, y) => x + y`, and `() => 42`; parentheses may be omitted only around one untyped parameter. Lambdas can appear as callback arguments or function results, but cannot be bound as standalone function declarations (`double = x => x * 2` is invalid); use `fn double(x: number) { x * 2 }`. Named functions can be passed as positional callbacks. Explicitly unlabeled `fn` parameters and remaining function/lambda grammar are not settled (PAR-FN-01).
 
 ## Inference-first philosophy
 
