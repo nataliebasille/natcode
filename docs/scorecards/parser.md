@@ -164,18 +164,14 @@
 
 ### PAR-FN-01 — Function and lambda syntax
 
-- **Status:** Open question (partial grammar approved)
+- **Status:** Open question
 - **Spec:** [syntax-and-types.md — Function parameters and labeled calls](../spec/syntax-and-types.md#function-parameters-and-labeled-calls)
-- **Approved so far:**
-  - Named functions use `fn`; parameter types use `name: Type` and defaults use `name: Type = expression`. Defaults may precede required parameters.
-  - Calls to named functions use `label: value`, with arguments allowed in any order; `label = value` is not a call argument.
-  - `external as internal: Type` declares a separate external argument label and internal binding, optionally followed by `= default`; `name: Type` uses the same name externally and internally.
-  - Lambdas have positional, unannotated parameters and `=>` bodies: `x => x * x`, `(x, y) => x + y`, and `() => 42`. Parentheses may be omitted only for a single untyped parameter.
-  - A standalone lambda binding such as `double = x => x * 2` is invalid; lambdas are valid in callbacks or as function results, and named `fn` functions may be passed as positional callbacks.
-- **Questions remaining:**
-  1. Remaining full function/lambda grammar (including optional/rest/destructured/generic parameters and return annotations).
-  2. Explicitly unlabeled `fn` parameters (Swift-style `_ value: Type`) -- deferred.
-  3. Any unaddressed typing and invocation details; do not infer approval from this partial grammar.
+- **Questions:**
+  1. What is the remaining full grammar for optional, rest, destructured, and generic parameters, and for return annotations where applicable?
+  2. Should explicitly unlabeled `fn` parameters (Swift-style `_ value: Type`) be supported? Decision deferred.
+  3. What remaining function-value/call grammar needs to be established?
+- **Notes:** Approved portions: named functions use `fn`; parameters use `name: Type` and defaults `name: Type = expression`, with defaults allowed before required parameters. Calls to named functions use `label: expression`, with arbitrary argument order. Separate external labels and internal bindings use `external as internal: Type`, optionally with a default. Lambdas use positional unannotated parameters (`x => x * x`, `(x, y) => x + y`, `() => 42`), with parentheses optional only for a sole untyped parameter. Standalone lambda declarations such as `double = x => x * 2` are invalid, but callbacks and returning lambdas are valid; `fn` functions can be passed as positional callbacks.
+
 
 ### PAR-FN-02 — Dedicated function declaration keyword
 
