@@ -91,7 +91,7 @@
 
 - **Status:** Approved
 - **Spec:** [modules.md — Import syntax and ordering](../spec/modules.md#import-syntax-and-ordering)
-- **Done when:** `{ localName = publicName }` parses with the local name on the left.
+- **Done when:** `from "./math" import { compute as calculate }` parses with the exported/original name first and new local name second; the old `{ calculate = compute }` alias spelling is invalid.
 
 ### PAR-IMP-08 — Combined wildcard and named import
 
@@ -112,7 +112,7 @@
 
 - **Status:** Approved
 - **Spec:** [modules.md — Exported kind: object library or function executable](../spec/modules.md#exported-kind-object-library-or-function-executable)
-- **Done when:** `export { squareNumber = square }` parses with the public name on the left.
+- **Done when:** `export { square as squareNumber }` parses with the original local name first and public alias second; the old `{ squareNumber = square }` alias spelling is invalid.
 
 ### PAR-EXP-03 — Export of an arbitrary expression
 
@@ -164,11 +164,18 @@
 
 ### PAR-FN-01 — Function and lambda syntax
 
-- **Status:** Open question
-- **Spec:** [evaluation.md — Function return inference: context-independent](../spec/evaluation.md#function-return-inference-context-independent)
-- **Questions:**
-  1. What is the complete grammar for functions introduced by `fn` and for lambda expressions? `x => x * x` and `() => x` are illustrative.
-  2. How are parameters and their type constraints written?
+- **Status:** Open question (partial grammar approved)
+- **Spec:** [syntax-and-types.md — Function parameters and labeled calls](../spec/syntax-and-types.md#function-parameters-and-labeled-calls)
+- **Approved so far:**
+  - Named functions use `fn`; parameter types use `name: Type` and defaults use `name: Type = expression`. Defaults may precede required parameters.
+  - Calls to named functions use `label: value`, with arguments allowed in any order; `label = value` is not a call argument.
+  - `external as internal: Type` declares a separate external argument label and internal binding, optionally followed by `= default`; `name: Type` uses the same name externally and internally.
+  - Lambdas have positional, unannotated parameters and `=>` bodies: `x => x * x`, `(x, y) => x + y`, and `() => 42`. Parentheses may be omitted only for a single untyped parameter.
+  - A standalone lambda binding such as `double = x => x * 2` is invalid; lambdas are valid in callbacks or as function results, and named `fn` functions may be passed as positional callbacks.
+- **Questions remaining:**
+  1. Remaining full function/lambda grammar (including optional/rest/destructured/generic parameters and return annotations).
+  2. Explicitly unlabeled `fn` parameters (Swift-style `_ value: Type`) -- deferred.
+  3. Any unaddressed typing and invocation details; do not infer approval from this partial grammar.
 
 ### PAR-FN-02 — Dedicated function declaration keyword
 
@@ -216,7 +223,7 @@
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Code blocks and data structures](../spec/syntax-and-types.md#code-blocks-and-data-structures)
 - **Done when:** Object literals support `{}`; comma-separated properties with an optional trailing comma; explicit `key: expression` properties; identifier shorthand such as `{ name }`; static identifier, string-literal, and numeric-literal keys; and computed `[expression]: expression` keys. Commas are required between entries even across line breaks. Shorthand is identifier-only. Repeating the same written static key in one literal is a compile error.
-- **Notes:** Ordinary object properties use `:` rather than `=` (PAR-OBJ-02). Dynamic-key type representation and collision-sensitive inference are TYP-OBJ-01. Object spread is PAR-OBJ-03. The distinct export-alias syntax `export { publicName = localName }` remains unchanged.
+- **Notes:** Ordinary object properties use `:` rather than `=` (PAR-OBJ-02). Dynamic-key type representation and collision-sensitive inference are TYP-OBJ-01. Object spread is PAR-OBJ-03. The distinct export-alias syntax is `export { localName as publicName }` (PAR-EXP-02).
 
 ### PAR-OBJ-02 — Object property colons and arrow-body disambiguation
 
