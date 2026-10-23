@@ -44,15 +44,16 @@
   1. Which additional words, if any, should be reserved beyond the approved set?
   2. Should generator/effect words such as `yield`, `async`, or `await` become reserved? Their semantics remain open.
   3. Is `then` or any other branch-related word necessary once `when` handles conditionals?
-- **Notes:** The lexer currently recognizes `from`, `import`, `export`, `unique`, `type`, `fn`, `when`, `where`, `true`, and `false`. `match` is no longer reserved (LEX-KW-07). `if`, `else`, `elif`, `case`, `return`, and `null` are explicitly excluded by approved decisions. Other words, such as `then`, `let`, `val`, `var`, `yield`, `async`, and `await`, currently lex as identifiers (`tests/lexer/main.rs::keywords::undecided_words_are_not_reserved_for_now`).
+- **Notes:** The lexer currently recognizes `from`, `import`, `export`, `unique`, `type`, `fn`, `when`, `where`, `as`, `true`, and `false`. `match` is no longer reserved (LEX-KW-07). `if`, `else`, `elif`, `case`, `return`, and `null` are explicitly excluded by approved decisions. Other words, such as `then`, `let`, `val`, `var`, `yield`, `async`, and `await`, currently lex as identifiers (`tests/lexer/main.rs::keywords::undecided_words_are_not_reserved_for_now`).
 
 ### LEX-KW-04 — Hard-reserved keyword strategy
 
-- **Status:** Needs update
+- **Status:** Implemented
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
 - **Done when:** Every designated keyword, including `as` (LEX-KW-15), lexes as its keyword token regardless of syntactic context; no contextual keyword classification is used.
+- **Evidence:** `tests/lexer/main.rs::keywords::keywords_are_reserved_regardless_of_context`, `tests/lexer/main.rs::keywords::as_is_reserved`
 - **Previous evidence:** `tests/lexer/main.rs::keywords::keywords_are_reserved_regardless_of_context`
-- **Notes:** Existing tests predate the newly approved `as` keyword and do not establish its required behavior.  Whether a keyword token is allowed in a property-key position is determined by the parser; it is never re-lexed as an identifier.
+- **Notes:** The context test now also covers `as` in property-key and member positions. Whether a keyword token is allowed in a property-key position is determined by the parser; it is never re-lexed as an identifier.
 
 ### LEX-KW-05 — Type declaration keyword
 
@@ -116,9 +117,10 @@
 
 ### LEX-KW-15 — Hard-reserved renaming keyword `as`
 
-- **Status:** Approved
+- **Status:** Implemented
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
 - **Done when:** `as` lexes as a hard-reserved, case-sensitive keyword regardless of context, so `as = 42` is invalid. Longer names such as `aside` remain identifiers. `as?` remains one distinct runtime-validation operator token (LEX-OP-05).
+- **Evidence:** `tests/lexer/main.rs::keywords::as_is_reserved`, `tests/lexer/main.rs::keywords::words_containing_as_are_identifiers`, `tests/lexer/main.rs::keywords::keywords_are_case_sensitive`, `tests/lexer/main.rs::keywords::keywords_are_reserved_regardless_of_context`, `tests/lexer/main.rs::operators::as_alone_is_a_keyword`
 - **Notes:** Approved for renaming syntax in imports, exports, and named function parameters (PAR-IMP-07, PAR-EXP-02, PAR-FN-01); never treat plain `as` as a type assertion or conversion.
 
 ### LEX-KW-13 — Refinement `where` keyword
@@ -335,11 +337,12 @@
 
 ### LEX-OP-05 — Runtime-validation `as?` token
 
-- **Status:** Needs update
+- **Status:** Implemented
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
 - **Done when:** `as?` lexes as one indivisible operator token; `as` alone lexes as a hard-reserved keyword (LEX-KW-15), and whitespace-separated `as ?` does not form the operator.
+- **Evidence:** `tests/lexer/main.rs::operators::as_question_is_one_token`, `tests/lexer/main.rs::operators::as_alone_is_a_keyword`, `tests/lexer/main.rs::operators::separated_as_and_question_mark_is_not_the_operator`, `tests/lexer/main.rs::operators::as_question_requires_the_whole_word_as`, `tests/lexer/main.rs::operators::question_mark_after_as_question_is_unexpected`, `tests/lexer/main.rs::operators::every_approved_operator_and_punctuation`
 - **Previous evidence:** `tests/lexer/main.rs::operators::as_question_is_one_token`, `tests/lexer/main.rs::operators::as_alone_is_an_identifier`, `tests/lexer/main.rs::operators::separated_as_and_question_mark_is_not_the_operator`, `tests/lexer/main.rs::operators::as_question_requires_the_whole_word_as`, `tests/lexer/main.rs::operators::question_mark_after_as_question_is_unexpected`, `tests/lexer/main.rs::operators::every_approved_operator_and_punctuation`
-- **Notes:** Parser and type semantics are PAR-VAL-01 and TYP-REF-12. The operator forms only when the complete identifier is exactly `as` and is immediately followed by `?`; in `has?`, `As?`, or `alias?`, the `?` remains an unexpected character. The former `as_alone_is_an_identifier` test conflicts with the new keyword requirement and must be replaced. Other previously passing tests are historical evidence only until the new specification passes with updated tests. Plain `as` is hard-reserved; it is not a type assertion or conversion.
+- **Notes:** Parser and type semantics are PAR-VAL-01 and TYP-REF-12. The operator forms only when the complete identifier is exactly `as` and is immediately followed by `?`; in `has?`, `As?`, or `alias?`, the `?` remains an unexpected character. The former `as_alone_is_an_identifier` test was replaced by `as_alone_is_a_keyword`. Plain `as` is hard-reserved; it is not a type assertion or conversion.
 
 ## Whitespace and indentation
 

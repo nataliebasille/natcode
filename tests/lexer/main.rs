@@ -110,6 +110,37 @@ mod keywords {
     }
 
     #[test]
+    fn as_is_reserved() {
+        assert_clean("as = 42", &[(As, "as"), (Equals, "="), (Number, "42")]);
+        assert_clean(
+            "{ compute as calculate }",
+            &[
+                (LBrace, "{"),
+                (Identifier, "compute"),
+                (As, "as"),
+                (Identifier, "calculate"),
+                (RBrace, "}"),
+            ],
+        );
+    }
+
+    #[test]
+    fn words_containing_as_are_identifiers() {
+        assert_clean(
+            "aside has as_ _as as2 ask class",
+            &[
+                (Identifier, "aside"),
+                (Identifier, "has"),
+                (Identifier, "as_"),
+                (Identifier, "_as"),
+                (Identifier, "as2"),
+                (Identifier, "ask"),
+                (Identifier, "class"),
+            ],
+        );
+    }
+
+    #[test]
     fn match_is_an_identifier() {
         assert_clean(
             "match = when",
@@ -125,7 +156,7 @@ mod keywords {
     #[test]
     fn keywords_are_case_sensitive() {
         assert_clean(
-            "From IMPORT Export True FALSE Type FN When Unique WHERE",
+            "From IMPORT Export True FALSE Type FN When Unique WHERE As AS aS",
             &[
                 (Identifier, "From"),
                 (Identifier, "IMPORT"),
@@ -137,6 +168,9 @@ mod keywords {
                 (Identifier, "When"),
                 (Identifier, "Unique"),
                 (Identifier, "WHERE"),
+                (Identifier, "As"),
+                (Identifier, "AS"),
+                (Identifier, "aS"),
             ],
         );
     }
@@ -200,6 +234,18 @@ mod keywords {
                 (Unique, "unique"),
                 (Dot, "."),
                 (Where, "where"),
+            ],
+        );
+        assert_clean(
+            "{ as: 1 }.as",
+            &[
+                (LBrace, "{"),
+                (As, "as"),
+                (Colon, ":"),
+                (Number, "1"),
+                (RBrace, "}"),
+                (Dot, "."),
+                (As, "as"),
             ],
         );
     }
@@ -789,19 +835,23 @@ mod operators {
     }
 
     #[test]
-    fn as_alone_is_an_identifier() {
+    fn as_alone_is_a_keyword() {
+        assert_clean("as = 1", &[(As, "as"), (Equals, "="), (Number, "1")]);
         assert_clean(
-            "as = 1",
-            &[(Identifier, "as"), (Equals, "="), (Number, "1")],
+            "x as? T as y",
+            &[
+                (Identifier, "x"),
+                (AsQuestion, "as?"),
+                (Identifier, "T"),
+                (As, "as"),
+                (Identifier, "y"),
+            ],
         );
     }
 
     #[test]
     fn separated_as_and_question_mark_is_not_the_operator() {
-        assert_tokens(
-            "x as ?",
-            &[(Identifier, "x"), (Identifier, "as"), (Error, "?")],
-        );
+        assert_tokens("x as ?", &[(Identifier, "x"), (As, "as"), (Error, "?")]);
         assert_eq!(
             diag_kinds("x as ?"),
             vec![DiagnosticKind::UnexpectedCharacter]
