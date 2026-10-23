@@ -16,7 +16,7 @@ Source text is UTF-8. Positions are reported as byte-offset spans plus 1-based l
 
 | Category | Forms |
 | --- | --- |
-| Reserved keywords | `from`, `import`, `export`, `unique`, `type`, `fn`, `when`, `where`. These are case-sensitive, hard-reserved words (LEX-KW-01, LEX-KW-04 through LEX-KW-07, LEX-KW-12, LEX-KW-13). |
+| Reserved keywords | `from`, `import`, `export`, `unique`, `type`, `fn`, `when`, `where`, `as`. These are case-sensitive, hard-reserved words (LEX-KW-01, LEX-KW-04 through LEX-KW-07, LEX-KW-12, LEX-KW-13, LEX-KW-15). |
 | Boolean literals | `true`, `false` |
 | Identifiers | Unicode identifiers per UAX #31: first character is `XID_Start` or `_`; following characters are `XID_Continue`. Letters of any script (`café`, `größe`, `π`, `中文`) are allowed. |
 | Wildcard | A standalone `_` is its own token, never an identifier. `_x`, `__`, and `x_` are identifiers. |
@@ -26,7 +26,7 @@ Source text is UTF-8. Positions are reported as byte-offset spans plus 1-based l
 | Comments | `// …` to end of line; `/* … */` block comments, which nest. Comment text produces no ordinary tokens. Physical line breaks inside block comments must remain visible to layout analysis (LEX-COM-04), whether through newline tokens or source-position/layout metadata. |
 | Line breaks | LF or CRLF; each is one newline token. Spaces are insignificant between tokens. |
 
-The reserved words are recognized as keywords regardless of position; they cannot name ordinary bindings. `unique` is the hard-reserved modifier in nominal declarations written `unique type`. `alias` is an ordinary identifier, not a declaration keyword. Keyword spellings are permitted as object property names, with details of the object grammar still to be determined (PAR-OBJ-01). `match`, `if`, `else`, `elif`, and `case` are not reserved words or language control-flow constructs. The unified matching and conditional keyword is `when` (LEX-KW-07). `return` is not a control-flow construct or keyword. `try`, `catch`, and `throw` are not reserved or built-in exception constructs (LEX-KW-11). `null` is not a native literal or reserved word; absence is represented using constructors such as `None`. `where` is the refinement-type keyword. `as?` is one indivisible runtime-validation operator token (LEX-OP-05); `as` by itself remains an ordinary identifier, and whitespace-separated `as ?` is not the operator. Value-expression operators `-`, `!`, `<`, `<=`, `>`, `>=`, `==`, `!=`, `&&`, and `||` are approved by LEX-OP-03; multi-character operators use maximal munch (LEX-OP-02). A future pipe operator remains open under PAR-PIPE-01. Further words, including `then` and generator/effect vocabulary, remain open questions (LEX-KW-03).
+The reserved words are recognized as keywords regardless of position; they cannot name ordinary bindings. `unique` is the hard-reserved modifier in nominal declarations written `unique type`. `alias` is an ordinary identifier, not a declaration keyword. Keyword spellings are permitted as object property names, with details of the object grammar still to be determined (PAR-OBJ-01). `match`, `if`, `else`, `elif`, and `case` are not reserved words or language control-flow constructs. The unified matching and conditional keyword is `when` (LEX-KW-07). `return` is not a control-flow construct or keyword. `try`, `catch`, and `throw` are not reserved or built-in exception constructs (LEX-KW-11). `null` is not a native literal or reserved word; absence is represented using constructors such as `None`. `where` is the refinement-type keyword. `as` is a hard-reserved renaming keyword (LEX-KW-15) used in imports, exports, and function parameter aliases (PAR-IMP-07, PAR-EXP-02, PAR-FN-01). It cannot name a value, and it is not a type assertion or conversion. `as?` is one indivisible, distinct runtime-validation operator token (LEX-OP-05); whitespace-separated `as ?` is not the operator. Value-expression operators `-`, `!`, `<`, `<=`, `>`, `>=`, `==`, `!=`, `&&`, and `||` are approved by LEX-OP-03; multi-character operators use maximal munch (LEX-OP-02). A future pipe operator remains open under PAR-PIPE-01. Further words, including `then` and generator/effect vocabulary, remain open questions (LEX-KW-03).
 
 ## Layout and indentation
 
@@ -182,12 +182,39 @@ Both forms must be exhaustive (TYP-PAT-01). The remaining possible value set mus
 
 ## Declaration keywords and expression results
 
-- `fn` introduces named function declarations (PAR-FN-02). Parameter and body syntax remain open (PAR-FN-01).
+- `fn` introduces named function declarations (PAR-FN-02). Core parameter, label, and default forms are approved below; remaining grammar stays PAR-FN-01.
 - Functions return the value of their final expression; there is no `return` statement or explicit early return (PAR-FN-03).
 - `unique type` introduces a fresh **nominal** type identity (PAR-TYPE-03, TYP-NOM-01), even when its constructor payload types match another type.
 - `type Name = expression` names an existing type expression or constructor symbol transparently, without creating a new nominal identity (PAR-TYPE-05, TYP-ALI-01, TYP-ALI-02). Constructor-symbol names retain construction and pattern behavior. The full expression grammar remains PAR-TYPE-01.
 - `unique type Name(...)` and `unique type Name` with constructor branches introduce nominal constructors (PAR-TYPE-04, PAR-TYPE-06). Bare `type Name(...)` and `unique type Name = expression` are invalid. Further declaration and generic grammar remains open (PAR-TYPE-02).
 - Ordinary variable bindings continue to use keyword-free `name = expression` declarations (PAR-DECL-01).
+
+## Function parameters and labeled calls
+
+Named functions declare parameter bindings with TypeScript-like type annotations. Calls to a named `fn` declaration use `label: expression` (not `label = expression`), and labeled arguments may appear in any order. Parameter defaults use `=` and may precede required parameters (PAR-FN-01).
+
+```natcode
+fn greet(first: String = "Ada", last: String) {
+    first + " " + last
+}
+
+greet(last: "Lovelace")
+greet(last: "Lovelace", first: "Grace")
+```
+
+A parameter may have distinct external and internal names via `external as internal: Type`, with an optional `= default`. Callers use the external label; the body uses the internal binding. Without an alias, one parameter name serves both purposes.
+
+```natcode
+fn greet(person as name: String = "Guest") {
+    "Hello, " + name
+}
+
+greet(person: "Ada")
+```
+
+Plain `as` is for renaming only, consistent with import/export aliases (PAR-IMP-07, PAR-EXP-02). It does not assert a type or convert a value. The distinct `as?` token remains the runtime-validation operator (PAR-VAL-01, LEX-OP-05).
+
+Lambda parameters remain positional and cannot have inline type annotations. Valid parameter forms include `x => x * 2`, `(x) => x * 2`, `(x, y) => x + y`, and `() => 42`; parentheses may be omitted only around one untyped parameter. Lambdas can appear as callback arguments or function results, but cannot be bound as standalone function declarations (`double = x => x * 2` is invalid); use `fn double(x: number) { x * 2 }`. Named functions can be passed as positional callbacks. Explicitly unlabeled `fn` parameters and remaining function/lambda grammar are not settled (PAR-FN-01).
 
 ## Inference-first philosophy
 
@@ -780,12 +807,12 @@ The final export may be an **arbitrary expression**, but its inferred type must 
 
 ```natcode
 PI = 3.14159
-square = x => x * x
+fn square(x: number) { x * x }
 export { PI, square }        // library: object-shaped public interface
 ```
 
 ```natcode
-run = () => print("Hello")
+fn run() { print("Hello") }
 export run                   // executable: function entry
 ```
 
@@ -799,11 +826,11 @@ Here `export { ... }` builds the module's exported object. `export api` where `a
 - Both **types and values** can be placed in the same exported object; `export { Point, origin }` is valid.
 - A module may **re-export previously imported declarations**, including complete imported namespace values.
 - Object properties' **public names must be unique** within the exported interface. Unlike same-scope variable redeclarations, duplicate public export keys are compilation errors.
-- **Export aliases** use `=` with the public name on the left: `export { publicName = localName }`.
+- **Export aliases** use `as`, original local name first: `export { localName as publicName }`.
 
 ```natcode
 from "./math" import { square }
-export { squareNumber = square }
+export { square as squareNumber }
 ```
 
 ## Entry modules
@@ -816,7 +843,7 @@ export { squareNumber = square }
 
 ```natcode
 // app.nat
-run = () => print("Hello")
+fn run() { print("Hello") }
 export { run }               // library
 
 // main.nat (different file)
@@ -840,7 +867,7 @@ from "./math" import { PI }, Math
 - `*` imports **all possible exported names** as direct local bindings; `_` is **not** an import wildcard.
 - The combined form `{ PI }, Math` imports `PI` directly and places only the **remaining** names in `Math`; `Math.PI` is absent from that combined import.
 - The designer also wants remaining exports to be importable unqualified via wildcard in a combined selective import; the grammar for this is PAR-IMP-08.
-- Import aliases use `=` with local alias on the left: `from "./math" import { localName = publicName }`.
+- Import aliases use `as`, original exported name first: `from "./math" import { publicName as localName }`.
 - Bare `from "./math"` without `import ...` is **invalid**.
 - Multiple import declarations from the **same module are allowed** and resolved independently. For example, separate `{ PI }` and `Math` imports leave `PI` inside `Math`; one combined `{ PI }, Math` import removes `PI` from that `Math` view.
 
@@ -860,8 +887,8 @@ from "./math" import { PI }, Math
 - This is not inconsistent with ordinary binding redeclaration: a later **local declaration can shadow an imported binding** according to Natcode's immutable sequential scope rules.
 
 ```natcode
-from "./math" import { MATH_PI = PI }
-from "./geometry" import { GEO_PI = PI }
+from "./math" import { PI as MATH_PI }
+from "./geometry" import { PI as GEO_PI }
 
 PI = 3.14    // allowed local declaration
 ```
