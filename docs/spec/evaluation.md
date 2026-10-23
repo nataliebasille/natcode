@@ -44,7 +44,7 @@ The initial symbolic solver must guarantee a practical decidable subset of numer
 - transitive implications such as `x > y` and `y > 0` implying `x > 0`;
 - linear arithmetic with known constant coefficients, such as `x + 5 > y`, `x - y <= 10`, and `2 * x > y`.
 
-Predicates outside that guaranteed symbolic subset remain valid. Multiplication or division between two unknown values, powers, and other nonlinear relationships are not required to be proven symbolically in the initial solver. When all relevant inputs are statically known, ordinary pure compile-time evaluation may still validate such a predicate directly.
+Predicates outside that guaranteed symbolic subset remain valid. Multiplication or division between two unknown values, powers, and other nonlinear relationships are not required to be proven symbolically in the initial solver. When all relevant inputs are statically known, ordinary pure compile-time evaluation may still validate such a predicate directly. Separately, successful `/`, `%`, and Euclidean modulo arithmetic require proof that the divisor is nonzero; an unknown divisor without such a proof is rejected (TYP-ARITH-04). This is a required operand guarantee, not a claim that the full quotient or remainder must be symbolically computed.
 
 A failure to prove a fact outside the supported solver is **not** proof that the fact is false. It simply cannot satisfy a mandatory static restriction unless another known fact establishes it. When the source value is already statically compatible with a restricted target's validation input type, `as?` may explicitly perform the remaining membership check as runtime validation (TYP-REF-12). Its result type remains `Target | ValidationError` even if compile-time evaluation or symbolic reasoning can prove the particular application will succeed or fail; such proof may eliminate runtime work but does not alter the validator's stable signature (TYP-REF-13).
 
@@ -62,7 +62,7 @@ Error values are ordinary first-class values, but their types are designated as 
 
 `ValidationError` is the designated error alternative produced by explicit restricted-type validation with `as?`; it captures type-level validation failures while preserving the requested target as the success alternative (TYP-REF-12, TYP-REF-15). Its exact payload/message representation remains open (TYP-REF-16).
 
-How types receive the general error designation, how possible errors are inferred in other signatures, and how errors are propagated and handled remain open (TYP-ERR-01). Unrecoverable runtime faults and failures in lazy computations remain a separate question (RUN-EFF-02).
+Built-in arithmetic operators automatically propagate designated error operands rather than attempting arithmetic on them (TYP-ERR-03); the broader principle of propagating errors through other suitable operators is approved in principle. Exact error designation, type-inference mechanics, evaluation order, multiple-error handling, and other operator coverage remain open (TYP-ERR-01). Unrecoverable runtime faults and failures in lazy computations remain a separate question (RUN-EFF-02).
 
 ## Laziness
 
