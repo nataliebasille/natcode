@@ -2,7 +2,7 @@
 //!
 //! Implements the Implemented `LEX-*` items: UAX #31 identifiers (XID_Start
 //! or `_`, then XID_Continue) normalized to NFC, the hard-reserved
-//! `from`/`import`/`export`/`unique`/`type`/`fn`/`when`/`where` keywords,
+//! `from`/`import`/`export`/`unique`/`type`/`fn`/`when`/`where`/`as` keywords,
 //! boolean literals, decimal numbers, escape-free double-quoted strings,
 //! line/nested block comments, the core operator set (including `/` and the
 //! indivisible `as?`), the value-expression operators `-` `!` `<` `<=` `>`
@@ -29,6 +29,7 @@ pub enum TokenKind {
     When,
     Unique,
     Where,
+    As,                 // `as`, the renaming keyword; distinct from `as?`.
     Underscore,         // Standalone `_`, reserved as a wildcard.
     Equals,             // `=`
     FatArrow,           // `=>`
@@ -404,6 +405,7 @@ impl Lexer<'_> {
             "when" => TokenKind::When,
             "unique" => TokenKind::Unique,
             "where" => TokenKind::Where,
+            "as" => TokenKind::As,
             "true" => TokenKind::True,
             "false" => TokenKind::False,
             _ => TokenKind::Identifier,
