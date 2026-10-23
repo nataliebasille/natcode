@@ -36,12 +36,12 @@ The final export may be an **arbitrary expression**, but its inferred type must 
 
 ```natcode
 PI = 3.14159
-square = x => x * x
+fn square(x: number) { x * x }
 export { PI, square }        // library: object-shaped public interface
 ```
 
 ```natcode
-run = () => print("Hello")
+fn run() { print("Hello") }
 export run                   // executable: function entry
 ```
 
@@ -55,11 +55,11 @@ Here `export { ... }` builds the module's exported object. `export api` where `a
 - Both **types and values** can be placed in the same exported object; `export { Point, origin }` is valid.
 - A module may **re-export previously imported declarations**, including complete imported namespace values.
 - Object properties' **public names must be unique** within the exported interface. Unlike same-scope variable redeclarations, duplicate public export keys are compilation errors.
-- **Export aliases** use `=` with the public name on the left: `export { publicName = localName }`.
+- **Export aliases** use `as`, original local name first: `export { localName as publicName }`.
 
 ```natcode
 from "./math" import { square }
-export { squareNumber = square }
+export { square as squareNumber }
 ```
 
 ## Entry modules
@@ -72,7 +72,7 @@ export { squareNumber = square }
 
 ```natcode
 // app.nat
-run = () => print("Hello")
+fn run() { print("Hello") }
 export { run }               // library
 
 // main.nat (different file)
@@ -96,7 +96,7 @@ from "./math" import { PI }, Math
 - `*` imports **all possible exported names** as direct local bindings; `_` is **not** an import wildcard.
 - The combined form `{ PI }, Math` imports `PI` directly and places only the **remaining** names in `Math`; `Math.PI` is absent from that combined import.
 - The designer also wants remaining exports to be importable unqualified via wildcard in a combined selective import; the grammar for this is PAR-IMP-08.
-- Import aliases use `=` with local alias on the left: `from "./math" import { localName = publicName }`.
+- Import aliases use `as`, original exported name first: `from "./math" import { publicName as localName }`.
 - Bare `from "./math"` without `import ...` is **invalid**.
 - Multiple import declarations from the **same module are allowed** and resolved independently. For example, separate `{ PI }` and `Math` imports leave `PI` inside `Math`; one combined `{ PI }, Math` import removes `PI` from that `Math` view.
 
@@ -116,8 +116,8 @@ from "./math" import { PI }, Math
 - This is not inconsistent with ordinary binding redeclaration: a later **local declaration can shadow an imported binding** according to Natcode's immutable sequential scope rules.
 
 ```natcode
-from "./math" import { MATH_PI = PI }
-from "./geometry" import { GEO_PI = PI }
+from "./math" import { PI as MATH_PI }
+from "./geometry" import { PI as GEO_PI }
 
 PI = 3.14    // allowed local declaration
 ```
