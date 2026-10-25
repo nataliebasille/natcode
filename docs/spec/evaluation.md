@@ -10,17 +10,35 @@ Item status and open questions for this file are tracked in the [types](../score
 
 ## Function return inference: context-independent
 
-The designer revised an earlier broader constant-evaluation proposal: **function return types are inferred from parameter types and the function's own body**, not specialized using the specific values passed at each call site, nor values outside the function. Exact types can propagate through function-local variables.
+Function bodies are analyzed **independently of call sites** to infer a symbolic type-level relation between parameter types and results (TYP-FN-01). Every parameter is implicitly a distinct polymorphic type variable. A written annotation constrains acceptable arguments; without an annotation its bound is `Any` (TYP-FN-06, PAR-FN-04). Neither form widens the argument's exact inferred type. At each call the inferred symbolic signature is instantiated with the argument types, without reanalyzing the function body for individual call sites.
 
 ```natcode
-// Illustration of intended syntax and inference:
-test(x: number) => x * 2   // return: number
-test(x: 24) => x * 2       // return: 48
+fn identity(value) { value }
+fn increment(value: Number) { value + 1 }
+
+a = identity(value: 42)             // type 42
+b = increment(value: 41)            // type 42
 ```
 
-The function syntax in these examples is illustrative (PAR-FN-01, TYP-FN-03); they illustrate type inference rules only.
+Independent parameters preserve independent exact types even when they have the same annotations. The symbolic result may reflect unions from return branches, truth of a branch condition known at the call site, and exact properties of structurally constrained records:
+
+```natcode
+fn first(a: Number, b: Number) { a }
+fn getName(user: { name: String }) { user.name }
+
+x = first(a: 42, b: 100)              // type 42
+y = getName(user: { name: "Ada", age: 30 }) // type "Ada"
+```
+
+A return of `when condition` branches can select only the possible branch results after specializing the condition's type: a known `true` condition eliminates the `false` branch; an unknown Boolean condition retains both. More detailed inference precision and recursion remain TYP-FN-04. This changes the previous fixed-return-widening interpretation without abandoning context-independent function analysis.
 
 Optional compile-time evaluation must not change inferred types, runtime semantics, or whether a program is valid (TYP-EVAL-01). Pure functions with statically known inputs may be evaluated at compile time to validate mandatory `where` restrictions (TYP-EVAL-03). A restriction proven false is a compile error, and required validation cannot silently fall back to a broader type. If the compiler cannot establish a mandatory restriction, that is also a compile error; unknown is not treated as either true or false (TYP-EVAL-04). Exact evaluation budgets and the complete eligibility rules for compile-time function evaluation remain open (TYP-EVAL-02).
+
+## Symbolic return constraints
+
+When the solver can prove a mathematical relationship across a transformation, the inferred type retains that relationship rather than needlessly widening (TYP-COMP-03). In exact mathematical arithmetic, `x > 0` implies `x + 1 > 1`; whether this holds under Natcode's eventual numeric representations must account for rounding and precision (TYP-BLT-05/06). Unknown or nonlinear relations outside the guaranteed subset are not silently assumed valid.
+
+Type-level computation also preserves the dependency of multiple references to one binding, including across intermediate declarations (TYP-COMP-02). Two independent union expressions may combine all alternatives, but `x + x` denotes the same underlying `x` on both sides.
 
 ## Flow-sensitive refinement and symbolic reasoning
 
