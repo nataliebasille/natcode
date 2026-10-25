@@ -122,7 +122,7 @@
 
 - **Status:** Proposed
 - **Spec:** [modules.md — Exported kind: object library or function executable](../spec/modules.md#exported-kind-object-library-or-function-executable)
-- **Done when:** The shared conformance case passes on WebAssembly. `export { squareNumber = square }` gives importers a working `squareNumber`.
+- **Done when:** The shared conformance case passes on WebAssembly. `export { square as squareNumber }` gives importers a working `squareNumber`.
 
 ### WASM-MOD-07 — Re-exports
 
@@ -161,19 +161,19 @@
 
 - **Status:** Proposed
 - **Spec:** [modules.md — Exported object shapes and optional properties](../spec/modules.md#exported-object-shapes-and-optional-properties)
-- **Done when:** The shared conformance case passes on WebAssembly. `import *` makes every statically possible export usable by its own name.
+- **Done when:** The shared conformance case passes on WebAssembly. `from "./math" import *` makes every statically possible export usable by its own name.
 
 ### WASM-IMP-03 — Combined named and namespace import
 
 - **Status:** Proposed
 - **Spec:** [modules.md — Import syntax and ordering](../spec/modules.md#import-syntax-and-ordering)
-- **Done when:** The shared conformance case passes on WebAssembly. `{ PI }, Math` provides a working `PI` and a `Math` namespace without `PI`.
+- **Done when:** The shared conformance case passes on WebAssembly. `from "./math" import { PI }, Math` provides a working `PI` and a `Math` namespace without `PI`.
 
 ### WASM-IMP-04 — Import aliases
 
 - **Status:** Proposed
 - **Spec:** [modules.md — Import syntax and ordering](../spec/modules.md#import-syntax-and-ordering)
-- **Done when:** The shared conformance case passes on WebAssembly. `{ formatText = format }` provides a working `formatText`.
+- **Done when:** The shared conformance case passes on WebAssembly. `from "./math" import { format as formatText }` provides a working `formatText`.
 
 ### WASM-IMP-05 — Repeated imports of one module
 
