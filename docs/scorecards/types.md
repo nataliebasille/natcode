@@ -130,6 +130,13 @@
 - **Spec:** [evaluation.md — Flow-sensitive refinement and symbolic reasoning](../spec/evaluation.md#flow-sensitive-refinement-and-symbolic-reasoning)
 - **Done when:** The guaranteed solver handles equality/order relations, Boolean combinations, transitive implications, and linear arithmetic with known constant coefficients; nonlinear relationships between unknown values are valid predicates but need not be symbolically proven.
 
+### TYP-REF-18 — Refining complemented types
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Where placement and precedence](../spec/syntax-and-types.md#where-placement-and-precedence)
+- **Done when:** `where` can restrict a complement type such as `~Number` under the same pattern-narrowing and operand typing rules as any other type. Numeric operations on a whole `~Number` candidate are invalid, but a nominal constructor pattern can narrow the candidate and expose a numeric payload for valid comparisons. `~Number where ...` restricts the complement; `~(Number where ...)` complements the refinement instead.
+- **Notes:** Approved 2026-10-25. No new special filtering syntax.
+
 ### TYP-REF-11 — Restricted assignability requires established membership
 
 - **Status:** Approved
