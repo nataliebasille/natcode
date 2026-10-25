@@ -101,6 +101,13 @@ Thus `a + b * c` means `a + (b * c)`, `a - b - c` means `(a - b) - c`, `a * b / 
 
 Member access and calls form one postfix layer, so `foo.bar(x).baz()` groups as `(((foo.bar)(x)).baz)()`. Type-expression `|` and `&` are separate union/intersection operators and are not ordinary value operators. Pipe syntax and precedence remain open under PAR-PIPE-01. `/` denotes numeric division in both value expressions and type-level computations; type set difference uses `\` (PAR-TYPE-08). Validation with `as?` applies to the complete preceding arithmetic expression unless parenthesized as an operand (PAR-VAL-01); its right-hand type expression retains its own grammar.
 
+## Strict Boolean operations
+
+Boolean logic has no implicit truthiness: `&&`, `||`, and prefix `!` require operands assignable to `Boolean`, and each produces only Boolean values. `&&` and `||` short-circuit; they do not return their original operands as JavaScript operators can. A union with any non-Boolean possibility is an invalid Boolean operand and causes a compile error, rather than silently discarding that possibility. Known results retain literal `true` or `false` types. Subjectless `when` conditions and `where` predicates must likewise produce Boolean values (TYP-BOOL-01, RUN-BOOL-01).
+
+Prefix `~` is reserved for type complement; Boolean NOT remains `!` (TYP-UNI-05).
+
+
 ## Numeric arithmetic operators
 
 - Binary `-` subtracts numbers, with the same precedence as `+` and left associativity (PAR-EXPR-01).
@@ -613,6 +620,48 @@ For a union target, validation succeeds when any alternative succeeds. Failures 
 `ValidationError` is a first-class designated error type that carries the type-level validation failures encountered while checking the requested target. Validation evaluates all applicable checks needed to collect every determinable failure rather than stopping after the first independent failure (TYP-REF-15). The exact structure of `ValidationError`, developer-defined type-level validation messages or metadata, and their representation remain open (TYP-REF-16).
 
 A target type therefore conceptually induces a validator with the shape `U -> T | ValidationError`. General expression-placeholder syntax such as `_ as? T`, including multiple-placeholder and scope rules, remains open (PAR-EXPR-02). Pipe syntax and any error-aware short-circuiting behavior also remain open (PAR-PIPE-01, TYP-REF-17).
+
+## Type-expression computations and record syntax
+
+Type expressions accept named and qualified types, constructor restrictions, parentheses, primitive literal types (numeric literals including negative values and decimals; double-quoted strings; and `true`/`false`), and structural record types (PAR-TYPE-09). Record types use `{}` for the empty record, `key: Type` properties, required commas between properties, and an optional trailing comma. Static keys can be identifiers, string literals, or numeric literals, matching object literals. Computed and dynamic property typing remains an open question (TYP-OBJ-01).
+
+```natcode
+type User = { name: String, age: Number, active: Boolean }
+type Tagged = { kind: "left", value: Number }
+type EmptyRecord = {}
+```
+
+Type expressions may perform numeric arithmetic (`+`, `-`, `*`, `/`, `%`), comparisons, and Boolean operations (`&&`, `||`, `!`) on the possible values of their operand types (PAR-TYPE-10, TYP-COMP-01). A not-yet-spelled Euclidean modulo operator remains separately open (PAR-EXPR-03). Arithmetic operates on **sets of possible results**: for example, `10 * (2 | 30)` describes `20 | 300`, and `(1 | 2) + (10 | 20)` describes `11 | 12 | 21 | 22`. Finite literal combinations are evaluated exactly. Expressions over infinite or refined numeric sets may retain symbolic constraints and simplify them when equivalence is established, subject to the still-open numeric representation and rounding rules (TYP-BLT-05/06). Division and remainder retain the required nonzero-divisor proof (TYP-ARITH-04).
+
+Comparisons produce possible Boolean literal results, and Boolean operations obey the same **strict Boolean** rule at type level as at runtime (TYP-BOOL-01). Invalid operand possibilities are compile errors, not filtered out:
+
+```natcode
+type Answer = 40 + 2              // 42
+type Products = 10 * (2 | 30)    // 20 | 300
+type Compare = (1 | 2 | 3) > 2   // Boolean
+type IsTrue = (10 > 5) && true  // true
+type Invalid = (true | 42) && true // compile error
+```
+
+A type computation can refer to a value binding through that binding's inferred type. The binding need not have one known runtime value. All occurrences of the **same** binding denote the same underlying choice, and correlated values derived through intermediate bindings remain dependent; independently written unions denote independent sets of possible values (TYP-COMP-02).
+
+```natcode
+minimum: Number = 10
+type Threshold = minimum + 2 // 12
+
+x = when getBoolean()
+    true => 1
+    false => 2
+y = x + 1
+
+type Related = x + y          // 3 | 5
+type Independent = (1 | 2) + (1 | 2) // 2 | 3 | 4
+```
+
+This does not authorize arbitrary effectful type computation. Pure user-defined compile-time evaluation guarantees and resource budgets remain TYP-EVAL-02; explicit generic declarations and advanced type-level functions remain TYP-GEN-01.
+
+The approved type-expression precedence is: grouping and constructor application; prefix `~`, `!`, and unary `-`; multiplicative arithmetic; additive arithmetic; `where`; `&` and `\\` (equal, left-associative); then `|`. Thus arithmetic and prefix operators bind more tightly than `where`, which binds more tightly than set operators. The placement of comparisons and Boolean `&&`/`||` relative to `where` and set operators has **not yet** been approved (PAR-TYPE-01), so parentheses should be used where those forms mix. No explicit `<T>` generic grammar has been adopted (TYP-GEN-01).
+
 
 ## Union and intersection types
 
