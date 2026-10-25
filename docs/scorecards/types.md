@@ -9,7 +9,7 @@
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
-- **Done when:** `unique type UserId(number)` and `unique type ProductId(number)` introduce distinct identities; values of one are not interchangeable with the other merely because both wrap `number`.
+- **Done when:** `unique type UserId(Number)` and `unique type ProductId(Number)` introduce distinct identities; values of one are not interchangeable with the other merely because both wrap `Number`.
 
 ### TYP-NOM-02 — Strict nominal payload boundary
 
@@ -21,7 +21,7 @@
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
-- **Done when:** `unique type Point(number, number)` allows `Point(10, 20)` and each parameter is typed independently.
+- **Done when:** `unique type Point(Number, Number)` allows `Point(10, 20)` and each parameter is typed independently.
 
 ### TYP-NOM-04 — Destructuring constructor patterns, no automatic value property
 
@@ -41,14 +41,14 @@
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
-- **Done when:** `unique type Sprint(Position, Color)` takes constructed `Position` and `Color` values as ordinary arguments; writing `Position(number, number)` or `Color(string)` where these do not restrict the declared type has the same parameter meaning.
+- **Done when:** `unique type Sprint(Position, Color)` takes constructed `Position` and `Color` values as ordinary arguments; writing `Position(Number, Number)` or `Color(String)` where these do not restrict the declared type has the same parameter meaning.
 - **Notes:** No special nominal-combination operator, multiple inheritance, interfaces, classes, or automatic nested-value projection is approved.
 
 ### TYP-NOM-07 — Specialized constructor aliases expose remaining parameters
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Specialized aliases and constructors](../spec/syntax-and-types.md#specialized-aliases-and-constructors)
-- **Done when:** `type XAxis = Position(number, 0)` exposes one constructor parameter and `XAxis(10)` constructs `Position(10, 0)`; `Position(0, 0)` exposes zero parameters.
+- **Done when:** `type XAxis = Position(Number, 0)` exposes one constructor parameter and `XAxis(10)` constructs `Position(10, 0)`; `Position(0, 0)` exposes zero parameters.
 
 ### TYP-NOM-08 — Optional parentheses for zero-parameter application
 
@@ -207,13 +207,13 @@
 
 - **Status:** Approved
 - **Spec:** [variables.md — Declaration syntax](../spec/variables.md#declaration-syntax)
-- **Done when:** `x: number = 42` passes and `x: string = 42` fails.
+- **Done when:** `x: Number = 42` passes and `x: String = 42` fails.
 
 ### TYP-CON-02 — Constraints never widen
 
 - **Status:** Approved
 - **Spec:** [variables.md — Declaration syntax](../spec/variables.md#declaration-syntax)
-- **Done when:** After `x: number = 42`, `x` still has the inferred type `42`.
+- **Done when:** After `x: Number = 42`, `x` still has the inferred type `42`.
 
 ### TYP-CON-03 — Assignability and subtyping rules
 
@@ -433,9 +433,9 @@
 - **Questions:**
   1. How closely are object types related to `Map`, if at all?
   2. How should the type system represent an object literal containing a computed key whose runtime value is not statically known?
-  3. When a computed key may collide with a statically known property, how is the final property type inferred while preserving source-order overwrite behavior and precise access to known properties?
+  3. When a computed key may collide with a statically known property, how is the final property type inferred while preserving precise access to known properties and the eventual approved runtime collision semantics (RUN-OBJ-01)?
   4. When a computed key is known exactly, or is provably disjoint from a static property, how is that knowledge reflected in the resulting object type?
-- **Notes:** Computed-key syntax itself is approved by PAR-OBJ-01. The representation is intentionally unresolved. For example, with `key: String`, `{ name: "Ada", [key]: 1234 }` must remain type-safe even though `key` may be `"name"`; a future design may relate the dynamic portion to `Map`, use intersections, or choose another representation without committing to any of those here.
+- **Notes:** Computed-key syntax itself is approved by PAR-OBJ-01. The representation and runtime collision/overwrite order (RUN-OBJ-01) are intentionally unresolved. For example, with `key: String`, `{ name: "Ada", [key]: 1234 }` must remain type-safe even though `key` may be `"name"`; a future design may relate the dynamic portion to `Map`, use intersections, or choose another representation without committing to any of those here.
 
 ## Module export kinds and shapes
 
