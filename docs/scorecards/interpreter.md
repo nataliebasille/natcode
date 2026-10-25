@@ -107,7 +107,7 @@
 
 - **Status:** Proposed
 - **Spec:** [modules.md — Exported kind: object library or function executable](../spec/modules.md#exported-kind-object-library-or-function-executable)
-- **Done when:** The shared conformance case passes on the native interpreter. `export { squareNumber = square }` gives importers a working `squareNumber`.
+- **Done when:** The shared conformance case passes on the native interpreter. `export { square as squareNumber }` gives importers a working `squareNumber`.
 
 ### INT-MOD-07 — Re-exports
 
@@ -146,19 +146,19 @@
 
 - **Status:** Proposed
 - **Spec:** [modules.md — Exported object shapes and optional properties](../spec/modules.md#exported-object-shapes-and-optional-properties)
-- **Done when:** The shared conformance case passes on the native interpreter. `import *` makes every statically possible export usable by its own name.
+- **Done when:** The shared conformance case passes on the native interpreter. `from "./math" import *` makes every statically possible export usable by its own name.
 
 ### INT-IMP-03 — Combined named and namespace import
 
 - **Status:** Proposed
 - **Spec:** [modules.md — Import syntax and ordering](../spec/modules.md#import-syntax-and-ordering)
-- **Done when:** The shared conformance case passes on the native interpreter. `{ PI }, Math` provides a working `PI` and a `Math` namespace without `PI`.
+- **Done when:** The shared conformance case passes on the native interpreter. `from "./math" import { PI }, Math` provides a working `PI` and a `Math` namespace without `PI`.
 
 ### INT-IMP-04 — Import aliases
 
 - **Status:** Proposed
 - **Spec:** [modules.md — Import syntax and ordering](../spec/modules.md#import-syntax-and-ordering)
-- **Done when:** The shared conformance case passes on the native interpreter. `{ formatText = format }` provides a working `formatText`.
+- **Done when:** The shared conformance case passes on the native interpreter. `from "./math" import { format as formatText }` provides a working `formatText`.
 
 ### INT-IMP-05 — Repeated imports of one module
 
