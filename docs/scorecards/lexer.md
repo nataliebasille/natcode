@@ -327,13 +327,13 @@
 - **Evidence:** `tests/lexer/main.rs::operators::value_expression_operators`, `tests/lexer/main.rs::operators::value_expression_operators_without_whitespace`, `tests/lexer/main.rs::operators::value_operator_ends_an_unexpected_character_run`, `tests/lexer/main.rs::numbers::minus_is_not_part_of_a_number`
 - **Notes:** A future pipe operator remains open under PAR-PIPE-01 and is not approved here. Leading `-` remains an operator rather than part of a number literal (LEX-NUM-03). The lexer only produces the tokens; unary/binary roles and precedence belong to the parser (PAR-EXPR-01).
 
-### LEX-OP-04 — Slash token for division and type set difference
+### LEX-OP-04 — Slash token for arithmetic division
 
 - **Status:** Implemented
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
-- **Done when:** `/` lexes as its own token for approved value division and type-expression `A / B` set difference; the parser determines the role.
+- **Done when:** `/` lexes as its own arithmetic division token in both value expressions and type-level numeric computations; its behavior is not type set difference.
 - **Evidence:** `tests/lexer/main.rs::operators::slash_is_a_token`, `tests/lexer/main.rs::operators::double_slash_and_slash_star_still_start_comments`, `tests/lexer/main.rs::operators::every_approved_operator_and_punctuation`, `tests/lexer/main.rs::comments::stray_block_comment_close_is_not_a_comment`
-- **Notes:** Value-expression division (PAR-EXPR-01) and type-expression difference (PAR-TYPE-08) share the same token. `//` and `/*` still begin comments, so `A//B` and `A/*B` start comments rather than producing `/` tokens; a stray `*/` lexes as `*` followed by `/`.
+- **Notes:** The implemented `/` token remains unchanged and its passing lexer tests still apply; only the formerly approved type-context interpretation has been replaced by `\` (PAR-TYPE-08). `//` and `/*` still begin comments, so `A//B` and `A/*B` start comments rather than producing `/` tokens; a stray `*/` lexes as `*` followed by `/`.
 
 ### LEX-OP-05 — Runtime-validation `as?` token
 
@@ -350,6 +350,13 @@
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
 - **Done when:** `%` lexes as a single operator token for value-expression truncated remainder (PAR-EXPR-01, TYP-ARITH-02), with ordinary surrounding tokens lexed separately. Its lexer implementation has not yet been completed.
 - **Notes:** Do not infer a token for Euclidean modulo; its spelling remains open (PAR-EXPR-03).
+
+### LEX-OP-07 — Set difference and complement tokens
+
+- **Status:** Approved
+- **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
+- **Done when:** `\` and `~` lex as independent ASCII operator tokens for type-expression set difference and prefix set complement respectively; `/` continues to lex as division, `!` continues to lex as Boolean NOT, and strings still reject backslash characters under LEX-STR-02. Backslash is not an explicit line-continuation token.
+- **Notes:** Approved 2026-10-25 (PAR-TYPE-08, TYP-UNI-05). Lexer implementation and tests are not yet complete.
 
 ## Whitespace and indentation
 
