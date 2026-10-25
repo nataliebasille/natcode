@@ -22,17 +22,17 @@ Source text is UTF-8. Positions are reported as byte-offset spans plus 1-based l
 | Wildcard | A standalone `_` is its own token, never an identifier. `_x`, `__`, and `x_` are identifiers. |
 | Numbers | Decimal integers (`42`) and decimal fractions (`3.14159`), using ASCII digits only. |
 | Strings | Double-quoted, single-line: `"Alice"`, `"./math"`. Any character except a line break is allowed, including non-ASCII. |
-| Operators and punctuation | `=` `=>` `:` `\|` `&` `/` `as?` `{` `}` `(` `)` `,` `.` `*` `+` `-` `%` `!` `<` `<=` `>` `>=` `==` `!=` `&&` `||` |
+| Operators and punctuation | `=` `=>` `:` `\|` `&` `\` `~` `/` `as?` `{` `}` `(` `)` `,` `.` `*` `+` `-` `%` `!` `<` `<=` `>` `>=` `==` `!=` `&&` `||` |
 | Comments | `// …` to end of line; `/* … */` block comments, which nest. Comment text produces no ordinary tokens. Physical line breaks inside block comments must remain visible to layout analysis (LEX-COM-04), whether through newline tokens or source-position/layout metadata. |
 | Line breaks | LF or CRLF; each is one newline token. Spaces are insignificant between tokens. |
 
-The reserved words are recognized as keywords regardless of position; they cannot name ordinary bindings. `unique` is the hard-reserved modifier in nominal declarations written `unique type`. `alias` is an ordinary identifier, not a declaration keyword. Keyword spellings are permitted as object property names, with details of the object grammar still to be determined (PAR-OBJ-01). `match`, `if`, `else`, `elif`, and `case` are not reserved words or language control-flow constructs. The unified matching and conditional keyword is `when` (LEX-KW-07). `return` is not a control-flow construct or keyword. `try`, `catch`, and `throw` are not reserved or built-in exception constructs (LEX-KW-11). `null` is not a native literal or reserved word; absence is represented using constructors such as `None`. `where` is the refinement-type keyword. `as` is a hard-reserved renaming keyword (LEX-KW-15) used in imports, exports, and function parameter aliases (PAR-IMP-07, PAR-EXP-02, PAR-FN-01). It cannot name a value, and it is not a type assertion or conversion. `as?` is one indivisible, distinct runtime-validation operator token (LEX-OP-05); whitespace-separated `as ?` is not the operator. Value-expression operators `-`, `!`, `<`, `<=`, `>`, `>=`, `==`, `!=`, `&&`, and `||` are tokenized per LEX-OP-03; `-` has both unary and binary parser roles. `/` is a token for both numeric division and type set difference (LEX-OP-04). `%` is newly approved for truncated remainder and needs lexer implementation (LEX-OP-06). Euclidean modulo is approved semantically, but no spelling or token is yet approved (PAR-EXPR-03). Multi-character operators use maximal munch (LEX-OP-02). A future pipe operator remains open under PAR-PIPE-01. Further words, including `then` and generator/effect vocabulary, remain open questions (LEX-KW-03).
+The reserved words are recognized as keywords regardless of position; they cannot name ordinary bindings. `unique` is the hard-reserved modifier in nominal declarations written `unique type`. `alias` is an ordinary identifier, not a declaration keyword. Keyword spellings are permitted as object property names, with details of the object grammar still to be determined (PAR-OBJ-01). `match`, `if`, `else`, `elif`, and `case` are not reserved words or language control-flow constructs. The unified matching and conditional keyword is `when` (LEX-KW-07). `return` is not a control-flow construct or keyword. `try`, `catch`, and `throw` are not reserved or built-in exception constructs (LEX-KW-11). `null` is not a native literal or reserved word; absence is represented using constructors such as `None`. `where` is the refinement-type keyword. `as` is a hard-reserved renaming keyword (LEX-KW-15) used in imports, exports, and function parameter aliases (PAR-IMP-07, PAR-EXP-02, PAR-FN-01). It cannot name a value, and it is not a type assertion or conversion. `as?` is one indivisible, distinct runtime-validation operator token (LEX-OP-05); whitespace-separated `as ?` is not the operator. Value-expression operators `-`, `!`, `<`, `<=`, `>`, `>=`, `==`, `!=`, `&&`, and `||` are tokenized per LEX-OP-03; `-` has both unary and binary parser roles. `/` is the arithmetic-division token in both value and type computations (LEX-OP-04). `\` and `~` are approved type difference and complement operator tokens awaiting implementation (LEX-OP-07). `%` is newly approved for truncated remainder and needs lexer implementation (LEX-OP-06). Euclidean modulo is approved semantically, but no spelling or token is yet approved (PAR-EXPR-03). Multi-character operators use maximal munch (LEX-OP-02). A future pipe operator remains open under PAR-PIPE-01. Further words, including `then` and generator/effect vocabulary, remain open questions (LEX-KW-03).
 
 ## Layout and indentation
 
 Source indentation has **no fixed required width**. Explicit executable blocks are delimited by braces. Leading whitespace remains available for parsing `when` and `where` branch lists and nominal constructor lists, even when those constructs occur inside `{}` or `()`. These lists use their grammar and applicable branch constraints to establish membership: differing indentation alone is not a compile error when ownership is unambiguous. Blank lines and comment-only lines do not change grouping. An unresolved ambiguous grouping is a compilation error; the compiler must not guess or automatically reindent it.
 
-Natcode has **no explicit line-continuation marker**, including backslash continuation. Parentheses and other expression delimiters may allow multiline expressions; their complete newline grammar is still to be specified (PAR-BLK-02, PAR-EXPR-01). Canonical formatting uses four spaces and is part of the Natcode toolchain (TOOL-FMT-01). Tabs and other whitespace categories remain separately open in LEX-WS-02. Under LEX-COM-04, block comments preserve physical line boundaries for layout: removing comment text never joins two physical lines into one logical line. Comment-only lines remain layout-neutral, and following code retains the layout of its own physical line. The representation of these boundaries as newline tokens or source-position/layout metadata is an implementation choice.
+Natcode has **no explicit line-continuation marker**. The `\` token is type set difference and never acts as a backslash continuation marker. Expressions may span physical lines after a trailing binary operator that still needs its right operand or within explicit parentheses without changing branch ownership (PAR-BLK-02). Canonical formatting uses four spaces and is part of the Natcode toolchain (TOOL-FMT-01). Tabs and other whitespace categories remain separately open in LEX-WS-02. Under LEX-COM-04, block comments preserve physical line boundaries for layout: removing comment text never joins two physical lines into one logical line. Comment-only lines remain layout-neutral, and following code retains the layout of its own physical line. The representation of these boundaries as newline tokens or source-position/layout metadata is an implementation choice.
 
 ## Identifier normalization
 
@@ -158,12 +158,19 @@ Ordinary value-expression operators bind from highest to lowest as follows:
 
 Thus `a + b * c` means `a + (b * c)`, `a - b - c` means `(a - b) - c`, `a * b / c` means `(a * b) / c`, `!ready && enabled` means `(!ready) && enabled`, and `x => y => x + y` means `x => (y => x + y)`. Comparison operators do not chain: `a < b < c` is invalid; write `a < b && b < c`.
 
-Member access and calls form one postfix layer, so `foo.bar(x).baz()` groups as `(((foo.bar)(x)).baz)()`. Type-expression `|` and `&` are separate union/intersection operators and are not ordinary value operators. Pipe syntax and precedence remain open under PAR-PIPE-01. `/` is numeric division here and set difference in type expressions (PAR-TYPE-08). Validation with `as?` applies to the complete preceding arithmetic expression unless parenthesized as an operand (PAR-VAL-01); its right-hand type expression retains its own grammar.
+Member access and calls form one postfix layer, so `foo.bar(x).baz()` groups as `(((foo.bar)(x)).baz)()`. Type-expression `|` and `&` are separate union/intersection operators and are not ordinary value operators. Pipe syntax and precedence remain open under PAR-PIPE-01. `/` denotes numeric division in both value expressions and type-level computations; type set difference uses `\` (PAR-TYPE-08). Validation with `as?` applies to the complete preceding arithmetic expression unless parenthesized as an operand (PAR-VAL-01); its right-hand type expression retains its own grammar.
+
+## Strict Boolean operations
+
+Boolean logic has no implicit truthiness: `&&`, `||`, and prefix `!` require operands assignable to `Boolean`, and each produces only Boolean values. `&&` and `||` short-circuit; they do not return their original operands as JavaScript operators can. A union with any non-Boolean possibility is an invalid Boolean operand and causes a compile error, rather than silently discarding that possibility. Known results retain literal `true` or `false` types. Subjectless `when` conditions and `where` predicates must likewise produce Boolean values (TYP-BOOL-01, RUN-BOOL-01).
+
+Prefix `~` is reserved for type complement; Boolean NOT remains `!` (TYP-UNI-05).
+
 
 ## Numeric arithmetic operators
 
 - Binary `-` subtracts numbers, with the same precedence as `+` and left associativity (PAR-EXPR-01).
-- Value-level `/` performs **true division**, so `5 / 2` produces `2.5` rather than `2` (TYP-ARITH-01). It is distinct from type-level set difference, which shares its token.
+- `/` performs **true division** both on runtime numbers and in type-level numeric computations; `5 / 2` evaluates to `2.5` rather than `2` (TYP-ARITH-01). Type set difference instead uses `\`.
 - `%` is **truncated remainder**, with quotient rounded toward zero, including fractional operands: `-5 % 3` is `-2`, `5 % -3` is `2`, and `5.5 % 2` is `1.5` (TYP-ARITH-02).
 - A **second infix operator** computes **Euclidean modulo** on fractional as well as integer operands. For a nonzero divisor `b`, its result is nonnegative and smaller than `abs(b)`, even when `b` is negative. This operator is left-associative at the same precedence as `*`, `/`, and `%` (TYP-ARITH-03).
 - The Euclidean operator's **spelling is not yet chosen** (PAR-EXPR-03); the notation `MOD` in examples is illustrative and is not a lexer token or keyword.
@@ -208,7 +215,7 @@ Both forms must be exhaustive (TYP-PAT-01). The remaining possible value set mus
 
 ## Function parameters and labeled calls
 
-Named functions declare parameter bindings with TypeScript-like type annotations. Calls to a named `fn` declaration use `label: expression` (not `label = expression`), and labeled arguments may appear in any order. Parameter defaults use `=` and may precede required parameters (PAR-FN-01).
+Named functions may omit parameter type annotations. Every parameter is implicitly polymorphic and has its own independent type variable, constrained by its annotation or by `Any` when omitted (PAR-FN-04, TYP-FN-06). An explicit annotation constrains acceptable arguments but does not widen their exact types. Calls to a named `fn` declaration use `label: expression` (not `label = expression`), and labeled arguments may appear in any order. Parameter defaults use `=` and may precede required parameters (PAR-FN-01).
 
 ```natcode
 fn greet(first: String = "Ada", last: String) {
@@ -412,7 +419,7 @@ Within `Option where ...`, unqualified constructor names such as `Some` and `Non
 
 ### Where placement and precedence
 
-`where` is a normal type operator and may appear wherever a type expression is already permitted (PAR-REF-01). The `where` keyword must start on the **same physical line** as the type or constructor it restricts (for a parenthesized expression, the line of its closing `)`); moving it to the next line is invalid. Its branch indentation can be normalized when ownership is unambiguous (LEX-IND-01). It binds more tightly than the set operators `|`, `&`, and `/`:
+`where` is a normal type operator and may appear wherever a type expression is already permitted (PAR-REF-01). The `where` keyword must start on the **same physical line** as the type or constructor it restricts (for a parenthesized expression, the line of its closing `)`); moving it to the next line is invalid. Its branch indentation can be normalized when ownership is unambiguous (LEX-IND-01). Arithmetic, prefix complement `~`, and prefix Boolean NOT `!` bind more tightly than `where`; `where` binds more tightly than the set operators `|`, `&`, and `\`. Intersection `&` and difference `\` have equal left-associative precedence, with union `|` lower. The full placement of comparisons and Boolean `&&`/`||` relative to `where` and set operators remains open (PAR-TYPE-01):
 
 ```natcode
 A | B where x => predicate(x)
@@ -427,6 +434,17 @@ Parentheses select a larger input explicitly:
     A(x) => ...
     B(x) => ...
 ```
+
+`~Number where x => predicate(x)` means `(~Number) where x => predicate(x)`; `~(Number where x => predicate(x))` complements the restricted Number type instead. Ordinary `where` pattern-narrowing and operand-safety rules apply to complements (TYP-REF-18). For example:
+
+```natcode
+unique type Ticket(Number)
+
+type PositiveTickets = ~Number where
+    Ticket(x) => x > 0
+```
+
+The `Ticket(x)` pattern narrows the candidate to a nominal value whose payload is Number. By contrast, `~Number where x => x > 0` is invalid because an unrestricted whole-value binder for `~Number` cannot support a numeric comparison.
 
 Directly chaining `where` operators is rejected. Combine conditions in one restriction or name the intermediate type instead:
 
@@ -596,7 +614,7 @@ type Center = XAxis & YAxis
 
 normalizes to `Position(0, 0)`, so `Center` has the resulting zero-parameter constructor.
 
-Set difference preserves constructibility when its normalized result still has one effective constructor shape. The type-expression operator `A / B` denotes values in `A` that are not in `B` (TYP-UNI-10).
+Set difference preserves constructibility when its normalized result still has one effective constructor shape. The type-expression operator `A \ B` denotes values in `A` that are not in `B` (TYP-UNI-10).
 
 ### Purity and lexical capture
 
@@ -662,12 +680,55 @@ For a union target, validation succeeds when any alternative succeeds. Failures 
 
 A target type therefore conceptually induces a validator with the shape `U -> T | ValidationError`. General expression-placeholder syntax such as `_ as? T`, including multiple-placeholder and scope rules, remains open (PAR-EXPR-02). Pipe syntax and any error-aware short-circuiting behavior also remain open (PAR-PIPE-01, TYP-REF-17).
 
+## Type-expression computations and record syntax
+
+Type expressions accept named and qualified types, constructor restrictions, parentheses, primitive literal types (numeric literals including negative values and decimals; double-quoted strings; and `true`/`false`), and structural record types (PAR-TYPE-09). Record types use `{}` for the empty record, `key: Type` properties, required commas between properties, and an optional trailing comma. Static keys can be identifiers, string literals, or numeric literals, matching object literals. Computed and dynamic property typing remains an open question (TYP-OBJ-01).
+
+```natcode
+type User = { name: String, age: Number, active: Boolean }
+type Tagged = { kind: "left", value: Number }
+type EmptyRecord = {}
+```
+
+Type expressions may perform numeric arithmetic (`+`, `-`, `*`, `/`, `%`), comparisons, and Boolean operations (`&&`, `||`, `!`) on the possible values of their operand types (PAR-TYPE-10, TYP-COMP-01). A not-yet-spelled Euclidean modulo operator remains separately open (PAR-EXPR-03). Arithmetic operates on **sets of possible results**: for example, `10 * (2 | 30)` describes `20 | 300`, and `(1 | 2) + (10 | 20)` describes `11 | 12 | 21 | 22`. Finite literal combinations are evaluated exactly. Expressions over infinite or refined numeric sets may retain symbolic constraints and simplify them when equivalence is established, subject to the still-open numeric representation and rounding rules (TYP-BLT-05/06). Division and remainder retain the required nonzero-divisor proof (TYP-ARITH-04).
+
+Comparisons produce possible Boolean literal results, and Boolean operations obey the same **strict Boolean** rule at type level as at runtime (TYP-BOOL-01). Invalid operand possibilities are compile errors, not filtered out:
+
+```natcode
+type Answer = 40 + 2              // 42
+type Products = 10 * (2 | 30)    // 20 | 300
+type Compare = (1 | 2 | 3) > 2   // Boolean
+type IsTrue = (10 > 5) && true  // true
+type Invalid = (true | 42) && true // compile error
+```
+
+A type computation can refer to a value binding through that binding's inferred type. The binding need not have one known runtime value. All occurrences of the **same** binding denote the same underlying choice, and correlated values derived through intermediate bindings remain dependent; independently written unions denote independent sets of possible values (TYP-COMP-02).
+
+```natcode
+minimum: Number = 10
+type Threshold = minimum + 2 // 12
+
+x = when getBoolean()
+    true => 1
+    false => 2
+y = x + 1
+
+type Related = x + y          // 3 | 5
+type Independent = (1 | 2) + (1 | 2) // 2 | 3 | 4
+```
+
+This does not authorize arbitrary effectful type computation. Pure user-defined compile-time evaluation guarantees and resource budgets remain TYP-EVAL-02; explicit generic declarations and advanced type-level functions remain TYP-GEN-01.
+
+The approved type-expression precedence is: grouping and constructor application; prefix `~`, `!`, and unary `-`; multiplicative arithmetic; additive arithmetic; `where`; `&` and `\` (equal, left-associative); then `|`. Thus arithmetic and prefix operators bind more tightly than `where`, which binds more tightly than set operators. The placement of comparisons and Boolean `&&`/`||` relative to `where` and set operators has **not yet** been approved (PAR-TYPE-01), so parentheses should be used where those forms mix. No explicit `<T>` generic grammar has been adopted (TYP-GEN-01).
+
+
 ## Union and intersection types
 
 - `|` is mathematical **set union**: a value belongs to `A | B` precisely when it belongs to `A` or `B`. Neither union nor intersection creates a new nominal identity (TYP-UNI-06).
 - Simplification/consolidation of a union is permitted **only when it preserves the exact represented set of possibilities**. In particular, preserve correlations between fields and exclusions; do not merge distinct object variants in ways that admit combinations not present in the original union.
 - `&` is mathematical **set intersection**: a value belongs to `A & B` precisely when it belongs to **both** types. It never constructs or combines constituent values and is distinct from `:` constraints (TYP-UNI-06).
-- `/` is mathematical **set difference** in type expressions: `A / B` contains exactly the values in `A` that are not in `B` (TYP-UNI-10).
+- `\` is mathematical **set difference** in type expressions: `A \ B` contains exactly the values in `A` that are not in `B` (TYP-UNI-10).
+- Prefix `~` is **set complement** relative to `Any`: `~A = Any \ A` (TYP-UNI-05). This is distinct from Boolean NOT `!`.
 - `Any` is the universal type (`T | Any = Any`, `T & Any = T`). `Empty` denotes the empty type: no values inhabit it. Thus `A | Empty = A` and `A & Empty = Empty` (TYP-UNI-07).
 - An intersection proven empty resolves to `Empty` and is **valid**, whether direct, nested, or involving explicit `Empty`. The declaration itself causes no warning or error merely for being empty. Attempting to provide a value where the type is uninhabited is an error (TYP-UNI-08).
 - Independently declared, unrelated nominal constructor types are disjoint: for example, `UserId & ProductId` is `Empty` (TYP-UNI-09). Nominal subtyping or other explicit overlapping-identity relationships are not introduced by ordinary constructors.
@@ -686,9 +747,9 @@ must not be simplified into:
 { kind: "left" | "right", value: number | string }
 ```
 
-because the latter would allow a `"left"` tag paired with a `string` value, which the original type excludes. The record-type syntax here is illustrative.
+because the latter would allow a `"left"` tag paired with a `string` value, which the original type excludes. The record-type syntax is approved by PAR-TYPE-09.
 
-Set identities include `A | B = B | A`, `A | A = A`, `A & B = B & A`, and `A & A = A`. More detailed structural membership and normalization choices remain TYP-UNI-04. Set difference `/` is approved in TYP-UNI-10; a standalone complement operator remains TYP-UNI-05. Generic types remain TYP-GEN-01; broader subtyping remains TYP-CON-03.
+Set identities include `A | B = B | A`, `A | A = A`, `A & B = B & A`, and `A & A = A`. More detailed structural membership and normalization choices remain TYP-UNI-04. Difference `\` is TYP-UNI-10 and complement `~` is TYP-UNI-05. Explicit generic declarations remain open (TYP-GEN-01); broader subtyping remains TYP-CON-03.
 
 ## Target directions
 
@@ -969,17 +1030,35 @@ Item status and open questions for this file are tracked in the [types](scorecar
 
 ## Function return inference: context-independent
 
-The designer revised an earlier broader constant-evaluation proposal: **function return types are inferred from parameter types and the function's own body**, not specialized using the specific values passed at each call site, nor values outside the function. Exact types can propagate through function-local variables.
+Function bodies are analyzed **independently of call sites** to infer a symbolic type-level relation between parameter types and results (TYP-FN-01). Every parameter is implicitly a distinct polymorphic type variable. A written annotation constrains acceptable arguments; without an annotation its bound is `Any` (TYP-FN-06, PAR-FN-04). Neither form widens the argument's exact inferred type. At each call the inferred symbolic signature is instantiated with the argument types, without reanalyzing the function body for individual call sites.
 
 ```natcode
-// Illustration of intended syntax and inference:
-test(x: number) => x * 2   // return: number
-test(x: 24) => x * 2       // return: 48
+fn identity(value) { value }
+fn increment(value: Number) { value + 1 }
+
+a = identity(value: 42)             // type 42
+b = increment(value: 41)            // type 42
 ```
 
-The function syntax in these examples is illustrative (PAR-FN-01, TYP-FN-03); they illustrate type inference rules only.
+Independent parameters preserve independent exact types even when they have the same annotations. The symbolic result may reflect unions from return branches, truth of a branch condition known at the call site, and exact properties of structurally constrained records:
+
+```natcode
+fn first(a: Number, b: Number) { a }
+fn getName(user: { name: String }) { user.name }
+
+x = first(a: 42, b: 100)              // type 42
+y = getName(user: { name: "Ada", age: 30 }) // type "Ada"
+```
+
+A return of `when condition` branches can select only the possible branch results after specializing the condition's type: a known `true` condition eliminates the `false` branch; an unknown Boolean condition retains both. More detailed inference precision and recursion remain TYP-FN-04. This changes the previous fixed-return-widening interpretation without abandoning context-independent function analysis.
 
 Optional compile-time evaluation must not change inferred types, runtime semantics, or whether a program is valid (TYP-EVAL-01). Pure functions with statically known inputs may be evaluated at compile time to validate mandatory `where` restrictions (TYP-EVAL-03). A restriction proven false is a compile error, and required validation cannot silently fall back to a broader type. If the compiler cannot establish a mandatory restriction, that is also a compile error; unknown is not treated as either true or false (TYP-EVAL-04). Exact evaluation budgets and the complete eligibility rules for compile-time function evaluation remain open (TYP-EVAL-02).
+
+## Symbolic return constraints
+
+When the solver can prove a mathematical relationship across a transformation, the inferred type retains that relationship rather than needlessly widening (TYP-COMP-03). In exact mathematical arithmetic, `x > 0` implies `x + 1 > 1`; whether this holds under Natcode's eventual numeric representations must account for rounding and precision (TYP-BLT-05/06). Unknown or nonlinear relations outside the guaranteed subset are not silently assumed valid.
+
+Type-level computation also preserves the dependency of multiple references to one binding, including across intermediate declarations (TYP-COMP-02). Two independent union expressions may combine all alternatives, but `x + x` denotes the same underlying `x` on both sides.
 
 ## Flow-sensitive refinement and symbolic reasoning
 
