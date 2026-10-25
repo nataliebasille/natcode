@@ -130,6 +130,13 @@
 - **Spec:** [evaluation.md — Flow-sensitive refinement and symbolic reasoning](../spec/evaluation.md#flow-sensitive-refinement-and-symbolic-reasoning)
 - **Done when:** The guaranteed solver handles equality/order relations, Boolean combinations, transitive implications, and linear arithmetic with known constant coefficients; nonlinear relationships between unknown values are valid predicates but need not be symbolically proven.
 
+### TYP-REF-18 — Refining complemented types
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Where placement and precedence](../spec/syntax-and-types.md#where-placement-and-precedence)
+- **Done when:** `where` can restrict a complement type such as `~Number` under the same pattern-narrowing and operand typing rules as any other type. Numeric operations on a whole `~Number` candidate are invalid, but a nominal constructor pattern can narrow the candidate and expose a numeric payload for valid comparisons. `~Number where ...` restricts the complement; `~(Number where ...)` complements the refinement instead.
+- **Notes:** Approved 2026-10-25. No new special filtering syntax.
+
 ### TYP-REF-11 — Restricted assignability requires established membership
 
 - **Status:** Approved
@@ -218,6 +225,34 @@
 
 ## Unions and intersections
 
+### TYP-COMP-01 — Set-based type-level computation
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Type-expression computations and record syntax](../spec/syntax-and-types.md#type-expression-computations-and-record-syntax)
+- **Done when:** Arithmetic, comparison, and strict Boolean operations within type expressions denote sets of possible results, distributing over independent finite literal alternatives while retaining symbolic constraints over larger numeric types when provable. Exact literal calculations such as `10 * (2 | 30)` yield `20 | 300`, while `Number + 1` denotes all possible results of the operation subject to approved numeric semantics.
+- **Notes:** Numeric representation, rounding, precision, and unrestricted symbolic arithmetic limits remain TYP-BLT-05/06 and TYP-EVAL-02.
+
+### TYP-COMP-02 — Correlated binding computations
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Type-expression computations and record syntax](../spec/syntax-and-types.md#type-expression-computations-and-record-syntax)
+- **Done when:** Type-level computations use the inferred type of a referenced value binding, including unions; repeated uses of one binding denote the same value choice, and derived bindings preserve that dependency. `x + x` for one `x: 1 | 2` yields `2 | 4`; with `y = x + 1`, `x + y` yields `3 | 5`. Independent literal-union operands may combine independently.
+- **Notes:** Approved 2026-10-25. Runtime object correlations and larger solver/representation strategies are implementation design work.
+
+### TYP-COMP-03 — Symbolic arithmetic on refinements
+
+- **Status:** Approved
+- **Spec:** [evaluation.md — Flow-sensitive refinement and symbolic reasoning](../spec/evaluation.md#flow-sensitive-refinement-and-symbolic-reasoning)
+- **Done when:** Inferred return/result types preserve provable symbolic arithmetic constraints on refined values rather than unconditionally widening to their broad numeric base types. For exact arithmetic, adding 1 to `Number where x => x > 0` gives the set satisfying `x > 1`; actual equivalences must respect Number's future representation and rounding semantics.
+- **Notes:** The guaranteed solver boundary is TYP-REF-10; exact numeric behavior remains TYP-BLT-05/06.
+
+### TYP-BOOL-01 — Strict Boolean operations and no truthiness
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Strict Boolean operations](../spec/syntax-and-types.md#strict-boolean-operations)
+- **Done when:** `&&`, `||`, and `!` accept exclusively Boolean operand types and yield only Boolean results, preserving literal `true`/`false` when derivable. Any possible non-Boolean operand is a compile error, not a silently excluded possibility. No implicit truthiness exists. Subjectless `when` conditions and `where` predicates require Boolean results. The same typing applies at runtime and in type expressions.
+- **Notes:** Runtime short-circuit and Boolean-only results are RUN-BOOL-01; approved 2026-10-25.
+
 ### TYP-UNI-01 — Union types
 
 - **Status:** Approved
@@ -268,27 +303,35 @@
 - **Spec:** [syntax-and-types.md — Union and intersection types](../spec/syntax-and-types.md#union-and-intersection-types)
 - **Done when:** `UserId & ProductId` resolves to `Empty` for unrelated nominal constructor types, even when they have the same payload representation.
 
-### TYP-UNI-05 — Complement types
-
-- **Status:** Open question
-- **Spec:** [syntax-and-types.md — Union and intersection types](../spec/syntax-and-types.md#union-and-intersection-types)
-- **Questions:**
-  1. Is there a standalone complement type operator, and with what syntax?
-- **Notes:** Binary set difference is approved separately as `/` in TYP-UNI-10.
-
-### TYP-UNI-10 — Set difference with `/`
+### TYP-UNI-05 — Set complement with prefix `~`
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Union and intersection types](../spec/syntax-and-types.md#union-and-intersection-types)
-- **Done when:** In type expressions, `A / B` denotes exactly the values in `A` that are not in `B`; normalization may preserve constructibility when the result still has one effective constructor shape.
+- **Done when:** `~A` denotes `Any \ A`, the mathematical complement relative to `Any`, and does not mean Boolean negation. Prefix `!` is reserved for strict Boolean NOT.
+- **Notes:** Formerly an open complement-operator question; prefix `~` approved 2026-10-25.
+
+### TYP-UNI-10 — Set difference with `\`
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Union and intersection types](../spec/syntax-and-types.md#union-and-intersection-types)
+- **Done when:** `A \ B` denotes values in `A` that are not in `B`; normalization may preserve constructibility when the resulting type has one effective constructor shape. Arithmetic division continues to use `/`, including within type expressions.
+- **Notes:** Replaces previously approved `/` difference spelling as of 2026-10-25.
 
 ## Functions
 
-### TYP-FN-01 — Context-independent return inference
+### TYP-FN-01 — Context-independent symbolic return inference
 
 - **Status:** Approved
 - **Spec:** [evaluation.md — Function return inference: context-independent](../spec/evaluation.md#function-return-inference-context-independent)
-- **Done when:** With a parameter of type `number`, `x * 2` infers `number`; with a parameter of literal type `24`, it infers `48`, regardless of call-site values.
+- **Done when:** A function is analyzed independently of call sites to infer a symbolic return type involving its implicitly polymorphic parameter types, then its signature is instantiated with each argument's inferred type. The return type preserves exact literals, parameter relationships, branch conditions, object properties, and supported arithmetic effects; for example `fn increment(value: Number) { value + 1 }` called with literal 41 has result type 42.
+- **Notes:** Revises the previously approved fixed-parameter return-type widening behavior while preserving independent function analysis; advanced precision limits and recursion remain TYP-FN-04.
+
+### TYP-FN-06 — Implicit independently quantified function parameters
+
+- **Status:** Approved
+- **Spec:** [evaluation.md — Function return inference: context-independent](../spec/evaluation.md#function-return-inference-context-independent)
+- **Done when:** Each function parameter is implicitly a separate polymorphic type variable, constrained by its optional written annotation or by `Any` if absent. A function can preserve the exact call-site argument type through return values, records, and branches even when other parameters share the same annotation; annotations constrain accepted types without widening them.
+- **Notes:** No explicit generic-parameter syntax is implied. Parameter annotation grammar is PAR-FN-04.
 
 ### TYP-FN-02 — Exact types through function-local declarations
 
@@ -443,7 +486,7 @@
   1. How does a type receive the error designation (declaration syntax, marker type, protocol, or another mechanism)?
   2. How are possible errors reflected in type inference, union types, and function return types?
   3. How do callers handle, transform, and propagate error values without exceptions?
-- **Notes:** Explicit, unwrapped error values and compiler-recognized designated error types are approved in TYP-ERR-02. Language-level exceptions are rejected (RUN-EFF-04). **Defer all remaining error designation, typing, and propagation decisions until the foundational type model is worked through**, especially TYP-ADT-02 (remaining algebraic type questions), TYP-CON-03 (subtyping), and PAR-TYPE-02 (remaining declaration grammar). Do not assume marker types, structural inheritance, or nominal branding.
+- **Notes:** Explicit, unwrapped error values and compiler-recognized designated error types are approved in TYP-ERR-02; automatic propagation of designated error operands through otherwise valid built-in arithmetic is approved in TYP-ERR-03. Language-level exceptions are rejected (RUN-EFF-04). **Defer remaining error designation, evaluation order, multiple-error behavior, general operator coverage, typing, and propagation details until the foundational type model is worked through**, especially TYP-ADT-02, TYP-CON-03, and PAR-TYPE-02. Do not assume marker types, structural inheritance, or nominal branding.
 
 ### TYP-ERR-02 — Designated first-class error types
 
@@ -451,6 +494,13 @@
 - **Spec:** [evaluation.md — Error handling](../spec/evaluation.md#error-handling)
 - **Done when:** Error values are ordinary first-class values; success values and designated error values may be returned directly as alternatives in a union, without obligatory `Ok`/`Err` wrappers. The type checker recognizes designated error types as distinct from ordinary non-error types.
 - **Notes:** The mechanism of designating an error type, exact return-type inference, and propagation rules remain open in TYP-ERR-01.
+
+### TYP-ERR-03 — Automatic propagation through arithmetic operators
+
+- **Status:** Approved
+- **Spec:** [evaluation.md — Error handling](../spec/evaluation.md#error-handling)
+- **Done when:** For an otherwise valid built-in arithmetic operation with a designated error value as an operand, the original error is propagated instead of performing arithmetic on it; possible error outcomes remain in the expression's result type. For example, `Number | ValidationError` combined with `Number` may produce `Number | ValidationError` rather than a mandatory wrapper.
+- **Notes:** Extending this principle to other applicable built-in operators is approved in principle, but exact coverage, evaluation order, short-circuiting, precedence among multiple errors, and precise typing remain open in TYP-ERR-01. This item does not determine how error types are designated. It also does not override the statically provable nonzero divisor requirement for successful division/modulo paths (TYP-ARITH-04).
 
 ### TYP-NONE-01 — Representation of `None`
 
@@ -474,12 +524,14 @@
   1. What further rules govern generic, recursive, nested and other advanced constructor definitions?
   2. What additional variant narrowing rules apply beyond the approved general `when` exhaustiveness requirement?
 
-### TYP-GEN-01 — Generics
+### TYP-GEN-01 — Explicit generics and advanced polymorphism
 
 - **Status:** Open question
-- **Spec:** [syntax-and-types.md — Union and intersection types](../spec/syntax-and-types.md#union-and-intersection-types)
+- **Spec:** [syntax-and-types.md — Type-expression computations and record syntax](../spec/syntax-and-types.md#type-expression-computations-and-record-syntax)
 - **Questions:**
-  1. Are there generic types and functions, and how are type parameters declared and inferred?
+  1. After implementing implicitly polymorphic function parameters (TYP-FN-06) and specialized constructor restrictions, which remaining examples, if any, genuinely require explicit generic type or function declarations, higher-order type functions, or type-level quantification syntax?
+  2. If needed, how should those advanced cases be expressed and inferred?
+- **Notes:** Explicit `<T>` is not approved. Ordinary function polymorphism is already approved independently of this question.
 
 ### TYP-NS-01 — Type values inside namespaces
 
@@ -487,6 +539,36 @@
 - **Spec:** [modules.md — First-class namespaces and persistent updates](../spec/modules.md#first-class-namespaces-and-persistent-updates)
 - **Questions:**
   1. How are types represented at runtime when they are members of a first-class namespace value?
+
+## Built-in arithmetic operators
+
+### TYP-ARITH-01 — True numeric division
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Numeric arithmetic operators](../spec/syntax-and-types.md#numeric-arithmetic-operators)
+- **Done when:** Value-expression `/` computes true division, rather than truncating the quotient: `5 / 2` evaluates to `2.5` and `6 / 2` evaluates to `3`, subject to the required nonzero divisor proof (TYP-ARITH-04).
+- **Notes:** Numeric representation, precision/rounding, and static result types involving `Number` and `Integer` remain open in TYP-BLT-05 and TYP-BLT-06.
+
+### TYP-ARITH-02 — Truncated remainder for numeric and fractional operands
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Numeric arithmetic operators](../spec/syntax-and-types.md#numeric-arithmetic-operators)
+- **Done when:** `%` computes the remainder associated with quotient truncation toward zero for finite numeric operands, including fractional operands: `-5 % 3` is `-2`, `5 % -3` is `2`, `5.5 % 2` is `1.5`, and `5 % 2.5` is `0`. The divisor must be provably nonzero (TYP-ARITH-04).
+- **Notes:** This is the JavaScript/TypeScript remainder convention, not Euclidean modulo. Edge cases involving numeric representation, rounding, and non-finite values remain open in TYP-BLT-05/06.
+
+### TYP-ARITH-03 — Euclidean modulo for numeric and fractional operands
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Numeric arithmetic operators](../spec/syntax-and-types.md#numeric-arithmetic-operators)
+- **Done when:** A second built-in infix arithmetic operator computes Euclidean modulo on finite numeric operands, including fractional operands. For any nonzero divisor `b`, the result `r` satisfies `0 <= r < abs(b)`; examples include `-5.5 MOD 2 == 0.5` and `5.5 MOD -2 == 1.5`. The operation is left-associative, at the `*`/`/`/`%` precedence tier, and requires a provably nonzero divisor.
+- **Notes:** `MOD` is a placeholder in examples, **not approved source syntax**. The actual token spelling is an open parser decision in PAR-EXPR-03. Representation-specific precision/rounding details remain open in TYP-BLT-05/06.
+
+### TYP-ARITH-04 — Divisors must be provably nonzero
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Numeric arithmetic operators](../spec/syntax-and-types.md#numeric-arithmetic-operators)
+- **Done when:** Numeric `/`, `%`, and Euclidean modulo require the divisor to be provably nonzero for the successful arithmetic path. Statically zero divisors and unknown divisors without established nonzero evidence cannot be used in arithmetic. A known nonzero literal or an established `where` refinement can supply the proof; explicit runtime validation with `as?` can establish the successful nonzero alternative and propagate its `ValidationError` alternative through arithmetic as approved in TYP-ERR-03.
+- **Notes:** Runtime-validation result signatures remain stable unions under TYP-REF-13; details of error-aware evaluation and typing remain TYP-ERR-01. Exact numeric proof limits remain TYP-REF-10 and TYP-BRF-05/06.
 
 ## Built-in value types
 
@@ -529,7 +611,7 @@ Each built-in type is an independent scorecard item. Each type also has a distin
   2. What arithmetic representation, exactness, numeric literal classification, and rounding rules apply?
   3. Does `Number` include non-finite values such as NaN or infinities?
   4. Are precision/scale-aware numeric types expressible with the existing type system, or is additional capability needed?
-- **Notes:** The language owner approved having `Number` as a built-in. Only its remaining semantics are open. `Float`, `Decimal`, and parameterized numeric precision are not approved as built-ins.
+- **Notes:** The language owner approved having `Number` as a built-in. True `/`, truncated `%` (including fractional operands), and Euclidean modulo (including fractional operands) are separately approved in TYP-ARITH-01 through TYP-ARITH-04. This item's representation, rounding, and precision questions remain open. `Float`, `Decimal`, and parameterized numeric precision are not approved as built-ins.
 
 ### TYP-BLT-06 — `Integer` built-in semantics
 
@@ -538,8 +620,8 @@ Each built-in type is an independent scorecard item. Each type also has a distin
 - **Questions:**
   1. Are integers arbitrary-precision or fixed-width?
   2. How does `Integer` relate to `Number` (subtyping, numeric family, or distinct representation)?
-  3. What are integer division, overflow, and coercion rules?
-- **Notes:** The language owner approved having `Integer` as a built-in; only its remaining semantics are open.
+  3. What are overflow, coercion, and static result-type rules for mixed `Integer`/`Number` arithmetic and true division?
+- **Notes:** The language owner approved having `Integer` as a built-in. Division is true rather than truncating (`5 / 2` gives `2.5`); numeric representation, static result types, overflow, and coercion remain open. Remainder/modulo semantics are separately approved in TYP-ARITH-02/03.
 
 ### TYP-BLT-07 — `String` built-in
 

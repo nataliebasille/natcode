@@ -45,8 +45,8 @@
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Canonical formatting](../spec/syntax-and-types.md#canonical-formatting)
-- **Done when:** Natcode ships a built-in `natcode fmt` and a non-mutating `natcode fmt --check` mode, requiring no third-party linter or formatter. It produces canonical four-space indentation from valid, unambiguous parsed structure without changing semantics; input indentation widths may vary. It preserves explicitly written executable braces, expands one-line braced executable bodies into multiline blocks, and aligns `when`, `where`, and constructor lists. It never silently fixes ambiguous ownership or changes a program's meaning.
-- **Notes:** Approved 2026-10-21. Ordinary compilation does not rewrite source. CLI details beyond the specifically approved formatter commands remain TOOL-CLI-02; this item is not yet implemented.
+- **Done when:** Natcode ships a built-in `natcode fmt` and a non-mutating `natcode fmt --check` mode, requiring no third-party linter or formatter. It produces canonical four-space indentation from valid, unambiguous parsed structure without changing semantics; input indentation widths may vary. It preserves explicitly written executable braces, expands one-line braced executable bodies into multiline blocks, and aligns `when`, `where`, and constructor lists. Continued expressions are normalized from their parsed structure: short expressions collapse to one line; long expressions wrap after binary operators with four-space continuation indentation; explicit grouping parentheses are preserved. It never joins distinct statements, silently fixes ambiguous ownership, or changes a program's meaning.
+- **Notes:** Approved 2026-10-21; expression-wrapping policy approved 2026-10-23 (PAR-BLK-02). The precise wrap-width threshold is not chosen. Ordinary compilation does not rewrite source. CLI details beyond the specifically approved formatter commands remain TOOL-CLI-02; this item is not yet implemented.
 
 ## Build and architecture
 

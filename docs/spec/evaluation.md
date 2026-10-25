@@ -10,17 +10,35 @@ Item status and open questions for this file are tracked in the [types](../score
 
 ## Function return inference: context-independent
 
-The designer revised an earlier broader constant-evaluation proposal: **function return types are inferred from parameter types and the function's own body**, not specialized using the specific values passed at each call site, nor values outside the function. Exact types can propagate through function-local variables.
+Function bodies are analyzed **independently of call sites** to infer a symbolic type-level relation between parameter types and results (TYP-FN-01). Every parameter is implicitly a distinct polymorphic type variable. A written annotation constrains acceptable arguments; without an annotation its bound is `Any` (TYP-FN-06, PAR-FN-04). Neither form widens the argument's exact inferred type. At each call the inferred symbolic signature is instantiated with the argument types, without reanalyzing the function body for individual call sites.
 
 ```natcode
-// Illustration of intended syntax and inference:
-test(x: number) => x * 2   // return: number
-test(x: 24) => x * 2       // return: 48
+fn identity(value) { value }
+fn increment(value: Number) { value + 1 }
+
+a = identity(value: 42)             // type 42
+b = increment(value: 41)            // type 42
 ```
 
-The function syntax in these examples is illustrative (PAR-FN-01, TYP-FN-03); they illustrate type inference rules only.
+Independent parameters preserve independent exact types even when they have the same annotations. The symbolic result may reflect unions from return branches, truth of a branch condition known at the call site, and exact properties of structurally constrained records:
+
+```natcode
+fn first(a: Number, b: Number) { a }
+fn getName(user: { name: String }) { user.name }
+
+x = first(a: 42, b: 100)              // type 42
+y = getName(user: { name: "Ada", age: 30 }) // type "Ada"
+```
+
+A return of `when condition` branches can select only the possible branch results after specializing the condition's type: a known `true` condition eliminates the `false` branch; an unknown Boolean condition retains both. More detailed inference precision and recursion remain TYP-FN-04. This changes the previous fixed-return-widening interpretation without abandoning context-independent function analysis.
 
 Optional compile-time evaluation must not change inferred types, runtime semantics, or whether a program is valid (TYP-EVAL-01). Pure functions with statically known inputs may be evaluated at compile time to validate mandatory `where` restrictions (TYP-EVAL-03). A restriction proven false is a compile error, and required validation cannot silently fall back to a broader type. If the compiler cannot establish a mandatory restriction, that is also a compile error; unknown is not treated as either true or false (TYP-EVAL-04). Exact evaluation budgets and the complete eligibility rules for compile-time function evaluation remain open (TYP-EVAL-02).
+
+## Symbolic return constraints
+
+When the solver can prove a mathematical relationship across a transformation, the inferred type retains that relationship rather than needlessly widening (TYP-COMP-03). In exact mathematical arithmetic, `x > 0` implies `x + 1 > 1`; whether this holds under Natcode's eventual numeric representations must account for rounding and precision (TYP-BLT-05/06). Unknown or nonlinear relations outside the guaranteed subset are not silently assumed valid.
+
+Type-level computation also preserves the dependency of multiple references to one binding, including across intermediate declarations (TYP-COMP-02). Two independent union expressions may combine all alternatives, but `x + x` denotes the same underlying `x` on both sides.
 
 ## Flow-sensitive refinement and symbolic reasoning
 
@@ -44,7 +62,7 @@ The initial symbolic solver must guarantee a practical decidable subset of numer
 - transitive implications such as `x > y` and `y > 0` implying `x > 0`;
 - linear arithmetic with known constant coefficients, such as `x + 5 > y`, `x - y <= 10`, and `2 * x > y`.
 
-Predicates outside that guaranteed symbolic subset remain valid. Multiplication or division between two unknown values, powers, and other nonlinear relationships are not required to be proven symbolically in the initial solver. When all relevant inputs are statically known, ordinary pure compile-time evaluation may still validate such a predicate directly.
+Predicates outside that guaranteed symbolic subset remain valid. Multiplication or division between two unknown values, powers, and other nonlinear relationships are not required to be proven symbolically in the initial solver. When all relevant inputs are statically known, ordinary pure compile-time evaluation may still validate such a predicate directly. Separately, successful `/`, `%`, and Euclidean modulo arithmetic require proof that the divisor is nonzero; an unknown divisor without such a proof is rejected (TYP-ARITH-04). This is a required operand guarantee, not a claim that the full quotient or remainder must be symbolically computed.
 
 A failure to prove a fact outside the supported solver is **not** proof that the fact is false. It simply cannot satisfy a mandatory static restriction unless another known fact establishes it. When the source value is already statically compatible with a restricted target's validation input type, `as?` may explicitly perform the remaining membership check as runtime validation (TYP-REF-12). Its result type remains `Target | ValidationError` even if compile-time evaluation or symbolic reasoning can prove the particular application will succeed or fail; such proof may eliminate runtime work but does not alter the validator's stable signature (TYP-REF-13).
 
@@ -62,7 +80,7 @@ Error values are ordinary first-class values, but their types are designated as 
 
 `ValidationError` is the designated error alternative produced by explicit restricted-type validation with `as?`; it captures type-level validation failures while preserving the requested target as the success alternative (TYP-REF-12, TYP-REF-15). Its exact payload/message representation remains open (TYP-REF-16).
 
-How types receive the general error designation, how possible errors are inferred in other signatures, and how errors are propagated and handled remain open (TYP-ERR-01). Unrecoverable runtime faults and failures in lazy computations remain a separate question (RUN-EFF-02).
+Built-in arithmetic operators automatically propagate designated error operands rather than attempting arithmetic on them (TYP-ERR-03); the broader principle of propagating errors through other suitable operators is approved in principle. Exact error designation, type-inference mechanics, evaluation order, multiple-error handling, and other operator coverage remain open (TYP-ERR-01). Unrecoverable runtime faults and failures in lazy computations remain a separate question (RUN-EFF-02).
 
 ## Laziness
 

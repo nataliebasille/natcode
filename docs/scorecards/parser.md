@@ -131,12 +131,10 @@
 
 ### PAR-BLK-02 — Remaining statement and block grammar
 
-- **Status:** Open question
+- **Status:** Approved
 - **Spec:** [syntax-and-types.md — Code blocks and data structures](../spec/syntax-and-types.md#code-blocks-and-data-structures)
-- **Questions:**
-  1. What is the full grammar for executable block contents, statement separation, and expression continuation?
-  2. Which additional constructs, if any, allow executable blocks, beyond the approved function and arrow/branch forms?
-- **Notes:** The brace boundary and final-expression value are approved (PAR-BLK-01, PAR-FN-03); no semicolon or general continuation grammar is inferred from these decisions. Explicit backslash continuation is rejected (LEX-IND-01).
+- **Done when:** Executable bodies parse newline-separated local bindings and expressions, with the final expression supplying the block result; two complete statements on one physical line and semicolons are rejected. An expression can continue across lines after a trailing binary operator requiring a right operand, or inside explicit parentheses; a leading operator alone never continues a completed preceding line, and backslash continuation is invalid. Continuations do not change `when`/`where`/constructor branch ownership, and ambiguous layouts are rejected. Standalone `{ ... }` executable block expressions are invalid; executable braces remain limited to named-function bodies and approved lambda/`when` branch bodies.
+- **Notes:** Approved 2026-10-23. Preserves PAR-BLK-01 and PAR-FN-03, including one-expression braced blocks and implicit final-expression results. Semicolons remain invalid per the lexical grammar. The formatter's wrapping and parentheses policy is TOOL-FMT-01. Self-invoking anonymous functions are a possible future alternative to standalone blocks under PAR-FN-01, not approved here.
 
 ### PAR-LAYOUT-01 — Recognize recoverable declarative layout
 
@@ -149,8 +147,8 @@
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Value expression grammar and precedence](../spec/syntax-and-types.md#value-expression-grammar-and-precedence)
-- **Done when:** Ordinary value expressions parse with this precedence from highest to lowest: postfix member access/call (`.`, `()`), prefix unary (`!`, `-`), multiplication (`*`), addition (`+`), comparisons (`<`, `<=`, `>`, `>=`, `==`, `!=`), `&&`, `||`, then right-associative `=>`. Postfix operations chain left-to-right; `*`, `+`, `&&`, and `||` are left-associative; comparisons are non-associative. Calls use parentheses only: `f(x)` and `f()` are valid, while whitespace application `f x` is invalid.
-- **Notes:** `&&` and `||` short-circuit. Type-expression `|` and `&` are not value operators and remain PAR-TYPE-01. Pipe syntax and precedence remain PAR-PIPE-01. The dedicated `as?` validation form keeps its own PAR-VAL-01 grammar rather than becoming a general binary value operator.
+- **Done when:** Ordinary value expressions parse with this precedence from highest to lowest: postfix member access/call (`.`, `()`), prefix unary (`!`, `-`), multiplicative (`*`, `/`, `%`), additive (`+`, binary `-`), comparisons (`<`, `<=`, `>`, `>=`, `==`, `!=`), `&&`, `||`, then right-associative `=>`. Postfix operations chain left-to-right; `*`, `/`, `%`, `+`, binary `-`, `&&`, and `||` are left-associative; comparisons are non-associative. Calls use parentheses only: `f(x)` and `f()` are valid, while whitespace application `f x` is invalid.
+- **Notes:** `&&` and `||` short-circuit. Type-expression `|` and `&` are not value operators and remain PAR-TYPE-01; `/` is division in value and type computations; set difference is `\` (PAR-TYPE-08). Euclidean modulo is separately approved but its operator spelling is still open (PAR-EXPR-03); when introduced, it uses the multiplicative tier and left associativity. Pipe syntax and precedence remain PAR-PIPE-01. Validation `as?` applies after ordinary arithmetic unless its expression is parenthesized (PAR-VAL-01); its other grammar remains dedicated.
 
 ### PAR-EXPR-02 — Expression placeholders and partial application
 
@@ -162,6 +160,14 @@
   3. How does placeholder application interact with future pipe syntax?
 - **Notes:** Standalone `_` already has a lexical token and wildcard meanings in patterns. Those existing meanings do not decide its ordinary-expression semantics.
 
+### PAR-EXPR-03 — Euclidean modulo operator spelling
+
+- **Status:** Open question
+- **Spec:** [syntax-and-types.md — Numeric arithmetic operators](../spec/syntax-and-types.md#numeric-arithmetic-operators)
+- **Questions:**
+  1. What spelling should the approved Euclidean modulo operator use, distinct from truncated-remainder `%` and existing syntax?
+- **Notes:** The operation's numeric behavior is approved in TYP-ARITH-03, including fractional operands and a nonnegative result for nonzero positive or negative divisors. Its precedence and left associativity match `*`, `/`, and `%` (PAR-EXPR-01). `MOD` in explanatory examples is only a placeholder, not a token or keyword.
+
 ### PAR-FN-01 — Function and lambda syntax
 
 - **Status:** Open question
@@ -170,8 +176,15 @@
   1. What is the remaining full grammar for optional, rest, destructured, and generic parameters, and for return annotations where applicable?
   2. Should explicitly unlabeled `fn` parameters (Swift-style `_ value: Type`) be supported? Decision deferred.
   3. What remaining function-value/call grammar needs to be established?
-- **Notes:** Approved portions: named functions use `fn`; parameters use `name: Type` and defaults `name: Type = expression`, with defaults allowed before required parameters. Calls to named functions use `label: expression`, with arbitrary argument order. Separate external labels and internal bindings use `external as internal: Type`, optionally with a default. Lambdas use positional unannotated parameters (`x => x * x`, `(x, y) => x + y`, `() => 42`), with parentheses optional only for a sole untyped parameter. Standalone lambda declarations such as `double = x => x * 2` are invalid, but callbacks and returning lambdas are valid; `fn` functions can be passed as positional callbacks.
+- **Notes:** Approved portions: named functions use `fn`; parameters may omit annotations (PAR-FN-04) or use `name: Type` and defaults `name: Type = expression`, with defaults allowed before required parameters. Calls to named functions use `label: expression`, with arbitrary argument order. Separate external labels and internal bindings use `external as internal: Type`, optionally with a default. Lambdas use positional unannotated parameters (`x => x * x`, `(x, y) => x + y`, `() => 42`), with parentheses optional only for a sole untyped parameter. Standalone lambda declarations such as `double = x => x * 2` are invalid, but callbacks and returning lambdas are valid; `fn` functions can be passed as positional callbacks.
 
+
+### PAR-FN-04 — Optional annotations for implicitly polymorphic parameters
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Function parameters and labeled calls](../spec/syntax-and-types.md#function-parameters-and-labeled-calls)
+- **Done when:** A named `fn` parameter permits an omitted type annotation; its effective constraint is then `Any`. Present annotations constrain arguments but do not widen their inferred argument types.
+- **Notes:** Inference of implicit independent type variables is TYP-FN-06. The remaining optional/rest/destructured function parameter grammar stays PAR-FN-01.
 
 ### PAR-FN-02 — Dedicated function declaration keyword
 
@@ -237,13 +250,41 @@
   2. If supported, where may spread entries appear, may multiple spreads occur, and do they use the same comma-separation rules as ordinary object entries?
 - **Notes:** Object-spread typing and overwrite semantics should be tracked separately from parser syntax if spread is approved.
 
-### PAR-TYPE-01 — Type expression grammar
+### PAR-TYPE-01 — Remaining type-expression precedence
 
 - **Status:** Open question
-- **Spec:** [syntax-and-types.md — Union and intersection types](../spec/syntax-and-types.md#union-and-intersection-types)
+- **Spec:** [syntax-and-types.md — Type-expression computations and record syntax](../spec/syntax-and-types.md#type-expression-computations-and-record-syntax)
 - **Questions:**
-  1. What is the grammar for record types, unions with `|`, intersections with `&`, and literal types? `{ kind: "left", value: number }` is illustrative.
-  2. What is the generic parameter grammar?
+  1. How do comparisons and Boolean `&&`/`||` group relative to `where` and the set operators in a single type expression?
+- **Notes:** Approved type-expression forms are tracked by PAR-TYPE-08 through PAR-TYPE-12 and PAR-REF-01. Explicit generic syntax remains undecided (TYP-GEN-01, PAR-TYPE-02).
+
+### PAR-TYPE-09 — Record and primitive literal type grammar
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Type-expression computations and record syntax](../spec/syntax-and-types.md#type-expression-computations-and-record-syntax)
+- **Done when:** Numeric (including unary negative and decimal), double-quoted string, and Boolean literal types and parenthesized type expressions parse, along with record types using `{}`, `key: Type` entries, comma separators, optional trailing comma, and identifier/string/numeric static keys.
+- **Notes:** Computed keys and their type representation remain TYP-OBJ-01.
+
+### PAR-TYPE-10 — Numeric and Boolean computations in type grammar
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Type-expression computations and record syntax](../spec/syntax-and-types.md#type-expression-computations-and-record-syntax)
+- **Done when:** Type computations parse numeric arithmetic, comparisons, and `&&`, `||`, `!` alongside set `|`, `&`, `\`, `~`. Boolean operand validity is TYP-BOOL-01. Euclidean modulo's eventual syntax depends on PAR-EXPR-03.
+- **Notes:** Relative grouping of comparisons/Boolean and set operations remains PAR-TYPE-01.
+
+### PAR-TYPE-11 — Approved type precedence tiers
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Type-expression computations and record syntax](../spec/syntax-and-types.md#type-expression-computations-and-record-syntax)
+- **Done when:** Type expressions bind grouping/application, prefix `~`/`!`/unary `-`, multiplicative, additive, postfix `where`, `&` and `\` together (left associative), then `|` in that order, without assigning the unresolved comparison/Boolean tiers.
+- **Notes:** The approved `~Number where ...` means `(~Number) where ...`, not `~(Number where ...)`.
+
+### PAR-TYPE-12 — Value binding references in type computations
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Type-expression computations and record syntax](../spec/syntax-and-types.md#type-expression-computations-and-record-syntax)
+- **Done when:** A value-binding name may be used as an operand in a type computation; its inferred type and dependencies are resolved by type analysis, without enabling arbitrary effectful execution.
+- **Notes:** The preservation of relationships between repeated and intermediate bindings is TYP-COMP-02.
 
 ### PAR-TYPE-02 — Remaining type declaration grammar
 
@@ -286,7 +327,8 @@
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Union and intersection types](../spec/syntax-and-types.md#union-and-intersection-types)
-- **Done when:** `A / B` parses in type-expression context as binary set difference; its precedence relative to `where` follows PAR-REF-01, while the remaining set-operator precedence table stays PAR-TYPE-01.
+- **Done when:** `A \ B` parses as set difference in a type expression, at the same left-associative precedence as `&`, higher than `|` and lower than `where`. In type computations `A / B` denotes arithmetic division, not difference.
+- **Notes:** Replaces the earlier `/` difference spelling, approved 2026-10-25.
 
 ### PAR-UPD-01 — Dotted update syntax
 
@@ -314,7 +356,7 @@
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Runtime validation](../spec/syntax-and-types.md#runtime-validation)
-- **Done when:** `value as? TypeExpression` parses as a runtime-validation expression whose right operand is one complete type expression; for example, `x as? number where n => n > 0` takes the whole refinement as its target. `as?` is the single token defined by LEX-OP-05.
+- **Done when:** `value as? TypeExpression` parses as a runtime-validation expression whose right operand is one complete type expression; for example, `x as? number where n => n > 0` takes the whole refinement as its target. Arithmetic binds before validation: `a / b as? T` validates the division expression, while `a / (b as? T)` and `(a as? T) / b` require parentheses to use validation as an arithmetic operand. `as?` is the single token defined by LEX-OP-05.
 - **Notes:** The remaining precedence of ordinary value operators stays PAR-EXPR-01. General `_` partial-application grammar is PAR-EXPR-02.
 
 ### PAR-PAT-01 — Pattern matching syntax
@@ -337,7 +379,8 @@
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Where placement and precedence](../spec/syntax-and-types.md#where-placement-and-precedence)
-- **Done when:** `where` is accepted wherever a type expression is accepted, binds tighter than `|`, `&`, and `/`, parentheses can select a larger left operand, and a direct chain such as `T where ... where ...` is rejected. Each postfix `where` must begin on the same physical line as the type expression or constructor it restricts (including that expression's closing `)` when parenthesized).
+- **Done when:** `where` is accepted wherever a type expression is accepted; arithmetic and prefix `~`, `!`, and unary `-` bind more tightly than `where`; `where` binds more tightly than set `|`, `&`, and `\`. Parentheses select larger left operands. Direct chains such as `T where ... where ...` are rejected, and each `where` begins on the physical line of its preceding type/constructor (or closing parenthesis). Comparison/Boolean precedence remains PAR-TYPE-01.
+- **Notes:** Extended with approved complement and arithmetic precedence 2026-10-25.
 
 ### PAR-REF-02 — Refinement binding and destructuring forms
 

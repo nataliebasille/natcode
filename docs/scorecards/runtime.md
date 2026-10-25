@@ -3,6 +3,15 @@
 - **Prefix:** RUN
 - **Covers:** The execution model shared by the interpreter and all backends: lazy evaluation, memoization, namespaces as values, persistent updates, entry functions, and effects. Per-target conformance is tracked in each execution scorecard.
 
+## Boolean operators
+
+### RUN-BOOL-01 — Strict Boolean execution and short-circuiting
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Strict Boolean operations](../spec/syntax-and-types.md#strict-boolean-operations)
+- **Done when:** At runtime, `&&` and `||` short-circuit and return only Boolean results, and prefix `!` returns Boolean negation. Non-Boolean operands are rejected by static typing rather than implicitly converted through truthiness. These operations do not return arbitrary operand values.
+- **Notes:** Approved 2026-10-25; type checking is TYP-BOOL-01.
+
 ## Laziness
 
 ### RUN-LAZY-01 — Demand-driven top-level bindings
