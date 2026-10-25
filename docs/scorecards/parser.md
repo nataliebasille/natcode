@@ -35,13 +35,13 @@
 
 - **Status:** Approved
 - **Spec:** [variables.md — Declaration syntax](../spec/variables.md#declaration-syntax)
-- **Done when:** `x: number = 42` parses with the constraint attached to the declaration.
+- **Done when:** `x: Number = 42` parses with the constraint attached to the declaration.
 
 ### PAR-DECL-03 — Initializer required
 
 - **Status:** Approved
 - **Spec:** [variables.md — Declaration syntax](../spec/variables.md#declaration-syntax)
-- **Done when:** `x: number` without `= expression` is rejected.
+- **Done when:** `x: Number` without `= expression` is rejected.
 
 ### PAR-DECL-04 — Underscore cannot be bound
 
@@ -303,7 +303,7 @@
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
-- **Done when:** `unique type UserId(number)` and `unique type Point(number, number)` parse as nominal type declarations with positional constructor payloads.
+- **Done when:** `unique type UserId(Number)` and `unique type Point(Number, Number)` parse as nominal type declarations with positional constructor payloads.
 
 ### PAR-TYPE-05 — Alias declarations
 
@@ -356,7 +356,7 @@
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Runtime validation](../spec/syntax-and-types.md#runtime-validation)
-- **Done when:** `value as? TypeExpression` parses as a runtime-validation expression whose right operand is one complete type expression; for example, `x as? number where n => n > 0` takes the whole refinement as its target. Arithmetic binds before validation: `a / b as? T` validates the division expression, while `a / (b as? T)` and `(a as? T) / b` require parentheses to use validation as an arithmetic operand. `as?` is the single token defined by LEX-OP-05.
+- **Done when:** `value as? TypeExpression` parses as a runtime-validation expression whose right operand is one complete type expression; for example, `x as? Number where n => n > 0` takes the whole refinement as its target. Arithmetic binds before validation: `a / b as? T` validates the division expression, while `a / (b as? T)` and `(a as? T) / b` require parentheses to use validation as an arithmetic operand. `as?` is the single token defined by LEX-OP-05.
 - **Notes:** The remaining precedence of ordinary value operators stays PAR-EXPR-01. General `_` partial-application grammar is PAR-EXPR-02.
 
 ### PAR-PAT-01 — Pattern matching syntax
@@ -392,7 +392,7 @@
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Where placement and precedence](../spec/syntax-and-types.md#where-placement-and-precedence)
-- **Done when:** A direct form such as `Position(0, number) where ...` or `Position(number, number) where ...` is rejected, while `Position(0, number where ...)` and a named specialized alias followed by `where` are accepted.
+- **Done when:** A direct form such as `Position(0, Number) where ...` or `Position(Number, Number) where ...` is rejected, while `Position(0, Number where ...)` and a named specialized alias followed by `where` are accepted.
 
 ### PAR-REF-04 — Refinement branch surface forms
 
