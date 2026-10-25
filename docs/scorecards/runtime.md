@@ -82,13 +82,14 @@
 - **Done when:** After an update, unchanged parts of the old and new values share storage.
 - **Notes:** The spec names persistent data structures as an intended technique, not a rule.
 
-### RUN-OBJ-01 — Computed and dynamic object keys
+### RUN-OBJ-01 — Runtime semantics of computed object keys
 
 - **Status:** Open question
 - **Spec:** [modules.md — Exported object shapes and optional properties](../spec/modules.md#exported-object-shapes-and-optional-properties)
 - **Questions:**
-  1. Can objects have computed or dynamic keys, and how are they accessed?
-- **Notes:** Dynamic-key objects may be exported only inside a statically named property.
+  1. How are computed keys evaluated and converted to property keys at runtime, and how are properties accessed dynamically?
+  2. When a computed key collides with an existing property, what overwrite and evaluation-order semantics apply?
+- **Notes:** Computed `[expression]: value` key syntax is already approved in PAR-OBJ-01; this item does not reopen that decision. The collision-aware type representation remains open in TYP-OBJ-01. Dynamic-key objects may be exported only inside a statically named property.
 
 ## Runtime validation
 

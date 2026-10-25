@@ -21,7 +21,7 @@
 
 - **Status:** Approved
 - **Spec:** [modules.md — Import syntax and ordering](../spec/modules.md#import-syntax-and-ordering)
-- **Done when:** `import Math` binds a namespace; a lowercase namespace alias is rejected.
+- **Done when:** `from "./math" import Math` binds a namespace; a lowercase namespace alias is rejected.
 
 ### RES-NAME-04 — Top-level UPPER_SNAKE_CASE values
 
@@ -62,7 +62,7 @@
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Purity and lexical capture](../spec/syntax-and-types.md#purity-and-lexical-capture)
-- **Done when:** A `where` predicate may reference an earlier immutable binding such as `minimum` in `number where x => x > minimum`, and the reference resolves to the specific binding visible at the restriction's declaration.
+- **Done when:** A `where` predicate may reference an earlier immutable binding such as `minimum` in `Number where x => x > minimum`, and the reference resolves to the specific binding visible at the restriction's declaration.
 
 ## Scopes and bindings
 
@@ -88,8 +88,8 @@
 
 - **Status:** Approved
 - **Spec:** [variables.md — Immutability, redeclaration, and scope](../spec/variables.md#immutability-redeclaration-and-scope)
-- **Done when:** After an indented nested scope shadows `x`, an outer-scope reference resolves to the original `x`.
-- **Notes:** Needs a block construct (PAR-BLK-02).
+- **Done when:** After a nested lexical scope shadows `x`, an outer-scope reference resolves to the original `x`.
+- **Notes:** Nested lexical scopes are established by the approved executable block/function constructs (PAR-BLK-01/02), not by indentation alone.
 
 ### RES-SCOPE-05 — Sequential visibility
 
@@ -195,25 +195,25 @@
 
 - **Status:** Approved
 - **Spec:** [modules.md — Import syntax and ordering](../spec/modules.md#import-syntax-and-ordering)
-- **Done when:** `import Math` binds `Math` to the module's exported namespace, and `Math.PI` resolves.
+- **Done when:** `from "./math" import Math` binds `Math` to the module's exported namespace, and `Math.PI` resolves.
 
 ### RES-IMP-03 — Wildcard imports
 
 - **Status:** Approved
 - **Spec:** [modules.md — Exported object shapes and optional properties](../spec/modules.md#exported-object-shapes-and-optional-properties)
-- **Done when:** `import *` binds every statically possible export name as a local, including conditionally present keys.
+- **Done when:** `from "./math" import *` binds every statically possible export name as a local, including conditionally present keys.
 
 ### RES-IMP-04 — Combined import removes named keys from the namespace
 
 - **Status:** Approved
 - **Spec:** [modules.md — Import syntax and ordering](../spec/modules.md#import-syntax-and-ordering)
-- **Done when:** `{ PI }, Math` binds `PI` locally, and `Math.PI` is absent from that namespace.
+- **Done when:** `from "./math" import { PI }, Math` binds `PI` locally, and `Math.PI` is absent from that namespace.
 
 ### RES-IMP-05 — Import aliases
 
 - **Status:** Approved
 - **Spec:** [modules.md — Import syntax and ordering](../spec/modules.md#import-syntax-and-ordering)
-- **Done when:** `{ formatText = format }` binds `formatText` locally to the exported `format`.
+- **Done when:** `from "./math" import { format as formatText }` binds `formatText` locally to the exported `format`.
 
 ### RES-IMP-06 — Repeated imports resolve independently
 
@@ -259,7 +259,7 @@
 
 - **Status:** Approved
 - **Spec:** [modules.md — Exported kind: object library or function executable](../spec/modules.md#exported-kind-object-library-or-function-executable)
-- **Done when:** `export { squareNumber = square }` exposes `squareNumber` and not `square`.
+- **Done when:** `export { square as squareNumber }` exposes `squareNumber` and not `square`.
 
 ### RES-EXP-04 — Duplicate public keys rejected
 
