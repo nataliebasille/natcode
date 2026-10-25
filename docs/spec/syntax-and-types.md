@@ -660,7 +660,7 @@ type Independent = (1 | 2) + (1 | 2) // 2 | 3 | 4
 
 This does not authorize arbitrary effectful type computation. Pure user-defined compile-time evaluation guarantees and resource budgets remain TYP-EVAL-02; explicit generic declarations and advanced type-level functions remain TYP-GEN-01.
 
-The approved type-expression precedence is: grouping and constructor application; prefix `~`, `!`, and unary `-`; multiplicative arithmetic; additive arithmetic; `where`; `&` and `\\` (equal, left-associative); then `|`. Thus arithmetic and prefix operators bind more tightly than `where`, which binds more tightly than set operators. The placement of comparisons and Boolean `&&`/`||` relative to `where` and set operators has **not yet** been approved (PAR-TYPE-01), so parentheses should be used where those forms mix. No explicit `<T>` generic grammar has been adopted (TYP-GEN-01).
+The approved type-expression precedence is: grouping and constructor application; prefix `~`, `!`, and unary `-`; multiplicative arithmetic; additive arithmetic; `where`; `&` and `\` (equal, left-associative); then `|`. Thus arithmetic and prefix operators bind more tightly than `where`, which binds more tightly than set operators. The placement of comparisons and Boolean `&&`/`||` relative to `where` and set operators has **not yet** been approved (PAR-TYPE-01), so parentheses should be used where those forms mix. No explicit `<T>` generic grammar has been adopted (TYP-GEN-01).
 
 
 ## Union and intersection types
