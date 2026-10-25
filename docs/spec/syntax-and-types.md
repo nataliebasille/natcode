@@ -99,12 +99,12 @@ Ordinary value-expression operators bind from highest to lowest as follows:
 
 Thus `a + b * c` means `a + (b * c)`, `a - b - c` means `(a - b) - c`, `a * b / c` means `(a * b) / c`, `!ready && enabled` means `(!ready) && enabled`, and `x => y => x + y` means `x => (y => x + y)`. Comparison operators do not chain: `a < b < c` is invalid; write `a < b && b < c`.
 
-Member access and calls form one postfix layer, so `foo.bar(x).baz()` groups as `(((foo.bar)(x)).baz)()`. Type-expression `|` and `&` are separate union/intersection operators and are not ordinary value operators. Pipe syntax and precedence remain open under PAR-PIPE-01. `/` is numeric division here and set difference in type expressions (PAR-TYPE-08). Validation with `as?` applies to the complete preceding arithmetic expression unless parenthesized as an operand (PAR-VAL-01); its right-hand type expression retains its own grammar.
+Member access and calls form one postfix layer, so `foo.bar(x).baz()` groups as `(((foo.bar)(x)).baz)()`. Type-expression `|` and `&` are separate union/intersection operators and are not ordinary value operators. Pipe syntax and precedence remain open under PAR-PIPE-01. `/` denotes numeric division in both value expressions and type-level computations; type set difference uses `\` (PAR-TYPE-08). Validation with `as?` applies to the complete preceding arithmetic expression unless parenthesized as an operand (PAR-VAL-01); its right-hand type expression retains its own grammar.
 
 ## Numeric arithmetic operators
 
 - Binary `-` subtracts numbers, with the same precedence as `+` and left associativity (PAR-EXPR-01).
-- Value-level `/` performs **true division**, so `5 / 2` produces `2.5` rather than `2` (TYP-ARITH-01). It is distinct from type-level set difference, which shares its token.
+- `/` performs **true division** both on runtime numbers and in type-level numeric computations; `5 / 2` evaluates to `2.5` rather than `2` (TYP-ARITH-01). Type set difference instead uses `\`.
 - `%` is **truncated remainder**, with quotient rounded toward zero, including fractional operands: `-5 % 3` is `-2`, `5 % -3` is `2`, and `5.5 % 2` is `1.5` (TYP-ARITH-02).
 - A **second infix operator** computes **Euclidean modulo** on fractional as well as integer operands. For a nonzero divisor `b`, its result is nonnegative and smaller than `abs(b)`, even when `b` is negative. This operator is left-associative at the same precedence as `*`, `/`, and `%` (TYP-ARITH-03).
 - The Euclidean operator's **spelling is not yet chosen** (PAR-EXPR-03); the notation `MOD` in examples is illustrative and is not a lexer token or keyword.
@@ -149,7 +149,7 @@ Both forms must be exhaustive (TYP-PAT-01). The remaining possible value set mus
 
 ## Function parameters and labeled calls
 
-Named functions declare parameter bindings with TypeScript-like type annotations. Calls to a named `fn` declaration use `label: expression` (not `label = expression`), and labeled arguments may appear in any order. Parameter defaults use `=` and may precede required parameters (PAR-FN-01).
+Named functions may omit parameter type annotations. Every parameter is implicitly polymorphic and has its own independent type variable, constrained by its annotation or by `Any` when omitted (PAR-FN-04, TYP-FN-06). An explicit annotation constrains acceptable arguments but does not widen their exact types. Calls to a named `fn` declaration use `label: expression` (not `label = expression`), and labeled arguments may appear in any order. Parameter defaults use `=` and may precede required parameters (PAR-FN-01).
 
 ```natcode
 fn greet(first: String = "Ada", last: String) {
@@ -353,7 +353,7 @@ Within `Option where ...`, unqualified constructor names such as `Some` and `Non
 
 ### Where placement and precedence
 
-`where` is a normal type operator and may appear wherever a type expression is already permitted (PAR-REF-01). The `where` keyword must start on the **same physical line** as the type or constructor it restricts (for a parenthesized expression, the line of its closing `)`); moving it to the next line is invalid. Its branch indentation can be normalized when ownership is unambiguous (LEX-IND-01). It binds more tightly than the set operators `|`, `&`, and `/`:
+`where` is a normal type operator and may appear wherever a type expression is already permitted (PAR-REF-01). The `where` keyword must start on the **same physical line** as the type or constructor it restricts (for a parenthesized expression, the line of its closing `)`); moving it to the next line is invalid. Its branch indentation can be normalized when ownership is unambiguous (LEX-IND-01). Arithmetic, prefix complement `~`, and prefix Boolean NOT `!` bind more tightly than `where`; `where` binds more tightly than the set operators `|`, `&`, and `\`. Intersection `&` and difference `\` have equal left-associative precedence, with union `|` lower. The full placement of comparisons and Boolean `&&`/`||` relative to `where` and set operators remains open (PAR-TYPE-01):
 
 ```natcode
 A | B where x => predicate(x)
@@ -368,6 +368,17 @@ Parentheses select a larger input explicitly:
     A(x) => ...
     B(x) => ...
 ```
+
+`~Number where x => predicate(x)` means `(~Number) where x => predicate(x)`; `~(Number where x => predicate(x))` complements the restricted Number type instead. Ordinary `where` pattern-narrowing and operand-safety rules apply to complements (TYP-REF-18). For example:
+
+```natcode
+unique type Ticket(Number)
+
+type PositiveTickets = ~Number where
+    Ticket(x) => x > 0
+```
+
+The `Ticket(x)` pattern narrows the candidate to a nominal value whose payload is Number. By contrast, `~Number where x => x > 0` is invalid because an unrestricted whole-value binder for `~Number` cannot support a numeric comparison.
 
 Directly chaining `where` operators is rejected. Combine conditions in one restriction or name the intermediate type instead:
 
@@ -537,7 +548,7 @@ type Center = XAxis & YAxis
 
 normalizes to `Position(0, 0)`, so `Center` has the resulting zero-parameter constructor.
 
-Set difference preserves constructibility when its normalized result still has one effective constructor shape. The type-expression operator `A / B` denotes values in `A` that are not in `B` (TYP-UNI-10).
+Set difference preserves constructibility when its normalized result still has one effective constructor shape. The type-expression operator `A \ B` denotes values in `A` that are not in `B` (TYP-UNI-10).
 
 ### Purity and lexical capture
 
@@ -608,7 +619,8 @@ A target type therefore conceptually induces a validator with the shape `U -> T 
 - `|` is mathematical **set union**: a value belongs to `A | B` precisely when it belongs to `A` or `B`. Neither union nor intersection creates a new nominal identity (TYP-UNI-06).
 - Simplification/consolidation of a union is permitted **only when it preserves the exact represented set of possibilities**. In particular, preserve correlations between fields and exclusions; do not merge distinct object variants in ways that admit combinations not present in the original union.
 - `&` is mathematical **set intersection**: a value belongs to `A & B` precisely when it belongs to **both** types. It never constructs or combines constituent values and is distinct from `:` constraints (TYP-UNI-06).
-- `/` is mathematical **set difference** in type expressions: `A / B` contains exactly the values in `A` that are not in `B` (TYP-UNI-10).
+- `\` is mathematical **set difference** in type expressions: `A \ B` contains exactly the values in `A` that are not in `B` (TYP-UNI-10).
+- Prefix `~` is **set complement** relative to `Any`: `~A = Any \ A` (TYP-UNI-05). This is distinct from Boolean NOT `!`.
 - `Any` is the universal type (`T | Any = Any`, `T & Any = T`). `Empty` denotes the empty type: no values inhabit it. Thus `A | Empty = A` and `A & Empty = Empty` (TYP-UNI-07).
 - An intersection proven empty resolves to `Empty` and is **valid**, whether direct, nested, or involving explicit `Empty`. The declaration itself causes no warning or error merely for being empty. Attempting to provide a value where the type is uninhabited is an error (TYP-UNI-08).
 - Independently declared, unrelated nominal constructor types are disjoint: for example, `UserId & ProductId` is `Empty` (TYP-UNI-09). Nominal subtyping or other explicit overlapping-identity relationships are not introduced by ordinary constructors.
@@ -627,9 +639,9 @@ must not be simplified into:
 { kind: "left" | "right", value: number | string }
 ```
 
-because the latter would allow a `"left"` tag paired with a `string` value, which the original type excludes. The record-type syntax here is illustrative.
+because the latter would allow a `"left"` tag paired with a `string` value, which the original type excludes. The record-type syntax is approved by PAR-TYPE-09.
 
-Set identities include `A | B = B | A`, `A | A = A`, `A & B = B & A`, and `A & A = A`. More detailed structural membership and normalization choices remain TYP-UNI-04. Set difference `/` is approved in TYP-UNI-10; a standalone complement operator remains TYP-UNI-05. Generic types remain TYP-GEN-01; broader subtyping remains TYP-CON-03.
+Set identities include `A | B = B | A`, `A | A = A`, `A & B = B & A`, and `A & A = A`. More detailed structural membership and normalization choices remain TYP-UNI-04. Difference `\` is TYP-UNI-10 and complement `~` is TYP-UNI-05. Explicit generic declarations remain open (TYP-GEN-01); broader subtyping remains TYP-CON-03.
 
 ## Target directions
 
