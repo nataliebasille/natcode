@@ -218,6 +218,34 @@
 
 ## Unions and intersections
 
+### TYP-COMP-01 — Set-based type-level computation
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Type-expression computations and record syntax](../spec/syntax-and-types.md#type-expression-computations-and-record-syntax)
+- **Done when:** Arithmetic, comparison, and strict Boolean operations within type expressions denote sets of possible results, distributing over independent finite literal alternatives while retaining symbolic constraints over larger numeric types when provable. Exact literal calculations such as `10 * (2 | 30)` yield `20 | 300`, while `Number + 1` denotes all possible results of the operation subject to approved numeric semantics.
+- **Notes:** Numeric representation, rounding, precision, and unrestricted symbolic arithmetic limits remain TYP-BLT-05/06 and TYP-EVAL-02.
+
+### TYP-COMP-02 — Correlated binding computations
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Type-expression computations and record syntax](../spec/syntax-and-types.md#type-expression-computations-and-record-syntax)
+- **Done when:** Type-level computations use the inferred type of a referenced value binding, including unions; repeated uses of one binding denote the same value choice, and derived bindings preserve that dependency. `x + x` for one `x: 1 | 2` yields `2 | 4`; with `y = x + 1`, `x + y` yields `3 | 5`. Independent literal-union operands may combine independently.
+- **Notes:** Approved 2026-10-25. Runtime object correlations and larger solver/representation strategies are implementation design work.
+
+### TYP-COMP-03 — Symbolic arithmetic on refinements
+
+- **Status:** Approved
+- **Spec:** [evaluation.md — Flow-sensitive refinement and symbolic reasoning](../spec/evaluation.md#flow-sensitive-refinement-and-symbolic-reasoning)
+- **Done when:** Inferred return/result types preserve provable symbolic arithmetic constraints on refined values rather than unconditionally widening to their broad numeric base types. For exact arithmetic, adding 1 to `Number where x => x > 0` gives the set satisfying `x > 1`; actual equivalences must respect Number's future representation and rounding semantics.
+- **Notes:** The guaranteed solver boundary is TYP-REF-10; exact numeric behavior remains TYP-BLT-05/06.
+
+### TYP-BOOL-01 — Strict Boolean operations and no truthiness
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Strict Boolean operations](../spec/syntax-and-types.md#strict-boolean-operations)
+- **Done when:** `&&`, `||`, and `!` accept exclusively Boolean operand types and yield only Boolean results, preserving literal `true`/`false` when derivable. Any possible non-Boolean operand is a compile error, not a silently excluded possibility. No implicit truthiness exists. Subjectless `when` conditions and `where` predicates require Boolean results. The same typing applies at runtime and in type expressions.
+- **Notes:** Runtime short-circuit and Boolean-only results are RUN-BOOL-01; approved 2026-10-25.
+
 ### TYP-UNI-01 — Union types
 
 - **Status:** Approved
@@ -268,27 +296,35 @@
 - **Spec:** [syntax-and-types.md — Union and intersection types](../spec/syntax-and-types.md#union-and-intersection-types)
 - **Done when:** `UserId & ProductId` resolves to `Empty` for unrelated nominal constructor types, even when they have the same payload representation.
 
-### TYP-UNI-05 — Complement types
-
-- **Status:** Open question
-- **Spec:** [syntax-and-types.md — Union and intersection types](../spec/syntax-and-types.md#union-and-intersection-types)
-- **Questions:**
-  1. Is there a standalone complement type operator, and with what syntax?
-- **Notes:** Binary set difference is approved separately as `/` in TYP-UNI-10.
-
-### TYP-UNI-10 — Set difference with `/`
+### TYP-UNI-05 — Set complement with prefix `~`
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Union and intersection types](../spec/syntax-and-types.md#union-and-intersection-types)
-- **Done when:** In type expressions, `A / B` denotes exactly the values in `A` that are not in `B`; normalization may preserve constructibility when the result still has one effective constructor shape.
+- **Done when:** `~A` denotes `Any \ A`, the mathematical complement relative to `Any`, and does not mean Boolean negation. Prefix `!` is reserved for strict Boolean NOT.
+- **Notes:** Formerly an open complement-operator question; prefix `~` approved 2026-10-25.
+
+### TYP-UNI-10 — Set difference with `\`
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Union and intersection types](../spec/syntax-and-types.md#union-and-intersection-types)
+- **Done when:** `A \ B` denotes values in `A` that are not in `B`; normalization may preserve constructibility when the resulting type has one effective constructor shape. Arithmetic division continues to use `/`, including within type expressions.
+- **Notes:** Replaces previously approved `/` difference spelling as of 2026-10-25.
 
 ## Functions
 
-### TYP-FN-01 — Context-independent return inference
+### TYP-FN-01 — Context-independent symbolic return inference
 
 - **Status:** Approved
 - **Spec:** [evaluation.md — Function return inference: context-independent](../spec/evaluation.md#function-return-inference-context-independent)
-- **Done when:** With a parameter of type `number`, `x * 2` infers `number`; with a parameter of literal type `24`, it infers `48`, regardless of call-site values.
+- **Done when:** A function is analyzed independently of call sites to infer a symbolic return type involving its implicitly polymorphic parameter types, then its signature is instantiated with each argument's inferred type. The return type preserves exact literals, parameter relationships, branch conditions, object properties, and supported arithmetic effects; for example `fn increment(value: Number) { value + 1 }` called with literal 41 has result type 42.
+- **Notes:** Revises the previously approved fixed-parameter return-type widening behavior while preserving independent function analysis; advanced precision limits and recursion remain TYP-FN-04.
+
+### TYP-FN-06 — Implicit independently quantified function parameters
+
+- **Status:** Approved
+- **Spec:** [evaluation.md — Function return inference: context-independent](../spec/evaluation.md#function-return-inference-context-independent)
+- **Done when:** Each function parameter is implicitly a separate polymorphic type variable, constrained by its optional written annotation or by `Any` if absent. A function can preserve the exact call-site argument type through return values, records, and branches even when other parameters share the same annotation; annotations constrain accepted types without widening them.
+- **Notes:** No explicit generic-parameter syntax is implied. Parameter annotation grammar is PAR-FN-04.
 
 ### TYP-FN-02 — Exact types through function-local declarations
 
@@ -481,12 +517,14 @@
   1. What further rules govern generic, recursive, nested and other advanced constructor definitions?
   2. What additional variant narrowing rules apply beyond the approved general `when` exhaustiveness requirement?
 
-### TYP-GEN-01 — Generics
+### TYP-GEN-01 — Explicit generics and advanced polymorphism
 
 - **Status:** Open question
-- **Spec:** [syntax-and-types.md — Union and intersection types](../spec/syntax-and-types.md#union-and-intersection-types)
+- **Spec:** [syntax-and-types.md — Type-expression computations and record syntax](../spec/syntax-and-types.md#type-expression-computations-and-record-syntax)
 - **Questions:**
-  1. Are there generic types and functions, and how are type parameters declared and inferred?
+  1. After implementing implicitly polymorphic function parameters (TYP-FN-06) and specialized constructor restrictions, which remaining examples, if any, genuinely require explicit generic type or function declarations, higher-order type functions, or type-level quantification syntax?
+  2. If needed, how should those advanced cases be expressed and inferred?
+- **Notes:** Explicit `<T>` is not approved. Ordinary function polymorphism is already approved independently of this question.
 
 ### TYP-NS-01 — Type values inside namespaces
 
