@@ -174,6 +174,78 @@ mod postfix {
     fn labeled_arguments_are_not_parsed_yet() {
         assert_rejected("greet(last: \"Lovelace\")", DiagnosticKind::Unsupported);
     }
+
+    #[test]
+    fn keyword_spellings_are_member_names() {
+        assert_parses("record.type", "(. record type)");
+        assert_parses("record.when.where", "(. (. record when) where)");
+        assert_parses("m.from(x).as", "(. (call (. m from) x) as)");
+        for keyword in ["import", "export", "unique", "fn"] {
+            assert_parses(&format!("a.{keyword}"), &format!("(. a {keyword})"));
+        }
+        assert_rejected("type", DiagnosticKind::UnexpectedToken);
+        assert_rejected("a._", DiagnosticKind::UnexpectedToken);
+    }
+}
+
+mod line_breaks {
+    use super::*;
+
+    /// Asserts that `src` is rejected exactly as `equivalent`, its form with
+    /// the block comment replaced by an explicit line break.
+    fn assert_rejected_like(src: &str, equivalent: &str) {
+        assert_rejected(src, DiagnosticKind::UnexpectedToken);
+        assert_rejected(equivalent, DiagnosticKind::UnexpectedToken);
+        let messages = |s: &str| -> Vec<String> {
+            parse_expression(s)
+                .diagnostics
+                .into_iter()
+                .map(|d| d.message)
+                .collect()
+        };
+        assert_eq!(messages(src), messages(equivalent), "messages for {src:?}");
+    }
+
+    #[test]
+    fn explicit_line_breaks_end_the_expression() {
+        assert_rejected("a\n+ b", DiagnosticKind::UnexpectedToken);
+        assert_rejected("f\n(x)", DiagnosticKind::UnexpectedToken);
+    }
+
+    #[test]
+    fn block_comment_line_breaks_are_not_joined() {
+        assert_rejected_like("a /*\n*/ + b", "a\n+ b");
+        assert_rejected_like("f /*\n*/ (x)", "f\n(x)");
+        assert_rejected_like("a /* one\r\ntwo */ * b", "a\r\n* b");
+        assert_rejected_like("a + /*\n*/ b", "a +\nb");
+    }
+
+    #[test]
+    fn comment_line_break_position() {
+        let result = parse_expression("ab /*\n*/ + c");
+        let diagnostic = &result.diagnostics[0];
+        assert_eq!(diagnostic.span, Span { start: 5, end: 6 });
+        assert_eq!(diagnostic.start.line, 1);
+        assert_eq!(diagnostic.start.column, 6);
+    }
+
+    #[test]
+    fn single_line_block_comments_are_ignored() {
+        assert_parses("a /* note */ + b", "(+ a b)");
+    }
+
+    #[test]
+    fn unterminated_comment_reports_only_the_lexical_error() {
+        let result = parse_expression("a + /*\n");
+        assert!(result.value.is_none());
+        let kinds: Vec<DiagnosticKind> = result.diagnostics.iter().map(|d| d.kind).collect();
+        assert_eq!(
+            kinds,
+            vec![DiagnosticKind::Lexical(
+                natcode::lexer::DiagnosticKind::UnterminatedBlockComment
+            )]
+        );
+    }
 }
 
 mod prefix {
@@ -273,7 +345,24 @@ mod lambdas {
             "(call map items (=> (x) (+ x 1)))",
         );
         assert_parses("a || (x => y)", "(|| a (paren (=> (x) y)))");
-        assert_parses("(x => x)(1)", "(call (paren (=> (x) x)) 1)");
+        assert_parses("make()(1)", "(call (call make) 1)");
+    }
+
+    #[test]
+    fn immediately_invoked_lambdas_are_not_supported() {
+        assert_rejected("(x => x)(1)", DiagnosticKind::Unsupported);
+        assert_rejected("((x => x))(1)", DiagnosticKind::Unsupported);
+        assert_rejected("(() => 42)()", DiagnosticKind::Unsupported);
+    }
+
+    #[test]
+    fn nested_groups_and_lambda_heads() {
+        let depth = 100;
+        let src = format!("{}x{}", "(".repeat(depth), ")".repeat(depth));
+        let expected = format!("{}x{}", "(paren ".repeat(depth), ")".repeat(depth));
+        assert_parses(&src, &expected);
+        assert_parses("((x) => (y))", "(paren (=> (x) (paren y)))");
+        assert_parses("f((a), (b) => b)", "(call f (paren a) (=> (b) b))");
     }
 
     #[test]

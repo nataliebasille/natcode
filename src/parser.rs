@@ -7,10 +7,11 @@
 //!
 //! Not yet parsed, because they belong to other items: expression
 //! continuation across line breaks (PAR-BLK-02), executable block bodies
-//! (PAR-BLK-01), labeled call arguments (PAR-FN-01), `as?` validation
-//! (PAR-VAL-01), `_` placeholders (PAR-EXPR-02), object literals
-//! (PAR-OBJ-01), and `when`. The parser stops at the first syntax error;
-//! error recovery is PAR-ERR-01.
+//! (PAR-BLK-01), labeled call arguments (PAR-FN-01), immediately invoked
+//! lambdas (PAR-FN-01), `as?` validation (PAR-VAL-01), `_` placeholders
+//! (PAR-EXPR-02), object literals (PAR-OBJ-01), and `when`. A line break
+//! inside a block comment ends a line like any other (LEX-COM-04). The parser
+//! stops at the first syntax error; error recovery is PAR-ERR-01.
 
 use crate::lexer::{self, Position, Span, Token, TokenKind, tokenize};
 
@@ -123,8 +124,11 @@ pub fn parse_expression(source: &str) -> ParseResult<Expr> {
             start: d.start,
         })
         .collect();
+    let tokens = restore_comment_line_breaks(source, lexed.tokens);
+    let closing_parens = match_parens(&tokens);
     let mut parser = Parser {
-        tokens: &lexed.tokens,
+        tokens: &tokens,
+        closing_parens,
         pos: 0,
         diagnostics: Vec::new(),
     };
@@ -143,6 +147,62 @@ pub fn parse_expression(source: &str) -> ParseResult<Expr> {
     }
 }
 
+/// The lexer emits no newline token for a line break inside a block comment
+/// (LEX-COM-04), so this inserts one wherever two adjacent tokens are on
+/// different lines. Removing comment text must never join two lines.
+fn restore_comment_line_breaks(source: &str, tokens: Vec<Token>) -> Vec<Token> {
+    let mut restored: Vec<Token> = Vec::with_capacity(tokens.len());
+    for token in tokens {
+        if let Some(prev) = restored.last()
+            && prev.kind != TokenKind::Newline
+            && token.kind != TokenKind::Newline
+            && token.start.line > prev.start.line
+            && let Some(found) = source[prev.span.end..token.span.start].find('\n')
+        {
+            // Only block comments span lines between tokens.
+            let offset = prev.span.end + found;
+            let start = if offset > 0 && source.as_bytes()[offset - 1] == b'\r' {
+                offset - 1
+            } else {
+                offset
+            };
+            let column = prev.start.column + source[prev.span.start..start].chars().count() as u32;
+            restored.push(Token {
+                kind: TokenKind::Newline,
+                text: source[start..offset + 1].to_string(),
+                span: Span {
+                    start,
+                    end: offset + 1,
+                },
+                start: Position {
+                    line: prev.start.line,
+                    column,
+                },
+            });
+        }
+        restored.push(token);
+    }
+    restored
+}
+
+/// For each `(` token index, the index of its matching `)`, if any.
+fn match_parens(tokens: &[Token]) -> Vec<Option<usize>> {
+    let mut closing = vec![None; tokens.len()];
+    let mut open = Vec::new();
+    for (index, token) in tokens.iter().enumerate() {
+        match token.kind {
+            TokenKind::LParen => open.push(index),
+            TokenKind::RParen => {
+                if let Some(start) = open.pop() {
+                    closing[start] = Some(index);
+                }
+            }
+            _ => {}
+        }
+    }
+    closing
+}
+
 /// A syntax error has already been recorded as a diagnostic.
 struct Reported;
 
@@ -150,6 +210,7 @@ type Parsed<T> = Result<T, Reported>;
 
 struct Parser<'a> {
     tokens: &'a [Token],
+    closing_parens: Vec<Option<usize>>,
     pos: usize,
     diagnostics: Vec<Diagnostic>,
 }
@@ -247,22 +308,8 @@ impl Parser<'_> {
         match self.peek().kind {
             TokenKind::Identifier if self.peek_kind_at(1) == TokenKind::Arrow => Some(self.pos + 1),
             TokenKind::LParen => {
-                let mut depth = 0usize;
-                for (index, token) in self.tokens.iter().enumerate().skip(self.pos) {
-                    match token.kind {
-                        TokenKind::LParen => depth += 1,
-                        TokenKind::RParen => {
-                            depth -= 1;
-                            if depth == 0 {
-                                let next = self.tokens.get(index + 1)?;
-                                return (next.kind == TokenKind::Arrow).then_some(index + 1);
-                            }
-                        }
-                        TokenKind::Eof => return None,
-                        _ => {}
-                    }
-                }
-                None
+                let close = self.closing_parens[self.pos]?;
+                (self.tokens.get(close + 1)?.kind == TokenKind::Arrow).then_some(close + 1)
             }
             _ => None,
         }
@@ -435,7 +482,8 @@ impl Parser<'_> {
             match self.peek().kind {
                 TokenKind::MemberAccess => {
                     self.advance();
-                    if !self.at(TokenKind::Identifier) {
+                    // Keyword spellings are permitted as property names (lexical.md).
+                    if !self.at(TokenKind::Identifier) && !is_keyword(self.peek().kind) {
                         return self.unexpected("a property name after `.`");
                     }
                     let name = self.name();
@@ -452,6 +500,18 @@ impl Parser<'_> {
                     };
                 }
                 TokenKind::LParen => {
+                    if is_lambda(&expr) {
+                        let open = self.peek().clone();
+                        return self.error(
+                            DiagnosticKind::Unsupported,
+                            "immediately invoked lambdas are not supported (PAR-FN-01)".to_string(),
+                            Span {
+                                start: expr.span.start,
+                                end: open.span.end,
+                            },
+                            open.start,
+                        );
+                    }
                     self.advance();
                     let args = self.arguments()?;
                     let close =
@@ -533,6 +593,31 @@ impl Parser<'_> {
             kind,
             span: token.span,
         })
+    }
+}
+
+/// The hard-reserved keywords of `lexical.md`.
+fn is_keyword(kind: TokenKind) -> bool {
+    matches!(
+        kind,
+        TokenKind::From
+            | TokenKind::Import
+            | TokenKind::Export
+            | TokenKind::Unique
+            | TokenKind::Type
+            | TokenKind::Fn
+            | TokenKind::When
+            | TokenKind::Where
+            | TokenKind::As
+    )
+}
+
+/// A lambda, possibly wrapped in grouping parentheses.
+fn is_lambda(expr: &Expr) -> bool {
+    match &expr.kind {
+        ExprKind::Lambda { .. } => true,
+        ExprKind::Paren(inner) => is_lambda(inner),
+        _ => false,
     }
 }
 
