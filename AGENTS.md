@@ -12,3 +12,21 @@ Before designing or implementing any language feature:
 8. Only the language owner moves items to **Open question** or **Approved**, or changes specification decisions. You may add **Proposed** items, add questions, and suggest answers for review. Move items to **In progress** or **Implemented** only for approved work, recording passing tests as evidence.
 
 When blocked, describe the missing decision, why it affects implementation, and possible alternatives without selecting one on the owner's behalf.
+
+## Opening pull requests
+
+Use the GitHub CLI (`gh`) to open pull requests; the GitHub MCP tools cannot create them.
+
+1. **Base the branch on the latest `main`.** Run `git fetch origin` and confirm `git rev-list --left-right --count HEAD...origin/main` reports `0` commits behind; rebase onto `origin/main` otherwise. Check that `main` has not already implemented the same scorecard items before starting work.
+2. **Validate.** Run `cargo test`, `cargo clippy --all-targets`, and, if docs changed, `python docs/tools/build_spec.py` and `python docs/tools/scorecard_status.py --check`. Report any failure that already exists on `main` instead of fixing it in an unrelated PR.
+3. **Commit and push.** Follow the existing subject-prefix style (`lexer: …`, `docs: …`, `docs(scorecards): …`), then `git push -u origin <branch>`.
+4. **Install `gh` if it is missing.** On Windows, run `winget install --id GitHub.cli -e --source winget`. It installs to `C:\Program Files\GitHub CLI\gh.exe`, which shells started before the install will not have on `PATH`, so call it by full path if needed.
+5. **Authenticate.** Check `gh auth status`. If `gh` is not logged in, reuse the GitHub token already held by Git Credential Manager, scoped to the current process only:
+
+   ```powershell
+   $cred = "protocol=https`nhost=github.com`n`n" | git credential fill
+   $env:GH_TOKEN = ($cred | Where-Object { $_ -like 'password=*' }) -replace '^password=', ''
+   ```
+
+   Never print, log, or commit the token, and do not persist it with `gh auth login`. The `repo` scope is sufficient for pull requests.
+6. **Create the pull request.** Write the description to a temporary file and run `gh pr create --base main --head <branch> --title "<prefix>: <summary>" --body-file <file>`. The description should cover what changed, the scorecard items affected, notes for reviewers, and validation results. Delete the temporary file afterwards.
