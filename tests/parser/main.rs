@@ -1,8 +1,19 @@
 //! Parser tests. Each test is cited as evidence by an item in
 //! `docs/scorecards/parser.md`.
 
-use natcode::lexer::Span;
+use natcode::lexer::{Position, Span};
 use natcode::parser::{DiagnosticKind, Expr, ExprKind, parse_expression};
+
+/// The 1-based line and column of byte `offset`, counted independently of
+/// the lexer; columns count Unicode scalar values.
+fn position_of(src: &str, offset: usize) -> Position {
+    let before = &src[..offset];
+    let line_start = before.rfind('\n').map_or(0, |i| i + 1);
+    Position {
+        line: before.matches('\n').count() as u32 + 1,
+        column: before[line_start..].chars().count() as u32 + 1,
+    }
+}
 
 fn parse(src: &str) -> Expr {
     let result = parse_expression(src);
@@ -19,12 +30,88 @@ fn assert_parses(src: &str, expected: &str) {
     assert_eq!(parse(src).to_string(), expected, "tree for {src:?}");
 }
 
-/// Asserts that `src` is rejected, with exactly one diagnostic of `kind`.
+/// Asserts that `src` is rejected, with exactly one diagnostic of `kind`
+/// whose line and column match the start of its span.
 fn assert_rejected(src: &str, kind: DiagnosticKind) {
     let result = parse_expression(src);
     assert!(result.value.is_none(), "{src:?} should be rejected");
     let kinds: Vec<DiagnosticKind> = result.diagnostics.iter().map(|d| d.kind).collect();
     assert_eq!(kinds, vec![kind], "diagnostics for {src:?}");
+    let diagnostic = &result.diagnostics[0];
+    assert_eq!(
+        diagnostic.start,
+        position_of(src, diagnostic.span.start),
+        "diagnostic position for {src:?}"
+    );
+}
+
+mod diagnostics {
+    use super::*;
+
+    /// Asserts the span and the line and column of the only diagnostic.
+    fn assert_located(
+        src: &str,
+        kind: DiagnosticKind,
+        span: (usize, usize),
+        line: u32,
+        column: u32,
+    ) {
+        assert_rejected(src, kind);
+        let diagnostic = &parse_expression(src).diagnostics[0];
+        assert_eq!(
+            diagnostic.span,
+            Span {
+                start: span.0,
+                end: span.1
+            },
+            "span for {src:?}"
+        );
+        assert_eq!(
+            diagnostic.start,
+            Position { line, column },
+            "position for {src:?}"
+        );
+    }
+
+    #[test]
+    fn positions_match_span_starts() {
+        assert_located(
+            "f(x) => y",
+            DiagnosticKind::InvalidLambdaParameters,
+            (0, 7),
+            1,
+            1,
+        );
+        assert_located(
+            "a || b => c",
+            DiagnosticKind::InvalidLambdaParameters,
+            (0, 9),
+            1,
+            1,
+        );
+        assert_located("(x => x)(1)", DiagnosticKind::Unsupported, (0, 9), 1, 1);
+        assert_located(
+            "(x: Number) => x",
+            DiagnosticKind::InvalidLambdaParameters,
+            (0, 11),
+            1,
+            1,
+        );
+        assert_located(
+            "g(1, (a b) => a)",
+            DiagnosticKind::InvalidLambdaParameters,
+            (5, 10),
+            1,
+            6,
+        );
+        assert_located(
+            "/* c\n*/ f(x) => y",
+            DiagnosticKind::InvalidLambdaParameters,
+            (8, 15),
+            2,
+            4,
+        );
+    }
 }
 
 mod primaries {

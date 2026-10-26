@@ -496,13 +496,9 @@ impl Parser<'_> {
         token
     }
 
-    fn error<T>(
-        &mut self,
-        kind: DiagnosticKind,
-        message: String,
-        span: Span,
-        start: Position,
-    ) -> Parsed<T> {
+    /// Records a diagnostic whose line and column are those of `span.start`.
+    fn error<T>(&mut self, kind: DiagnosticKind, message: String, span: Span) -> Parsed<T> {
+        let start = self.position_at(span.start);
         self.diagnostics.push(Diagnostic {
             kind,
             message,
@@ -510,6 +506,15 @@ impl Parser<'_> {
             start,
         });
         Err(Reported)
+    }
+
+    /// The line and column of byte `offset`, which every diagnostic span
+    /// starts at: the start of some token.
+    fn position_at(&self, offset: usize) -> Position {
+        let index = self.tokens.partition_point(|t| t.span.start < offset);
+        let token = &self.tokens[index.min(self.tokens.len() - 1)];
+        debug_assert_eq!(token.span.start, offset, "spans start at a token");
+        token.start
     }
 
     fn unexpected<T>(&mut self, expected: &str) -> Parsed<T> {
@@ -527,7 +532,6 @@ impl Parser<'_> {
             DiagnosticKind::UnexpectedToken,
             format!("expected {expected}, found {found}"),
             token.span,
-            token.start,
         )
     }
 
@@ -557,7 +561,6 @@ impl Parser<'_> {
                     DiagnosticKind::Unsupported,
                     "labeled arguments are not supported yet (PAR-FN-01)".to_string(),
                     token.span,
-                    token.start,
                 );
             }
             if let Some(arrow_index) = self.lambda_head_end() {
@@ -608,7 +611,6 @@ impl Parser<'_> {
                     DiagnosticKind::Unsupported,
                     "`_` placeholders in expressions are not supported (PAR-EXPR-02)".to_string(),
                     token.span,
-                    token.start,
                 );
             }
             _ => return self.unexpected("an expression"),
@@ -658,7 +660,6 @@ impl Parser<'_> {
                             start: callee.span.start,
                             end: token.span.end,
                         },
-                        token.start,
                     );
                 }
                 self.advance();
@@ -695,7 +696,6 @@ impl Parser<'_> {
                     start: frame.start,
                     end: token.span.end,
                 },
-                token.start,
             ),
             kind => match binary_op(kind) {
                 Some(op) => {
@@ -714,7 +714,6 @@ impl Parser<'_> {
                                     token.text
                                 ),
                                 token.span,
-                                token.start,
                             );
                         }
                         frame.reduce(level);
@@ -823,7 +822,6 @@ impl Parser<'_> {
                 DiagnosticKind::Unsupported,
                 "lambda block bodies are not supported yet (PAR-BLK-01, PAR-BLK-02)".to_string(),
                 brace.span,
-                brace.start,
             );
         }
         Ok(params)
@@ -854,14 +852,12 @@ impl Parser<'_> {
     }
 
     fn invalid_params<T>(&mut self, start: usize, arrow_index: usize) -> Parsed<T> {
-        let token = self.peek().clone();
         let end = self.tokens[arrow_index - 1].span.end;
         self.error(
             DiagnosticKind::InvalidLambdaParameters,
             "lambda parameters must be comma-separated names without type annotations, such as `(x, y)`"
                 .to_string(),
             Span { start, end },
-            token.start,
         )
     }
 
