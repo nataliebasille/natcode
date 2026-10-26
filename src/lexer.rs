@@ -7,7 +7,8 @@
 //! line/nested block comments, the core operator set (including `/` and the
 //! indivisible `as?`), the value-expression operators `-` `!` `<` `<=` `>`
 //! `>=` `==` `!=` `&&` `||` (multi-character operators by maximal munch),
-//! and newline tokens. Emoji identifiers
+//! the remainder `%`, the type set difference `\` and complement `~`, and
+//! newline tokens. Emoji identifiers
 //! (LEX-ID-04) and indentation tokens (LEX-IND-01) are open questions and not
 //! handled yet.
 
@@ -30,32 +31,35 @@ pub enum TokenKind {
     Unique,
     Where,
     As,                 // `as`, the renaming keyword; distinct from `as?`.
-    Underscore,         // Standalone `_`, reserved as a wildcard.
-    Equals,             // `=`
-    FatArrow,           // `=>`
-    Colon,              // `:`
-    Pipe,               // `|`
-    Ampersand,          // `&`
-    LBrace,             // `{`
-    RBrace,             // `}`
-    LParen,             // `(`
-    RParen,             // `)`
-    Comma,              // `,`
-    Dot,                // `.`
-    Star,               // `*`
-    Plus,               // `+`
-    Slash,              // `/`
-    Minus,              // `-`
-    Not,                // `!`
-    LessThan,           // `<`
-    LessThanOrEqual,    // `<=`
-    GreaterThan,        // `>`
+    Wildcard,           // Standalone `_`: matches any remaining value.
+    Assign,       // `=`: declarations, parameter defaults, export entries, persistent updates.
+    Arrow,        // `=>`: lambdas, also separates `when` branches and `where` patterns.
+    Colon,        // `:` has several roles (type constraint, property key, call label).
+    Union,        // `|`: type set union.
+    Intersection, // `&`: type set intersection.
+    LBrace,       // `{`
+    RBrace,       // `}`
+    LParen,       // `(`
+    RParen,       // `)`
+    Comma,        // `,`
+    MemberAccess, // `.`
+    Star,         // `*` has several roles (multiplication, wildcard import).
+    Plus,         // `+`: addition.
+    Divide,       // `/`: division, in value and type computations.
+    Minus,        // `-`: subtraction or prefix negation.
+    Remainder,    // `%`: truncated remainder.
+    SetDifference, // `\`: type set difference; never a line continuation.
+    SetComplement, // `~`: prefix type set complement.
+    Not,          // `!`
+    LessThan,     // `<`
+    LessThanOrEqual, // `<=`
+    GreaterThan,  // `>`
     GreaterThanOrEqual, // `>=`
-    EqualTo,            // `==`
-    NotEqualTo,         // `!=`
-    And,                // `&&`
-    Or,                 // `||`
-    AsQuestion,         // `as?`, a single indivisible runtime-validation operator.
+    EqualTo,      // `==`
+    NotEqualTo,   // `!=`
+    And,          // `&&`
+    Or,           // `||`
+    Validate,     // `as?`: one indivisible runtime-validation operator.
     Newline,
     Error,
     Eof,
@@ -387,7 +391,7 @@ impl Lexer<'_> {
         let raw = &self.src[start..self.pos];
         if raw == "as" && self.peek() == Some('?') {
             self.bump();
-            self.push(TokenKind::AsQuestion, start, start_pos);
+            self.push(TokenKind::Validate, start, start_pos);
             return;
         }
         let text: String = if is_nfc(raw) {
@@ -396,7 +400,7 @@ impl Lexer<'_> {
             raw.nfc().collect()
         };
         let kind = match text.as_str() {
-            "_" => TokenKind::Underscore,
+            "_" => TokenKind::Wildcard,
             "from" => TokenKind::From,
             "import" => TokenKind::Import,
             "export" => TokenKind::Export,
@@ -456,7 +460,7 @@ fn is_identifier_start(c: char) -> bool {
 /// Every two-character operator begins with a one-character operator.
 fn operator(c: char, next: Option<char>) -> Option<(TokenKind, usize)> {
     let double = match (c, next) {
-        ('=', Some('>')) => Some(TokenKind::FatArrow),
+        ('=', Some('>')) => Some(TokenKind::Arrow),
         ('=', Some('=')) => Some(TokenKind::EqualTo),
         ('!', Some('=')) => Some(TokenKind::NotEqualTo),
         ('<', Some('=')) => Some(TokenKind::LessThanOrEqual),
@@ -469,20 +473,23 @@ fn operator(c: char, next: Option<char>) -> Option<(TokenKind, usize)> {
         return Some((kind, 2));
     }
     let single = match c {
-        '=' => TokenKind::Equals,
+        '=' => TokenKind::Assign,
         ':' => TokenKind::Colon,
-        '|' => TokenKind::Pipe,
-        '&' => TokenKind::Ampersand,
+        '|' => TokenKind::Union,
+        '&' => TokenKind::Intersection,
         '{' => TokenKind::LBrace,
         '}' => TokenKind::RBrace,
         '(' => TokenKind::LParen,
         ')' => TokenKind::RParen,
         ',' => TokenKind::Comma,
-        '.' => TokenKind::Dot,
+        '.' => TokenKind::MemberAccess,
         '*' => TokenKind::Star,
         '+' => TokenKind::Plus,
-        '/' => TokenKind::Slash,
+        '/' => TokenKind::Divide,
         '-' => TokenKind::Minus,
+        '%' => TokenKind::Remainder,
+        '\\' => TokenKind::SetDifference,
+        '~' => TokenKind::SetComplement,
         '!' => TokenKind::Not,
         '<' => TokenKind::LessThan,
         '>' => TokenKind::GreaterThan,
