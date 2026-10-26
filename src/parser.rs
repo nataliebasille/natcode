@@ -12,16 +12,140 @@
 //! (PAR-EXPR-02), object literals (PAR-OBJ-01), and `when`. A line break
 //! inside a block comment ends a line like any other (LEX-COM-04). The parser
 //! stops at the first syntax error; error recovery is PAR-ERR-01.
+//!
+//! Parsing, printing, and dropping trees use explicit stacks rather than
+//! recursion, so deeply nested input cannot overflow the call stack.
+
+use std::fmt;
 
 use crate::lexer::{self, Position, Span, Token, TokenKind, tokenize};
 
-#[derive(Debug, Clone, PartialEq)]
 pub struct Expr {
     pub kind: ExprKind,
     pub span: Span,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+/// Writes the expression as a fully parenthesized S-expression that shows
+/// its grouping, such as `(+ a (* b c))` for `a + b * c`. Uses an explicit
+/// stack rather than recursion.
+impl fmt::Display for Expr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        enum Item<'a> {
+            Expr(&'a Expr),
+            Text(&'a str),
+        }
+        let mut stack = vec![Item::Expr(self)];
+        while let Some(item) = stack.pop() {
+            let expr = match item {
+                Item::Text(text) => {
+                    f.write_str(text)?;
+                    continue;
+                }
+                Item::Expr(expr) => expr,
+            };
+            match &expr.kind {
+                ExprKind::Identifier(text) | ExprKind::Number(text) => f.write_str(text)?,
+                ExprKind::String(text) => write!(f, "{text:?}")?,
+                ExprKind::Boolean(value) => write!(f, "{value}")?,
+                ExprKind::Paren(inner) => {
+                    f.write_str("(paren ")?;
+                    stack.extend([Item::Text(")"), Item::Expr(inner)]);
+                }
+                ExprKind::Member { object, name } => {
+                    f.write_str("(. ")?;
+                    stack.extend([
+                        Item::Text(")"),
+                        Item::Text(&name.text),
+                        Item::Text(" "),
+                        Item::Expr(object),
+                    ]);
+                }
+                ExprKind::Call { callee, args } => {
+                    f.write_str("(call ")?;
+                    stack.push(Item::Text(")"));
+                    for arg in args.iter().rev() {
+                        stack.extend([Item::Expr(arg), Item::Text(" ")]);
+                    }
+                    stack.push(Item::Expr(callee));
+                }
+                ExprKind::Unary { op, operand } => {
+                    write!(f, "({} ", op.symbol())?;
+                    stack.extend([Item::Text(")"), Item::Expr(operand)]);
+                }
+                ExprKind::Binary { op, left, right } => {
+                    write!(f, "({} ", op.symbol())?;
+                    stack.extend([
+                        Item::Text(")"),
+                        Item::Expr(right),
+                        Item::Text(" "),
+                        Item::Expr(left),
+                    ]);
+                }
+                ExprKind::Lambda { params, body } => {
+                    f.write_str("(=> (")?;
+                    for (index, param) in params.iter().enumerate() {
+                        if index > 0 {
+                            f.write_str(" ")?;
+                        }
+                        f.write_str(&param.text)?;
+                    }
+                    f.write_str(") ")?;
+                    stack.extend([Item::Text(")"), Item::Expr(body)]);
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
+/// Same as `Display`; a derived `Debug` would recurse through the tree.
+impl fmt::Debug for Expr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(self, f)
+    }
+}
+
+impl Drop for Expr {
+    fn drop(&mut self) {
+        let mut pending = Vec::new();
+        detach_children(&mut self.kind, &mut pending);
+        while let Some(mut expr) = pending.pop() {
+            detach_children(&mut expr.kind, &mut pending);
+        }
+    }
+}
+
+/// Moves the direct subexpressions of `kind` onto `pending`, leaving leaves
+/// in their place, so that dropping `kind` does not recurse.
+fn detach_children(kind: &mut ExprKind, pending: &mut Vec<Expr>) {
+    let mut detach = |child: &mut Box<Expr>| {
+        let leaf = Expr {
+            kind: ExprKind::Boolean(false),
+            span: child.span,
+        };
+        pending.push(std::mem::replace(&mut **child, leaf));
+    };
+    match kind {
+        ExprKind::Paren(child)
+        | ExprKind::Member { object: child, .. }
+        | ExprKind::Unary { operand: child, .. }
+        | ExprKind::Lambda { body: child, .. } => detach(child),
+        ExprKind::Binary { left, right, .. } => {
+            detach(left);
+            detach(right);
+        }
+        ExprKind::Call { callee, args } => {
+            detach(callee);
+            pending.append(args);
+        }
+        ExprKind::Identifier(_)
+        | ExprKind::Number(_)
+        | ExprKind::String(_)
+        | ExprKind::Boolean(_) => {}
+    }
+}
+
+#[derive(Debug)]
 pub enum ExprKind {
     Identifier(String),
     /// Source text of a number literal; numeric representation is TYP-BLT-05.
@@ -66,6 +190,15 @@ pub enum UnaryOp {
     Negate,
 }
 
+impl UnaryOp {
+    pub fn symbol(self) -> &'static str {
+        match self {
+            UnaryOp::Not => "!",
+            UnaryOp::Negate => "-",
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BinaryOp {
     Multiply,
@@ -81,6 +214,26 @@ pub enum BinaryOp {
     NotEqualTo,
     And,
     Or,
+}
+
+impl BinaryOp {
+    pub fn symbol(self) -> &'static str {
+        match self {
+            BinaryOp::Multiply => "*",
+            BinaryOp::Divide => "/",
+            BinaryOp::Remainder => "%",
+            BinaryOp::Add => "+",
+            BinaryOp::Subtract => "-",
+            BinaryOp::LessThan => "<",
+            BinaryOp::LessThanOrEqual => "<=",
+            BinaryOp::GreaterThan => ">",
+            BinaryOp::GreaterThanOrEqual => ">=",
+            BinaryOp::EqualTo => "==",
+            BinaryOp::NotEqualTo => "!=",
+            BinaryOp::And => "&&",
+            BinaryOp::Or => "||",
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -132,13 +285,7 @@ pub fn parse_expression(source: &str) -> ParseResult<Expr> {
         pos: 0,
         diagnostics: Vec::new(),
     };
-    let value = parser.expression().ok().and_then(|expr| {
-        if parser.at(TokenKind::Eof) {
-            Some(expr)
-        } else {
-            parser.unexpected("end of expression").ok()
-        }
-    });
+    let value = parser.parse().ok();
     let lexical_error = !diagnostics.is_empty();
     diagnostics.append(&mut parser.diagnostics);
     ParseResult {
@@ -208,6 +355,117 @@ struct Reported;
 
 type Parsed<T> = Result<T, Reported>;
 
+/// Binding strength of pending operators; higher binds tighter.
+const PREFIX_PRECEDENCE: u8 = 6;
+const COMPARISON_PRECEDENCE: u8 = 3;
+
+fn precedence(op: BinaryOp) -> u8 {
+    match op {
+        BinaryOp::Multiply | BinaryOp::Divide | BinaryOp::Remainder => 5,
+        BinaryOp::Add | BinaryOp::Subtract => 4,
+        BinaryOp::LessThan
+        | BinaryOp::LessThanOrEqual
+        | BinaryOp::GreaterThan
+        | BinaryOp::GreaterThanOrEqual
+        | BinaryOp::EqualTo
+        | BinaryOp::NotEqualTo => COMPARISON_PRECEDENCE,
+        BinaryOp::And => 2,
+        BinaryOp::Or => 1,
+    }
+}
+
+enum Operator {
+    Prefix { op: UnaryOp, start: usize },
+    Binary(BinaryOp),
+}
+
+impl Operator {
+    fn precedence(&self) -> u8 {
+        match self {
+            Operator::Prefix { .. } => PREFIX_PRECEDENCE,
+            Operator::Binary(op) => precedence(*op),
+        }
+    }
+}
+
+/// What encloses an expression, and so which token ends it.
+enum Context {
+    /// The whole input, ended by end of input.
+    Top,
+    /// Grouping parentheses opened at `start`, ended by `)`.
+    Paren { start: usize },
+    /// One argument of a call, ended by `,` or `)`.
+    Call { callee: Expr, args: Vec<Expr> },
+    /// A lambda body, ended by whatever ends the enclosing expression.
+    LambdaBody { params: Vec<Name>, start: usize },
+}
+
+/// One expression being parsed with operator-precedence state. Nested
+/// expressions push frames instead of recursing, so nesting depth is
+/// limited only by memory, never by the call stack.
+struct Frame {
+    context: Context,
+    /// Byte offset where this frame's expression begins.
+    start: usize,
+    operands: Vec<Expr>,
+    operators: Vec<Operator>,
+}
+
+impl Frame {
+    fn new(context: Context, start: usize) -> Frame {
+        Frame {
+            context,
+            start,
+            operands: Vec::new(),
+            operators: Vec::new(),
+        }
+    }
+
+    fn at_start(&self) -> bool {
+        self.operands.is_empty() && self.operators.is_empty()
+    }
+
+    /// Applies pending operators that bind at least as tightly as `min`.
+    fn reduce(&mut self, min: u8) {
+        while self
+            .operators
+            .last()
+            .is_some_and(|op| op.precedence() >= min)
+        {
+            let operator = self.operators.pop().expect("a pending operator");
+            let right = self.operands.pop().expect("an operand for each operator");
+            let expr = match operator {
+                Operator::Prefix { op, start } => Expr {
+                    span: Span {
+                        start,
+                        end: right.span.end,
+                    },
+                    kind: ExprKind::Unary {
+                        op,
+                        operand: Box::new(right),
+                    },
+                },
+                Operator::Binary(op) => {
+                    let left = self.operands.pop().expect("a left operand");
+                    binary(op, left, right)
+                }
+            };
+            self.operands.push(expr);
+        }
+    }
+
+    fn finish(&mut self) -> Expr {
+        self.reduce(0);
+        self.operands.pop().expect("a complete expression")
+    }
+}
+
+enum Step {
+    ExpectOperand,
+    AfterOperand,
+    Done(Expr),
+}
+
 struct Parser<'a> {
     tokens: &'a [Token],
     closing_parens: Vec<Option<usize>>,
@@ -236,14 +494,6 @@ impl Parser<'_> {
             self.pos += 1;
         }
         token
-    }
-
-    fn expect(&mut self, kind: TokenKind, expected: &str) -> Parsed<Token> {
-        if self.at(kind) {
-            Ok(self.advance().clone())
-        } else {
-            self.unexpected(expected)
-        }
     }
 
     fn error<T>(
@@ -281,26 +531,270 @@ impl Parser<'_> {
         )
     }
 
-    /// `=>` has the lowest precedence and is right-associative.
-    fn expression(&mut self) -> Parsed<Expr> {
-        if let Some(params_end) = self.lambda_head_end() {
-            return self.lambda(params_end);
+    /// Parses one complete expression followed by end of input.
+    fn parse(&mut self) -> Parsed<Expr> {
+        let mut frames = vec![Frame::new(Context::Top, self.peek().span.start)];
+        let mut step = Step::ExpectOperand;
+        loop {
+            step = match step {
+                Step::ExpectOperand => self.operand(&mut frames)?,
+                Step::AfterOperand => self.after_operand(&mut frames)?,
+                Step::Done(expr) => return Ok(expr),
+            };
         }
-        let expr = self.or()?;
-        if self.at(TokenKind::Arrow) {
-            let arrow = self.peek().clone();
-            return self.error(
+    }
+
+    /// Handles the token where an operand must start.
+    fn operand(&mut self, frames: &mut Vec<Frame>) -> Parsed<Step> {
+        let token = self.peek().clone();
+        let frame = frames.last_mut().expect("an open frame");
+        if frame.at_start() {
+            if matches!(frame.context, Context::Call { .. })
+                && token.kind == TokenKind::Identifier
+                && self.peek_kind_at(1) == TokenKind::Colon
+            {
+                return self.error(
+                    DiagnosticKind::Unsupported,
+                    "labeled arguments are not supported yet (PAR-FN-01)".to_string(),
+                    token.span,
+                    token.start,
+                );
+            }
+            if let Some(arrow_index) = self.lambda_head_end() {
+                let params = self.lambda_params(arrow_index)?;
+                let body_start = self.peek().span.start;
+                frames.push(Frame::new(
+                    Context::LambdaBody {
+                        params,
+                        start: token.span.start,
+                    },
+                    body_start,
+                ));
+                return Ok(Step::ExpectOperand);
+            }
+        }
+        let kind = match token.kind {
+            TokenKind::Not | TokenKind::Minus => {
+                let op = if token.kind == TokenKind::Not {
+                    UnaryOp::Not
+                } else {
+                    UnaryOp::Negate
+                };
+                self.advance();
+                frame.operators.push(Operator::Prefix {
+                    op,
+                    start: token.span.start,
+                });
+                return Ok(Step::ExpectOperand);
+            }
+            TokenKind::LParen => {
+                self.advance();
+                let inner_start = self.peek().span.start;
+                frames.push(Frame::new(
+                    Context::Paren {
+                        start: token.span.start,
+                    },
+                    inner_start,
+                ));
+                return Ok(Step::ExpectOperand);
+            }
+            TokenKind::Identifier => ExprKind::Identifier(token.text.clone()),
+            TokenKind::Number => ExprKind::Number(token.text.clone()),
+            TokenKind::String => ExprKind::String(token.text[1..token.text.len() - 1].to_string()),
+            TokenKind::True => ExprKind::Boolean(true),
+            TokenKind::False => ExprKind::Boolean(false),
+            TokenKind::Wildcard => {
+                return self.error(
+                    DiagnosticKind::Unsupported,
+                    "`_` placeholders in expressions are not supported (PAR-EXPR-02)".to_string(),
+                    token.span,
+                    token.start,
+                );
+            }
+            _ => return self.unexpected("an expression"),
+        };
+        self.advance();
+        frame.operands.push(Expr {
+            kind,
+            span: token.span,
+        });
+        Ok(Step::AfterOperand)
+    }
+
+    /// Handles the token following a complete operand: a postfix or binary
+    /// operator continues the expression; anything else ends the frame.
+    fn after_operand(&mut self, frames: &mut Vec<Frame>) -> Parsed<Step> {
+        let token = self.peek().clone();
+        let frame = frames.last_mut().expect("an open frame");
+        match token.kind {
+            TokenKind::MemberAccess => {
+                self.advance();
+                // Keyword spellings are permitted as property names (lexical.md).
+                if !self.at(TokenKind::Identifier) && !is_keyword(self.peek().kind) {
+                    return self.unexpected("a property name after `.`");
+                }
+                let name = self.name();
+                let object = frame.operands.pop().expect("a member object");
+                let span = Span {
+                    start: object.span.start,
+                    end: name.span.end,
+                };
+                frame.operands.push(Expr {
+                    kind: ExprKind::Member {
+                        object: Box::new(object),
+                        name,
+                    },
+                    span,
+                });
+                Ok(Step::AfterOperand)
+            }
+            TokenKind::LParen => {
+                let callee = frame.operands.pop().expect("a callee");
+                if is_lambda(&callee) {
+                    return self.error(
+                        DiagnosticKind::Unsupported,
+                        "immediately invoked lambdas are not supported (PAR-FN-01)".to_string(),
+                        Span {
+                            start: callee.span.start,
+                            end: token.span.end,
+                        },
+                        token.start,
+                    );
+                }
+                self.advance();
+                if self.at(TokenKind::RParen) {
+                    let end = self.advance().span.end;
+                    let span = Span {
+                        start: callee.span.start,
+                        end,
+                    };
+                    frame.operands.push(Expr {
+                        kind: ExprKind::Call {
+                            callee: Box::new(callee),
+                            args: Vec::new(),
+                        },
+                        span,
+                    });
+                    return Ok(Step::AfterOperand);
+                }
+                let arg_start = self.peek().span.start;
+                frames.push(Frame::new(
+                    Context::Call {
+                        callee,
+                        args: Vec::new(),
+                    },
+                    arg_start,
+                ));
+                Ok(Step::ExpectOperand)
+            }
+            TokenKind::Arrow => self.error(
                 DiagnosticKind::InvalidLambdaParameters,
                 "the left side of `=>` must be a lambda parameter list such as `x`, `(x, y)`, or `()`"
                     .to_string(),
                 Span {
-                    start: expr.span.start,
-                    end: arrow.span.end,
+                    start: frame.start,
+                    end: token.span.end,
                 },
-                arrow.start,
-            );
+                token.start,
+            ),
+            kind => match binary_op(kind) {
+                Some(op) => {
+                    let level = precedence(op);
+                    frame.reduce(level + 1);
+                    if frame
+                        .operators
+                        .last()
+                        .is_some_and(|top| top.precedence() == level)
+                    {
+                        if level == COMPARISON_PRECEDENCE {
+                            return self.error(
+                                DiagnosticKind::ChainedComparison,
+                                format!(
+                                    "comparison operators cannot be chained; `{}` follows another comparison (combine comparisons with `&&`)",
+                                    token.text
+                                ),
+                                token.span,
+                                token.start,
+                            );
+                        }
+                        frame.reduce(level);
+                    }
+                    frame.operators.push(Operator::Binary(op));
+                    self.advance();
+                    Ok(Step::ExpectOperand)
+                }
+                None => self.close_frame(frames),
+            },
         }
-        Ok(expr)
+    }
+
+    /// Completes the innermost frame at a token that cannot continue it.
+    fn close_frame(&mut self, frames: &mut Vec<Frame>) -> Parsed<Step> {
+        let mut frame = frames.pop().expect("an open frame");
+        let expr = frame.finish();
+        let completed = match frame.context {
+            Context::Top => {
+                return if self.at(TokenKind::Eof) {
+                    Ok(Step::Done(expr))
+                } else {
+                    self.unexpected("end of expression")
+                };
+            }
+            Context::Paren { start } => {
+                if !self.at(TokenKind::RParen) {
+                    return self.unexpected("`)`");
+                }
+                let end = self.advance().span.end;
+                Expr {
+                    kind: ExprKind::Paren(Box::new(expr)),
+                    span: Span { start, end },
+                }
+            }
+            Context::Call { callee, mut args } => {
+                args.push(expr);
+                match self.peek().kind {
+                    TokenKind::Comma => {
+                        self.advance();
+                        let arg_start = self.peek().span.start;
+                        frames.push(Frame::new(Context::Call { callee, args }, arg_start));
+                        return Ok(Step::ExpectOperand);
+                    }
+                    TokenKind::RParen => {
+                        let end = self.advance().span.end;
+                        let span = Span {
+                            start: callee.span.start,
+                            end,
+                        };
+                        Expr {
+                            kind: ExprKind::Call {
+                                callee: Box::new(callee),
+                                args,
+                            },
+                            span,
+                        }
+                    }
+                    _ => return self.unexpected("`,` or `)` in the argument list"),
+                }
+            }
+            // The token that ended the body also ends the enclosing frame,
+            // so it is left for that frame to handle.
+            Context::LambdaBody { params, start } => {
+                let end = expr.span.end;
+                Expr {
+                    kind: ExprKind::Lambda {
+                        params,
+                        body: Box::new(expr),
+                    },
+                    span: Span { start, end },
+                }
+            }
+        };
+        frames
+            .last_mut()
+            .expect("an enclosing frame")
+            .operands
+            .push(completed);
+        Ok(Step::AfterOperand)
     }
 
     /// If a lambda starts here, the index of the `=>` that ends its parameters.
@@ -315,8 +809,8 @@ impl Parser<'_> {
         }
     }
 
-    fn lambda(&mut self, arrow_index: usize) -> Parsed<Expr> {
-        let start = self.peek().span.start;
+    /// Parses lambda parameters and the `=>` at `arrow_index`.
+    fn lambda_params(&mut self, arrow_index: usize) -> Parsed<Vec<Name>> {
         let params = if self.at(TokenKind::Identifier) {
             vec![self.name()]
         } else {
@@ -332,15 +826,7 @@ impl Parser<'_> {
                 brace.start,
             );
         }
-        let body = self.expression()?;
-        let end = body.span.end;
-        Ok(Expr {
-            kind: ExprKind::Lambda {
-                params,
-                body: Box::new(body),
-            },
-            span: Span { start, end },
-        })
+        Ok(params)
     }
 
     /// `()`, `(x)`, or `(x, y, ...)`, ending just before `=>`.
@@ -386,214 +872,6 @@ impl Parser<'_> {
             span: token.span,
         }
     }
-
-    fn or(&mut self) -> Parsed<Expr> {
-        let mut left = self.and()?;
-        while self.at(TokenKind::Or) {
-            self.advance();
-            let right = self.and()?;
-            left = binary(BinaryOp::Or, left, right);
-        }
-        Ok(left)
-    }
-
-    fn and(&mut self) -> Parsed<Expr> {
-        let mut left = self.comparison()?;
-        while self.at(TokenKind::And) {
-            self.advance();
-            let right = self.comparison()?;
-            left = binary(BinaryOp::And, left, right);
-        }
-        Ok(left)
-    }
-
-    fn comparison(&mut self) -> Parsed<Expr> {
-        let left = self.additive()?;
-        let Some(op) = comparison_op(self.peek().kind) else {
-            return Ok(left);
-        };
-        self.advance();
-        let right = self.additive()?;
-        if comparison_op(self.peek().kind).is_some() {
-            let token = self.peek().clone();
-            return self.error(
-                DiagnosticKind::ChainedComparison,
-                format!(
-                    "comparison operators cannot be chained; `{}` follows another comparison (combine comparisons with `&&`)",
-                    token.text
-                ),
-                token.span,
-                token.start,
-            );
-        }
-        Ok(binary(op, left, right))
-    }
-
-    fn additive(&mut self) -> Parsed<Expr> {
-        let mut left = self.multiplicative()?;
-        loop {
-            let op = match self.peek().kind {
-                TokenKind::Plus => BinaryOp::Add,
-                TokenKind::Minus => BinaryOp::Subtract,
-                _ => return Ok(left),
-            };
-            self.advance();
-            let right = self.multiplicative()?;
-            left = binary(op, left, right);
-        }
-    }
-
-    fn multiplicative(&mut self) -> Parsed<Expr> {
-        let mut left = self.unary()?;
-        loop {
-            let op = match self.peek().kind {
-                TokenKind::Star => BinaryOp::Multiply,
-                TokenKind::Divide => BinaryOp::Divide,
-                TokenKind::Remainder => BinaryOp::Remainder,
-                _ => return Ok(left),
-            };
-            self.advance();
-            let right = self.unary()?;
-            left = binary(op, left, right);
-        }
-    }
-
-    fn unary(&mut self) -> Parsed<Expr> {
-        let op = match self.peek().kind {
-            TokenKind::Not => UnaryOp::Not,
-            TokenKind::Minus => UnaryOp::Negate,
-            _ => return self.postfix(),
-        };
-        let start = self.advance().span.start;
-        let operand = self.unary()?;
-        let end = operand.span.end;
-        Ok(Expr {
-            kind: ExprKind::Unary {
-                op,
-                operand: Box::new(operand),
-            },
-            span: Span { start, end },
-        })
-    }
-
-    fn postfix(&mut self) -> Parsed<Expr> {
-        let mut expr = self.primary()?;
-        loop {
-            match self.peek().kind {
-                TokenKind::MemberAccess => {
-                    self.advance();
-                    // Keyword spellings are permitted as property names (lexical.md).
-                    if !self.at(TokenKind::Identifier) && !is_keyword(self.peek().kind) {
-                        return self.unexpected("a property name after `.`");
-                    }
-                    let name = self.name();
-                    let span = Span {
-                        start: expr.span.start,
-                        end: name.span.end,
-                    };
-                    expr = Expr {
-                        kind: ExprKind::Member {
-                            object: Box::new(expr),
-                            name,
-                        },
-                        span,
-                    };
-                }
-                TokenKind::LParen => {
-                    if is_lambda(&expr) {
-                        let open = self.peek().clone();
-                        return self.error(
-                            DiagnosticKind::Unsupported,
-                            "immediately invoked lambdas are not supported (PAR-FN-01)".to_string(),
-                            Span {
-                                start: expr.span.start,
-                                end: open.span.end,
-                            },
-                            open.start,
-                        );
-                    }
-                    self.advance();
-                    let args = self.arguments()?;
-                    let close =
-                        self.expect(TokenKind::RParen, "`,` or `)` in the argument list")?;
-                    let span = Span {
-                        start: expr.span.start,
-                        end: close.span.end,
-                    };
-                    expr = Expr {
-                        kind: ExprKind::Call {
-                            callee: Box::new(expr),
-                            args,
-                        },
-                        span,
-                    };
-                }
-                _ => return Ok(expr),
-            }
-        }
-    }
-
-    /// Comma-separated positional arguments, up to (not including) `)`.
-    fn arguments(&mut self) -> Parsed<Vec<Expr>> {
-        let mut args = Vec::new();
-        if self.at(TokenKind::RParen) {
-            return Ok(args);
-        }
-        loop {
-            if self.at(TokenKind::Identifier) && self.peek_kind_at(1) == TokenKind::Colon {
-                let label = self.peek().clone();
-                return self.error(
-                    DiagnosticKind::Unsupported,
-                    "labeled arguments are not supported yet (PAR-FN-01)".to_string(),
-                    label.span,
-                    label.start,
-                );
-            }
-            args.push(self.expression()?);
-            if self.at(TokenKind::Comma) {
-                self.advance();
-            } else {
-                return Ok(args);
-            }
-        }
-    }
-
-    fn primary(&mut self) -> Parsed<Expr> {
-        let token = self.peek().clone();
-        let kind = match token.kind {
-            TokenKind::Identifier => ExprKind::Identifier(token.text.clone()),
-            TokenKind::Number => ExprKind::Number(token.text.clone()),
-            TokenKind::String => ExprKind::String(token.text[1..token.text.len() - 1].to_string()),
-            TokenKind::True => ExprKind::Boolean(true),
-            TokenKind::False => ExprKind::Boolean(false),
-            TokenKind::LParen => {
-                self.advance();
-                let inner = self.expression()?;
-                let close = self.expect(TokenKind::RParen, "`)`")?;
-                return Ok(Expr {
-                    kind: ExprKind::Paren(Box::new(inner)),
-                    span: Span {
-                        start: token.span.start,
-                        end: close.span.end,
-                    },
-                });
-            }
-            TokenKind::Wildcard => {
-                return self.error(
-                    DiagnosticKind::Unsupported,
-                    "`_` placeholders in expressions are not supported (PAR-EXPR-02)".to_string(),
-                    token.span,
-                    token.start,
-                );
-            }
-            _ => return self.unexpected("an expression"),
-        };
-        self.advance();
-        Ok(Expr {
-            kind,
-            span: token.span,
-        })
-    }
 }
 
 /// The hard-reserved keywords of `lexical.md`.
@@ -613,22 +891,31 @@ fn is_keyword(kind: TokenKind) -> bool {
 }
 
 /// A lambda, possibly wrapped in grouping parentheses.
-fn is_lambda(expr: &Expr) -> bool {
-    match &expr.kind {
-        ExprKind::Lambda { .. } => true,
-        ExprKind::Paren(inner) => is_lambda(inner),
-        _ => false,
+fn is_lambda(mut expr: &Expr) -> bool {
+    loop {
+        match &expr.kind {
+            ExprKind::Lambda { .. } => return true,
+            ExprKind::Paren(inner) => expr = inner,
+            _ => return false,
+        }
     }
 }
 
-fn comparison_op(kind: TokenKind) -> Option<BinaryOp> {
+fn binary_op(kind: TokenKind) -> Option<BinaryOp> {
     Some(match kind {
+        TokenKind::Star => BinaryOp::Multiply,
+        TokenKind::Divide => BinaryOp::Divide,
+        TokenKind::Remainder => BinaryOp::Remainder,
+        TokenKind::Plus => BinaryOp::Add,
+        TokenKind::Minus => BinaryOp::Subtract,
         TokenKind::LessThan => BinaryOp::LessThan,
         TokenKind::LessThanOrEqual => BinaryOp::LessThanOrEqual,
         TokenKind::GreaterThan => BinaryOp::GreaterThan,
         TokenKind::GreaterThanOrEqual => BinaryOp::GreaterThanOrEqual,
         TokenKind::EqualTo => BinaryOp::EqualTo,
         TokenKind::NotEqualTo => BinaryOp::NotEqualTo,
+        TokenKind::And => BinaryOp::And,
+        TokenKind::Or => BinaryOp::Or,
         _ => return None,
     })
 }

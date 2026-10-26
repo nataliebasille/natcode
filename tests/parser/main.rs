@@ -2,61 +2,7 @@
 //! `docs/scorecards/parser.md`.
 
 use natcode::lexer::Span;
-use natcode::parser::{BinaryOp, DiagnosticKind, Expr, ExprKind, UnaryOp, parse_expression};
-
-/// Renders a parsed expression as an S-expression, so that tests can state
-/// the grouping explicitly: `a + b * c` renders as `(+ a (* b c))`.
-fn sexpr(expr: &Expr) -> String {
-    match &expr.kind {
-        ExprKind::Identifier(name) => name.clone(),
-        ExprKind::Number(text) => text.clone(),
-        ExprKind::String(text) => format!("{text:?}"),
-        ExprKind::Boolean(value) => value.to_string(),
-        ExprKind::Paren(inner) => format!("(paren {})", sexpr(inner)),
-        ExprKind::Member { object, name } => format!("(. {} {})", sexpr(object), name.text),
-        ExprKind::Call { callee, args } => {
-            let mut out = format!("(call {}", sexpr(callee));
-            for arg in args {
-                out.push(' ');
-                out.push_str(&sexpr(arg));
-            }
-            out.push(')');
-            out
-        }
-        ExprKind::Unary { op, operand } => {
-            let op = match op {
-                UnaryOp::Not => "!",
-                UnaryOp::Negate => "neg",
-            };
-            format!("({op} {})", sexpr(operand))
-        }
-        ExprKind::Binary { op, left, right } => {
-            format!("({} {} {})", binary_op(*op), sexpr(left), sexpr(right))
-        }
-        ExprKind::Lambda { params, body } => {
-            let params: Vec<&str> = params.iter().map(|p| p.text.as_str()).collect();
-            format!("(=> ({}) {})", params.join(" "), sexpr(body))
-        }
-    }
-}
-
-fn binary_op(op: BinaryOp) -> &'static str {
-    match op {
-        BinaryOp::Multiply => "*",
-        BinaryOp::Divide => "/",
-        BinaryOp::Remainder => "%",
-        BinaryOp::Add => "+",
-        BinaryOp::Subtract => "-",
-        BinaryOp::LessThan => "<",
-        BinaryOp::LessThanOrEqual => "<=",
-        BinaryOp::GreaterThan => ">",
-        BinaryOp::GreaterThanOrEqual => ">=",
-        BinaryOp::EqualTo => "==",
-        BinaryOp::NotEqualTo => "!=",
-        BinaryOp::And => "&&",
-        BinaryOp::Or => "||",
-    }
-}
+use natcode::parser::{DiagnosticKind, Expr, ExprKind, parse_expression};
 
 fn parse(src: &str) -> Expr {
     let result = parse_expression(src);
@@ -69,7 +15,8 @@ fn parse(src: &str) -> Expr {
 }
 
 fn assert_parses(src: &str, expected: &str) {
-    assert_eq!(sexpr(&parse(src)), expected, "tree for {src:?}");
+    // `Expr` displays as a fully parenthesized S-expression showing its grouping.
+    assert_eq!(parse(src).to_string(), expected, "tree for {src:?}");
 }
 
 /// Asserts that `src` is rejected, with exactly one diagnostic of `kind`.
@@ -98,7 +45,7 @@ mod primaries {
     fn spans_cover_the_whole_expression() {
         let expr = parse("(a + b) * c");
         assert_eq!(expr.span, Span { start: 0, end: 11 });
-        let ExprKind::Binary { left, right, .. } = expr.kind else {
+        let ExprKind::Binary { left, right, .. } = &expr.kind else {
             panic!("expected a binary expression");
         };
         assert_eq!(left.span, Span { start: 0, end: 7 });
@@ -253,18 +200,18 @@ mod prefix {
 
     #[test]
     fn prefix_operators_bind_looser_than_postfix() {
-        assert_parses("-x", "(neg x)");
+        assert_parses("-x", "(- x)");
         assert_parses("!ready", "(! ready)");
-        assert_parses("-f(x)", "(neg (call f x))");
+        assert_parses("-f(x)", "(- (call f x))");
         assert_parses("!user.active", "(! (. user active))");
         assert_parses("!!x", "(! (! x))");
-        assert_parses("- -x", "(neg (neg x))");
+        assert_parses("- -x", "(- (- x))");
     }
 
     #[test]
     fn prefix_operators_bind_tighter_than_binary() {
-        assert_parses("-a * b", "(* (neg a) b)");
-        assert_parses("a - -b", "(- a (neg b))");
+        assert_parses("-a * b", "(* (- a) b)");
+        assert_parses("a - -b", "(- a (- b))");
         assert_parses("!ready && enabled", "(&& (! ready) enabled)");
     }
 }
@@ -357,12 +304,60 @@ mod lambdas {
 
     #[test]
     fn nested_groups_and_lambda_heads() {
-        let depth = 100;
-        let src = format!("{}x{}", "(".repeat(depth), ")".repeat(depth));
-        let expected = format!("{}x{}", "(paren ".repeat(depth), ")".repeat(depth));
-        assert_parses(&src, &expected);
+        assert_parses("((((x))))", "(paren (paren (paren (paren x))))");
         assert_parses("((x) => (y))", "(paren (=> (x) (paren y)))");
         assert_parses("f((a), (b) => b)", "(call f (paren a) (=> (b) b))");
+    }
+}
+
+mod nesting {
+    use super::*;
+
+    const DEPTH: usize = 100_000;
+
+    /// Parses, prints, and drops `src`, none of which may overflow the call
+    /// stack.
+    fn assert_deep_parse(src: &str) {
+        let result = parse_expression(src);
+        assert!(
+            result.diagnostics.is_empty(),
+            "unexpected diagnostics: {:?}",
+            result.diagnostics.first()
+        );
+        let expr = result.value.expect("an expression");
+        assert_eq!(expr.span.end, src.len());
+        assert!(!format!("{expr:?}").is_empty());
+    }
+
+    #[test]
+    fn deep_grouping() {
+        assert_deep_parse(&format!("{}x{}", "(".repeat(DEPTH), ")".repeat(DEPTH)));
+    }
+
+    #[test]
+    fn deep_prefix_chains() {
+        assert_deep_parse(&format!("{}x", "!".repeat(DEPTH)));
+        assert_deep_parse(&format!("{}x", "- ".repeat(DEPTH)));
+    }
+
+    #[test]
+    fn deep_calls_and_lambdas() {
+        assert_deep_parse(&format!("{}x{}", "f(".repeat(DEPTH), ")".repeat(DEPTH)));
+        assert_deep_parse(&format!("{}x", "x => ".repeat(DEPTH)));
+    }
+
+    #[test]
+    fn long_operator_and_postfix_chains() {
+        assert_deep_parse(&format!("x{}", " - x".repeat(DEPTH)));
+        assert_deep_parse(&format!("x{}", ".y".repeat(DEPTH)));
+        assert_deep_parse(&format!("f{}", "()".repeat(DEPTH)));
+    }
+
+    #[test]
+    fn deep_unclosed_grouping_is_rejected() {
+        let result = parse_expression(&format!("{}x", "(".repeat(DEPTH)));
+        assert!(result.value.is_none());
+        assert_eq!(result.diagnostics.len(), 1);
     }
 
     #[test]
