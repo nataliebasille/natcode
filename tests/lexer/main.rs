@@ -105,13 +105,13 @@ mod keywords {
     fn alias_is_an_identifier() {
         assert_clean(
             "alias = 1",
-            &[(Identifier, "alias"), (Equals, "="), (Number, "1")],
+            &[(Identifier, "alias"), (Assign, "="), (Number, "1")],
         );
     }
 
     #[test]
     fn as_is_reserved() {
-        assert_clean("as = 42", &[(As, "as"), (Equals, "="), (Number, "42")]);
+        assert_clean("as = 42", &[(As, "as"), (Assign, "="), (Number, "42")]);
         assert_clean(
             "{ compute as calculate }",
             &[
@@ -144,7 +144,7 @@ mod keywords {
     fn match_is_an_identifier() {
         assert_clean(
             "match = when",
-            &[(Identifier, "match"), (Equals, "="), (When, "when")],
+            &[(Identifier, "match"), (Assign, "="), (When, "when")],
         );
     }
 
@@ -221,18 +221,18 @@ mod keywords {
                 (Colon, ":"),
                 (Number, "2"),
                 (RBrace, "}"),
-                (Dot, "."),
+                (MemberAccess, "."),
                 (When, "when"),
             ],
         );
-        assert_clean("when = fn", &[(When, "when"), (Equals, "="), (Fn, "fn")]);
+        assert_clean("when = fn", &[(When, "when"), (Assign, "="), (Fn, "fn")]);
         assert_clean(
             "x.unique.where",
             &[
                 (Identifier, "x"),
-                (Dot, "."),
+                (MemberAccess, "."),
                 (Unique, "unique"),
-                (Dot, "."),
+                (MemberAccess, "."),
                 (Where, "where"),
             ],
         );
@@ -244,7 +244,7 @@ mod keywords {
                 (Colon, ":"),
                 (Number, "1"),
                 (RBrace, "}"),
-                (Dot, "."),
+                (MemberAccess, "."),
                 (As, "as"),
             ],
         );
@@ -267,7 +267,7 @@ mod keywords {
     fn null_is_an_identifier() {
         assert_clean(
             "null = None",
-            &[(Identifier, "null"), (Equals, "="), (Identifier, "None")],
+            &[(Identifier, "null"), (Assign, "="), (Identifier, "None")],
         );
     }
 
@@ -275,7 +275,7 @@ mod keywords {
     fn return_is_an_identifier() {
         assert_clean(
             "return = 1",
-            &[(Identifier, "return"), (Equals, "="), (Number, "1")],
+            &[(Identifier, "return"), (Assign, "="), (Number, "1")],
         );
     }
 
@@ -332,7 +332,7 @@ mod identifiers {
 
     #[test]
     fn standalone_underscore_is_its_own_token() {
-        assert_clean("_", &[(Underscore, "_")]);
+        assert_clean("_", &[(Wildcard, "_")]);
     }
 
     #[test]
@@ -340,7 +340,7 @@ mod identifiers {
         assert_clean(
             "_ __ _x x_",
             &[
-                (Underscore, "_"),
+                (Wildcard, "_"),
                 (Identifier, "__"),
                 (Identifier, "_x"),
                 (Identifier, "x_"),
@@ -370,7 +370,7 @@ mod identifiers {
     fn non_english_identifier_in_declaration() {
         assert_clean(
             "café = 1",
-            &[(Identifier, "café"), (Equals, "="), (Number, "1")],
+            &[(Identifier, "café"), (Assign, "="), (Number, "1")],
         );
     }
 
@@ -462,14 +462,14 @@ mod identifiers {
     #[test]
     fn emoji_identifier_is_rejected_for_now() {
         let src = "🚀 = 42";
-        assert_tokens(src, &[(Error, "🚀"), (Equals, "="), (Number, "42")]);
+        assert_tokens(src, &[(Error, "🚀"), (Assign, "="), (Number, "42")]);
         assert_eq!(diag_kinds(src), vec![DiagnosticKind::UnexpectedCharacter]);
     }
 
     #[test]
     fn composed_emoji_is_a_single_error_token() {
         let src = "👩‍💻 = 1";
-        assert_tokens(src, &[(Error, "👩‍💻"), (Equals, "="), (Number, "1")]);
+        assert_tokens(src, &[(Error, "👩‍💻"), (Assign, "="), (Number, "1")]);
         assert_eq!(diag_kinds(src), vec![DiagnosticKind::UnexpectedCharacter]);
     }
 }
@@ -524,7 +524,7 @@ mod numbers {
             "x = 1__0 + y",
             &[
                 (Identifier, "x"),
-                (Equals, "="),
+                (Assign, "="),
                 (Error, "1__0"),
                 (Plus, "+"),
                 (Identifier, "y"),
@@ -554,7 +554,7 @@ mod numbers {
             src,
             &[
                 (Identifier, "x"),
-                (Equals, "="),
+                (Assign, "="),
                 (Error, "42abc"),
                 (Plus, "+"),
                 (Identifier, "y"),
@@ -575,17 +575,20 @@ mod numbers {
 
     #[test]
     fn trailing_dot_is_not_part_of_number() {
-        assert_clean("1.", &[(Number, "1"), (Dot, ".")]);
+        assert_clean("1.", &[(Number, "1"), (MemberAccess, ".")]);
     }
 
     #[test]
     fn leading_dot_is_not_part_of_number() {
-        assert_clean(".5", &[(Dot, "."), (Number, "5")]);
+        assert_clean(".5", &[(MemberAccess, "."), (Number, "5")]);
     }
 
     #[test]
     fn dot_followed_by_identifier_after_number() {
-        assert_clean("1.foo", &[(Number, "1"), (Dot, "."), (Identifier, "foo")]);
+        assert_clean(
+            "1.foo",
+            &[(Number, "1"), (MemberAccess, "."), (Identifier, "foo")],
+        );
     }
 
     #[test]
@@ -755,7 +758,7 @@ mod comments {
 
     #[test]
     fn stray_block_comment_close_is_not_a_comment() {
-        assert_clean("*/", &[(Star, "*"), (Slash, "/")]);
+        assert_clean("*/", &[(Star, "*"), (Divide, "/")]);
     }
 }
 
@@ -765,34 +768,166 @@ mod operators {
     #[test]
     fn every_approved_operator_and_punctuation() {
         assert_clean(
-            "= => : | & { } ( ) , . * + / as?",
+            "= => : | & { } ( ) , . * + / as? % \\ ~",
             &[
-                (Equals, "="),
-                (FatArrow, "=>"),
+                (Assign, "="),
+                (Arrow, "=>"),
                 (Colon, ":"),
-                (Pipe, "|"),
-                (Ampersand, "&"),
+                (Union, "|"),
+                (Intersection, "&"),
                 (LBrace, "{"),
                 (RBrace, "}"),
                 (LParen, "("),
                 (RParen, ")"),
                 (Comma, ","),
-                (Dot, "."),
+                (MemberAccess, "."),
                 (Star, "*"),
                 (Plus, "+"),
-                (Slash, "/"),
-                (AsQuestion, "as?"),
+                (Divide, "/"),
+                (Validate, "as?"),
+                (Remainder, "%"),
+                (SetDifference, "\\"),
+                (SetComplement, "~"),
             ],
         );
+    }
+
+    #[test]
+    fn percent_is_a_remainder_token() {
+        assert_clean(
+            "a % b",
+            &[(Identifier, "a"), (Remainder, "%"), (Identifier, "b")],
+        );
+        assert_clean(
+            "7%-2",
+            &[(Number, "7"), (Remainder, "%"), (Minus, "-"), (Number, "2")],
+        );
+        assert_clean("%%=", &[(Remainder, "%"), (Remainder, "%"), (Assign, "=")]);
+    }
+
+    #[test]
+    fn backslash_and_tilde_are_set_operator_tokens() {
+        assert_clean(
+            "A \\ B",
+            &[(Identifier, "A"), (SetDifference, "\\"), (Identifier, "B")],
+        );
+        assert_clean(
+            "~A\\~B",
+            &[
+                (SetComplement, "~"),
+                (Identifier, "A"),
+                (SetDifference, "\\"),
+                (SetComplement, "~"),
+                (Identifier, "B"),
+            ],
+        );
+        assert_clean(
+            "\\\\~~",
+            &[
+                (SetDifference, "\\"),
+                (SetDifference, "\\"),
+                (SetComplement, "~"),
+                (SetComplement, "~"),
+            ],
+        );
+        assert_clean(
+            "~= \\=",
+            &[
+                (SetComplement, "~"),
+                (Assign, "="),
+                (SetDifference, "\\"),
+                (Assign, "="),
+            ],
+        );
+    }
+
+    #[test]
+    fn set_operators_stay_distinct_from_slash_and_not() {
+        assert_clean(
+            "A / B \\ C",
+            &[
+                (Identifier, "A"),
+                (Divide, "/"),
+                (Identifier, "B"),
+                (SetDifference, "\\"),
+                (Identifier, "C"),
+            ],
+        );
+        assert_clean(
+            "!a ~B",
+            &[
+                (Not, "!"),
+                (Identifier, "a"),
+                (SetComplement, "~"),
+                (Identifier, "B"),
+            ],
+        );
+        assert_clean("\\/", &[(SetDifference, "\\"), (Divide, "/")]);
+        assert_clean("/\\", &[(Divide, "/"), (SetDifference, "\\")]);
+    }
+
+    #[test]
+    fn backslash_is_not_a_line_continuation() {
+        assert_clean(
+            "A \\\nB",
+            &[
+                (Identifier, "A"),
+                (SetDifference, "\\"),
+                (Newline, "\n"),
+                (Identifier, "B"),
+            ],
+        );
+        assert_clean(
+            "A \\\r\nB",
+            &[
+                (Identifier, "A"),
+                (SetDifference, "\\"),
+                (Newline, "\r\n"),
+                (Identifier, "B"),
+            ],
+        );
+    }
+
+    #[test]
+    fn backslash_inside_a_string_is_still_rejected() {
+        assert_tokens("\\\"a\\b\"", &[(SetDifference, "\\"), (Error, "\"a\\b\"")]);
+        assert_eq!(
+            diag_kinds("\\\"a\\b\""),
+            vec![DiagnosticKind::EscapeNotSupported]
+        );
+    }
+
+    #[test]
+    fn new_operators_end_an_unexpected_character_run() {
+        for (src, op, kind) in [
+            ("@%", "%", Remainder),
+            ("@\\", "\\", SetDifference),
+            ("@~", "~", SetComplement),
+        ] {
+            assert_tokens(src, &[(Error, "@"), (kind, op)]);
+            assert_eq!(diag_kinds(src), vec![DiagnosticKind::UnexpectedCharacter]);
+        }
+    }
+
+    #[test]
+    fn new_operator_spans() {
+        let toks = tokenize("~A \\ B % c").tokens;
+        let got: Vec<_> = toks.iter().map(|t| (t.kind, t.span, t.start)).collect();
+        assert_eq!(got[0], (SetComplement, span(0, 1), pos(1, 1)));
+        assert_eq!(got[2], (SetDifference, span(3, 4), pos(1, 4)));
+        assert_eq!(got[4], (Remainder, span(7, 8), pos(1, 8)));
     }
 
     #[test]
     fn slash_is_a_token() {
         assert_clean(
             "A / B",
-            &[(Identifier, "A"), (Slash, "/"), (Identifier, "B")],
+            &[(Identifier, "A"), (Divide, "/"), (Identifier, "B")],
         );
-        assert_clean("A/B", &[(Identifier, "A"), (Slash, "/"), (Identifier, "B")]);
+        assert_clean(
+            "A/B",
+            &[(Identifier, "A"), (Divide, "/"), (Identifier, "B")],
+        );
     }
 
     #[test]
@@ -800,14 +935,14 @@ mod operators {
         assert_clean("A //B", &[(Identifier, "A")]);
         assert_clean(
             "A /*B*/ / C",
-            &[(Identifier, "A"), (Slash, "/"), (Identifier, "C")],
+            &[(Identifier, "A"), (Divide, "/"), (Identifier, "C")],
         );
         assert_clean(
             "A / / B",
             &[
                 (Identifier, "A"),
-                (Slash, "/"),
-                (Slash, "/"),
+                (Divide, "/"),
+                (Divide, "/"),
                 (Identifier, "B"),
             ],
         );
@@ -815,7 +950,7 @@ mod operators {
 
     #[test]
     fn slash_ends_an_unexpected_character_run() {
-        assert_tokens("@/", &[(Error, "@"), (Slash, "/")]);
+        assert_tokens("@/", &[(Error, "@"), (Divide, "/")]);
         assert_eq!(diag_kinds("@/"), vec![DiagnosticKind::UnexpectedCharacter]);
     }
 
@@ -823,11 +958,11 @@ mod operators {
     fn as_question_is_one_token() {
         assert_clean(
             "x as? T",
-            &[(Identifier, "x"), (AsQuestion, "as?"), (Identifier, "T")],
+            &[(Identifier, "x"), (Validate, "as?"), (Identifier, "T")],
         );
         assert_clean(
             "x as?T",
-            &[(Identifier, "x"), (AsQuestion, "as?"), (Identifier, "T")],
+            &[(Identifier, "x"), (Validate, "as?"), (Identifier, "T")],
         );
         let toks = tokenize("x as? T").tokens;
         assert_eq!(toks[1].span, span(2, 5));
@@ -836,12 +971,12 @@ mod operators {
 
     #[test]
     fn as_alone_is_a_keyword() {
-        assert_clean("as = 1", &[(As, "as"), (Equals, "="), (Number, "1")]);
+        assert_clean("as = 1", &[(As, "as"), (Assign, "="), (Number, "1")]);
         assert_clean(
             "x as? T as y",
             &[
                 (Identifier, "x"),
-                (AsQuestion, "as?"),
+                (Validate, "as?"),
                 (Identifier, "T"),
                 (As, "as"),
                 (Identifier, "y"),
@@ -874,7 +1009,7 @@ mod operators {
 
     #[test]
     fn question_mark_after_as_question_is_unexpected() {
-        assert_tokens("as??", &[(AsQuestion, "as?"), (Error, "?")]);
+        assert_tokens("as??", &[(Validate, "as?"), (Error, "?")]);
         assert_eq!(
             diag_kinds("as??"),
             vec![DiagnosticKind::UnexpectedCharacter]
@@ -937,7 +1072,7 @@ mod operators {
     #[test]
     fn multi_character_operators_are_single_tokens() {
         for (src, kind) in [
-            ("=>", FatArrow),
+            ("=>", Arrow),
             ("<=", LessThanOrEqual),
             (">=", GreaterThanOrEqual),
             ("==", EqualTo),
@@ -952,32 +1087,32 @@ mod operators {
 
     #[test]
     fn maximal_munch_takes_the_longest_operator_first() {
-        assert_clean("=>=", &[(FatArrow, "=>"), (Equals, "=")]);
-        assert_clean("===", &[(EqualTo, "=="), (Equals, "=")]);
-        assert_clean("!==", &[(NotEqualTo, "!="), (Equals, "=")]);
+        assert_clean("=>=", &[(Arrow, "=>"), (Assign, "=")]);
+        assert_clean("===", &[(EqualTo, "=="), (Assign, "=")]);
+        assert_clean("!==", &[(NotEqualTo, "!="), (Assign, "=")]);
         assert_clean("<=>", &[(LessThanOrEqual, "<="), (GreaterThan, ">")]);
-        assert_clean(">==", &[(GreaterThanOrEqual, ">="), (Equals, "=")]);
-        assert_clean("&&&", &[(And, "&&"), (Ampersand, "&")]);
-        assert_clean("|||", &[(Or, "||"), (Pipe, "|")]);
+        assert_clean(">==", &[(GreaterThanOrEqual, ">="), (Assign, "=")]);
+        assert_clean("&&&", &[(And, "&&"), (Intersection, "&")]);
+        assert_clean("|||", &[(Or, "||"), (Union, "|")]);
         assert_clean("!!", &[(Not, "!"), (Not, "!")]);
         assert_clean("--", &[(Minus, "-"), (Minus, "-")]);
-        assert_clean("=<", &[(Equals, "="), (LessThan, "<")]);
+        assert_clean("=<", &[(Assign, "="), (LessThan, "<")]);
         assert_clean("->", &[(Minus, "-"), (GreaterThan, ">")]);
     }
 
     #[test]
     fn separated_characters_do_not_form_an_operator() {
-        assert_clean("= >", &[(Equals, "="), (GreaterThan, ">")]);
-        assert_clean("= =", &[(Equals, "="), (Equals, "=")]);
-        assert_clean("< =", &[(LessThan, "<"), (Equals, "=")]);
-        assert_clean("> =", &[(GreaterThan, ">"), (Equals, "=")]);
-        assert_clean("! =", &[(Not, "!"), (Equals, "=")]);
-        assert_clean("& &", &[(Ampersand, "&"), (Ampersand, "&")]);
-        assert_clean("| |", &[(Pipe, "|"), (Pipe, "|")]);
-        assert_clean("=/**/=", &[(Equals, "="), (Equals, "=")]);
+        assert_clean("= >", &[(Assign, "="), (GreaterThan, ">")]);
+        assert_clean("= =", &[(Assign, "="), (Assign, "=")]);
+        assert_clean("< =", &[(LessThan, "<"), (Assign, "=")]);
+        assert_clean("> =", &[(GreaterThan, ">"), (Assign, "=")]);
+        assert_clean("! =", &[(Not, "!"), (Assign, "=")]);
+        assert_clean("& &", &[(Intersection, "&"), (Intersection, "&")]);
+        assert_clean("| |", &[(Union, "|"), (Union, "|")]);
+        assert_clean("=/**/=", &[(Assign, "="), (Assign, "=")]);
         assert_clean(
             "=\n>",
-            &[(Equals, "="), (Newline, "\n"), (GreaterThan, ">")],
+            &[(Assign, "="), (Newline, "\n"), (GreaterThan, ">")],
         );
     }
 
@@ -1001,7 +1136,7 @@ mod operators {
             "x=>x*x+1",
             &[
                 (Identifier, "x"),
-                (FatArrow, "=>"),
+                (Arrow, "=>"),
                 (Identifier, "x"),
                 (Star, "*"),
                 (Identifier, "x"),
@@ -1013,9 +1148,7 @@ mod operators {
 
     #[test]
     fn unsupported_ascii_characters_are_rejected() {
-        for src in [
-            ";", "@", "#", "?", "[", "]", "%", "'", "`", "\\", "$", "~", "^",
-        ] {
+        for src in [";", "@", "#", "?", "[", "]", "'", "`", "$", "^"] {
             assert_tokens(src, &[(Error, src)]);
             assert_eq!(
                 diag_kinds(src),
@@ -1273,7 +1406,7 @@ mod spec_examples {
                 (Newline, "\n"),
                 (Newline, "\n"),
                 (Identifier, "area"),
-                (Equals, "="),
+                (Assign, "="),
                 (Identifier, "PI"),
                 (Star, "*"),
                 (Number, "5"),
@@ -1315,13 +1448,13 @@ mod spec_examples {
         assert_eq!(
             kinds("from \"./math\" import { localName = publicName }"),
             vec![
-                From, String, Import, LBrace, Identifier, Equals, Identifier, RBrace
+                From, String, Import, LBrace, Identifier, Assign, Identifier, RBrace
             ]
         );
         assert_eq!(
             kinds("from \"./math\" import { MATH_PI = PI }"),
             vec![
-                From, String, Import, LBrace, Identifier, Equals, Identifier, RBrace
+                From, String, Import, LBrace, Identifier, Assign, Identifier, RBrace
             ]
         );
     }
@@ -1332,12 +1465,12 @@ mod spec_examples {
         assert_eq!(kinds("export run"), vec![Export, Identifier]);
         assert_eq!(
             kinds("export { squareNumber = square }"),
-            vec![Export, LBrace, Identifier, Equals, Identifier, RBrace]
+            vec![Export, LBrace, Identifier, Assign, Identifier, RBrace]
         );
         assert_eq!(
             kinds("export { cheap = 42, expensive = expensiveCalculation() }"),
             vec![
-                Export, LBrace, Identifier, Equals, Number, Comma, Identifier, Equals, Identifier,
+                Export, LBrace, Identifier, Assign, Number, Comma, Identifier, Assign, Identifier,
                 LParen, RParen, RBrace,
             ]
         );
@@ -1351,12 +1484,12 @@ mod spec_examples {
                 (Identifier, "x"),
                 (Colon, ":"),
                 (Identifier, "number"),
-                (Equals, "="),
+                (Assign, "="),
                 (Number, "42"),
             ],
         );
-        assert_eq!(kinds("MAX_SIZE = 100"), vec![Identifier, Equals, Number]);
-        assert_eq!(kinds("PI = 3.14159"), vec![Identifier, Equals, Number]);
+        assert_eq!(kinds("MAX_SIZE = 100"), vec![Identifier, Assign, Number]);
+        assert_eq!(kinds("PI = 3.14159"), vec![Identifier, Assign, Number]);
     }
 
     #[test]
@@ -1365,8 +1498,8 @@ mod spec_examples {
         assert_eq!(
             kinds(src),
             vec![
-                Identifier, Equals, Number, Newline, Identifier, Equals, Identifier, Plus, Number,
-                Newline, Identifier, Colon, Identifier, Equals, String, Newline,
+                Identifier, Assign, Number, Newline, Identifier, Assign, Identifier, Plus, Number,
+                Newline, Identifier, Colon, Identifier, Assign, String, Newline,
             ]
         );
         assert!(tokenize(src).diagnostics.is_empty());
@@ -1377,18 +1510,18 @@ mod spec_examples {
         assert_eq!(
             kinds("square = x => x * x"),
             vec![
-                Identifier, Equals, Identifier, FatArrow, Identifier, Star, Identifier
+                Identifier, Assign, Identifier, Arrow, Identifier, Star, Identifier
             ]
         );
         assert_eq!(
             kinds("run = () => print(\"Hello\")"),
             vec![
-                Identifier, Equals, LParen, RParen, FatArrow, Identifier, LParen, String, RParen
+                Identifier, Assign, LParen, RParen, Arrow, Identifier, LParen, String, RParen
             ]
         );
         assert_eq!(
             kinds("getX = () => x"),
-            vec![Identifier, Equals, LParen, RParen, FatArrow, Identifier]
+            vec![Identifier, Assign, LParen, RParen, Arrow, Identifier]
         );
     }
 
@@ -1398,11 +1531,11 @@ mod spec_examples {
             kinds("{ kind: \"left\", value: number }\n|\n{ kind: \"right\", value: string }"),
             vec![
                 LBrace, Identifier, Colon, String, Comma, Identifier, Colon, Identifier, RBrace,
-                Newline, Pipe, Newline, LBrace, Identifier, Colon, String, Comma, Identifier,
+                Newline, Union, Newline, LBrace, Identifier, Colon, String, Comma, Identifier,
                 Colon, Identifier, RBrace,
             ]
         );
-        assert_eq!(kinds("A & B"), vec![Identifier, Ampersand, Identifier]);
+        assert_eq!(kinds("A & B"), vec![Identifier, Intersection, Identifier]);
     }
 
     #[test]
@@ -1410,13 +1543,13 @@ mod spec_examples {
         assert_eq!(
             kinds("api = { PI = 3.14159, square = x => x * x }"),
             vec![
-                Identifier, Equals, LBrace, Identifier, Equals, Number, Comma, Identifier, Equals,
-                Identifier, FatArrow, Identifier, Star, Identifier, RBrace,
+                Identifier, Assign, LBrace, Identifier, Assign, Number, Comma, Identifier, Assign,
+                Identifier, Arrow, Identifier, Star, Identifier, RBrace,
             ]
         );
         assert_eq!(
             kinds("Math.PI = 3.14"),
-            vec![Identifier, Dot, Identifier, Equals, Number]
+            vec![Identifier, MemberAccess, Identifier, Assign, Number]
         );
     }
 }

@@ -346,17 +346,19 @@
 
 ### LEX-OP-06 — Percent token for truncated remainder
 
-- **Status:** Approved
+- **Status:** Implemented
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
-- **Done when:** `%` lexes as a single operator token for value-expression truncated remainder (PAR-EXPR-01, TYP-ARITH-02), with ordinary surrounding tokens lexed separately. Its lexer implementation has not yet been completed.
-- **Notes:** Do not infer a token for Euclidean modulo; its spelling remains open (PAR-EXPR-03).
+- **Done when:** `%` lexes as a single operator token for value-expression truncated remainder (PAR-EXPR-01, TYP-ARITH-02), with ordinary surrounding tokens lexed separately.
+- **Evidence:** `tests/lexer/main.rs::operators::percent_is_a_remainder_token`, `tests/lexer/main.rs::operators::every_approved_operator_and_punctuation`, `tests/lexer/main.rs::operators::new_operators_end_an_unexpected_character_run`, `tests/lexer/main.rs::operators::new_operator_spans`
+- **Notes:** Do not infer a token for Euclidean modulo; its spelling remains open (PAR-EXPR-03). The lexer emits `TokenKind::Remainder`; `%` never combines with a following character, so `%%=` is `%`, `%`, `=`.
 
 ### LEX-OP-07 — Set difference and complement tokens
 
-- **Status:** Approved
+- **Status:** Implemented
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
 - **Done when:** `\` and `~` lex as independent ASCII operator tokens for type-expression set difference and prefix set complement respectively; `/` continues to lex as division, `!` continues to lex as Boolean NOT, and strings still reject backslash characters under LEX-STR-02. Backslash is not an explicit line-continuation token.
-- **Notes:** Approved 2026-10-25 (PAR-TYPE-08, TYP-UNI-05). Lexer implementation and tests are not yet complete.
+- **Evidence:** `tests/lexer/main.rs::operators::backslash_and_tilde_are_set_operator_tokens`, `tests/lexer/main.rs::operators::set_operators_stay_distinct_from_slash_and_not`, `tests/lexer/main.rs::operators::backslash_is_not_a_line_continuation`, `tests/lexer/main.rs::operators::backslash_inside_a_string_is_still_rejected`, `tests/lexer/main.rs::operators::every_approved_operator_and_punctuation`, `tests/lexer/main.rs::operators::new_operators_end_an_unexpected_character_run`, `tests/lexer/main.rs::operators::new_operator_spans`, `tests/lexer/main.rs::strings::backslash_in_string_is_rejected`
+- **Notes:** Approved 2026-10-25 (PAR-TYPE-08, TYP-UNI-05). The lexer emits `TokenKind::SetDifference` and `TokenKind::SetComplement`. Neither combines with a following character, so `\\` and `~~` are each two tokens and `~=` is `~` then `=`. A `\` at the end of a line is followed by an ordinary newline token.
 
 ## Whitespace and indentation
 
@@ -408,4 +410,4 @@
 - **Done when:** A run of characters that cannot start a token (emoji, symbols such as `∑` or `€`, ASCII characters outside the approved operator set) is one error token with one diagnostic; the newly approved `/` token is not rejected.
 - **Evidence:** `tests/lexer/main.rs::operators::unsupported_ascii_characters_are_rejected`, `tests/lexer/main.rs::operators::adjacent_unexpected_characters_form_one_error`, `tests/lexer/main.rs::operators::slash_ends_an_unexpected_character_run`, `tests/lexer/main.rs::identifiers::non_letter_symbols_are_rejected`, `tests/lexer/main.rs::identifiers::rejected_symbol_after_identifier_recovers`
 - **Previous evidence:** `tests/lexer/main.rs::operators::unsupported_ascii_characters_are_rejected`, `tests/lexer/main.rs::operators::adjacent_unexpected_characters_form_one_error`, `tests/lexer/main.rs::identifiers::non_letter_symbols_are_rejected`, `tests/lexer/main.rs::identifiers::rejected_symbol_after_identifier_recovers`
-- **Notes:** The unsupported-character test no longer includes `/`, which is a token under LEX-OP-04, or `-`, `!`, `<`, and `>`, which are tokens under LEX-OP-03. `tests/lexer/main.rs::operators::lexing_recovers_after_unexpected_characters` now uses `;` instead of `-`, and `tests/lexer/main.rs::numbers::minus_is_not_part_of_a_number` now expects a `-` token rather than an error.
+- **Notes:** The unsupported-character test no longer includes `/`, which is a token under LEX-OP-04, or `-`, `!`, `<`, and `>`, which are tokens under LEX-OP-03. `tests/lexer/main.rs::operators::lexing_recovers_after_unexpected_characters` now uses `;` instead of `-`, and `tests/lexer/main.rs::numbers::minus_is_not_part_of_a_number` now expects a `-` token rather than an error. It also no longer includes `%`, `\`, or `~`, which are tokens under LEX-OP-06 and LEX-OP-07.
