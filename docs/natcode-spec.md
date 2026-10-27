@@ -1090,6 +1090,8 @@ A failure to prove a fact outside the supported solver is **not** proof that the
 
 Violated or unestablished mandatory guarantees are compile errors; provably redundant but valid code may warn; unsuccessful optional analyses need no diagnostic. Warnings do not prevent compilation or change semantics (TYP-DIAG-01).
 
+Natcode has strict and non-strict compiler diagnostic modes. In strict mode, every reported problem is a compile error, not a warning, including cases that would be warnings in non-strict mode. Existing mandatory errors remain errors in both modes, and inconclusive optional analyses alone do not become diagnostic errors (TYP-DIAG-05). Which otherwise valid constructs merit diagnostics, how the mode is selected, and the default mode remain open (TYP-DIAG-04).
+
 Natcode diagnostics should be understandable without compiler or type-theory terminology (TYP-DIAG-02). When possible, an error should explain in ordinary language what the developer wrote, why Natcode cannot accept it, and what form would work instead. Invalid `where` forms are hard compile errors with source spans, and a concrete rewrite should be shown when the compiler can confidently provide one. Whether a valid `as?` whose success or failure is already statically known should produce an informational or warning diagnostic remains open (TYP-DIAG-03).
 
 ## Error handling
