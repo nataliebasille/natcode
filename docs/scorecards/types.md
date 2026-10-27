@@ -418,16 +418,22 @@
   2. Should it warn or otherwise report when the compiler can already prove that it must fail?
 - **Notes:** Regardless of diagnostics, TYP-REF-13 keeps the stable `T | ValidationError` signature and permits compile-time elimination of runtime work.
 
-### TYP-DIAG-04 — Configurable compiler diagnostic strictness
+### TYP-DIAG-04 — Compiler diagnostic mode configuration
 
 - **Status:** Open question
 - **Spec:** [evaluation.md — Diagnostics](../spec/evaluation.md#diagnostics)
 - **Questions:**
-  1. Should Natcode provide strict and non-strict compiler modes for diagnostic severity?
-  2. Which diagnostics, if any, should become compile errors in strict mode but remain warnings in non-strict mode (for example, redundant `??` fallbacks such as `42 ?? 0`)?
-  3. How would configurable severity interact with mandatory errors and the existing unconditional errors for unreachable `when` branches (TYP-DIAG-01 and TYP-PAT-01)?
-  4. Should such a setting affect only diagnostics, without changing type inference or runtime semantics?
-- **Notes:** Raised while discussing whether provably redundant coalescing is an error or warning. No strict-mode behavior is approved; existing diagnostic decisions remain unchanged.
+  1. How is strict versus non-strict compiler mode selected, and which mode is the default?
+  2. Which otherwise valid constructs are considered problematic and warrant a diagnostic, including redundant `??` fallbacks such as `42 ?? 0`?
+  3. How should non-strict mode classify new diagnostics while preserving existing unconditional errors, including unreachable `when` branches (TYP-DIAG-01 and TYP-PAT-01)?
+  4. Does mode selection affect only diagnostic severity, without changing type inference or runtime semantics?
+- **Notes:** The existence of strict and non-strict modes and strict mode's error-only diagnostic behavior are approved under TYP-DIAG-05. This item tracks only the remaining unresolved design questions.
+
+### TYP-DIAG-05 — Strict mode reports problematic code as errors
+
+- **Status:** Approved
+- **Spec:** [evaluation.md — Diagnostics](../spec/evaluation.md#diagnostics)
+- **Done when:** The compiler supports strict and non-strict diagnostic modes. In strict mode, every diagnosed problematic construct is a compile error, never a warning, including cases that would only produce warnings in non-strict mode. Mandatory errors remain errors in both modes; inconclusive optional analyses do not acquire diagnostics just because strict mode is enabled. Which constructs warrant diagnostics and how modes are selected remain TYP-DIAG-04.
 
 ### TYP-PAT-01 — Exhaustiveness and redundant catch-all
 
