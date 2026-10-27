@@ -418,6 +418,17 @@
   2. Should it warn or otherwise report when the compiler can already prove that it must fail?
 - **Notes:** Regardless of diagnostics, TYP-REF-13 keeps the stable `T | ValidationError` signature and permits compile-time elimination of runtime work.
 
+### TYP-DIAG-04 — Configurable compiler diagnostic strictness
+
+- **Status:** Open question
+- **Spec:** [evaluation.md — Diagnostics](../spec/evaluation.md#diagnostics)
+- **Questions:**
+  1. Should Natcode provide strict and non-strict compiler modes for diagnostic severity?
+  2. Which diagnostics, if any, should become compile errors in strict mode but remain warnings in non-strict mode (for example, redundant `??` fallbacks such as `42 ?? 0`)?
+  3. How would configurable severity interact with mandatory errors and the existing unconditional errors for unreachable `when` branches (TYP-DIAG-01 and TYP-PAT-01)?
+  4. Should such a setting affect only diagnostics, without changing type inference or runtime semantics?
+- **Notes:** Raised while discussing whether provably redundant coalescing is an error or warning. No strict-mode behavior is approved; existing diagnostic decisions remain unchanged.
+
 ### TYP-PAT-01 — Exhaustiveness and redundant catch-all
 
 - **Status:** Approved
