@@ -93,6 +93,12 @@
 - **Evidence:** `tests/lexer/main.rs::keywords::null_is_an_identifier`
 - **Notes:** Foreign-language null conversions are a separate interoperability issue.
 
+### LEX-KW-16 — Built-in `none` literal keyword
+
+- **Status:** Approved
+- **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
+- **Done when:** Lowercase `none` lexes as a hard-reserved literal token with no ordinary identifier interpretation, while PascalCase `None` remains a type/constructor identifier.
+
 ### LEX-KW-10 — No return keyword
 
 - **Status:** Implemented
@@ -312,10 +318,10 @@
 
 ### LEX-OP-02 — Multi-character operators by maximal munch
 
-- **Status:** Implemented
+- **Status:** Needs update
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
-- **Done when:** `=>`, `<=`, `>=`, `==`, `!=`, `&&`, and `||` each lex as one token by maximal munch; whitespace-separated characters do not combine into an operator.
-- **Evidence:** `tests/lexer/main.rs::operators::multi_character_operators_are_single_tokens`, `tests/lexer/main.rs::operators::maximal_munch_takes_the_longest_operator_first`, `tests/lexer/main.rs::operators::separated_characters_do_not_form_an_operator`
+- **Done when:** `=>`, `<=`, `>=`, `==`, `!=`, `&&`, `||`, and `??` each lex as one token by maximal munch; whitespace-separated characters do not combine into an operator.
+- **Previous evidence:** `tests/lexer/main.rs::operators::multi_character_operators_are_single_tokens`, `tests/lexer/main.rs::operators::maximal_munch_takes_the_longest_operator_first`, `tests/lexer/main.rs::operators::separated_characters_do_not_form_an_operator`
 - **Previous evidence:** `tests/lexer/main.rs::operators::fat_arrow_uses_maximal_munch`, `tests/lexer/main.rs::operators::separated_equals_and_greater_than_is_not_an_arrow`
 - **Notes:** Maximal munch applies left to right, so `===` is `==` `=`, `<=>` is `<=` `>`, `&&&` is `&&` `&`, and `|||` is `||` `|`. Characters separated by whitespace, a line break, or a block comment never combine. The previous tests pinned the superseded rule that `==` is two `=` tokens.
 
@@ -337,12 +343,12 @@
 
 ### LEX-OP-05 — Runtime-validation `as?` token
 
-- **Status:** Implemented
+- **Status:** Needs update
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
 - **Done when:** `as?` lexes as one indivisible operator token; `as` alone lexes as a hard-reserved keyword (LEX-KW-15), and whitespace-separated `as ?` does not form the operator.
-- **Evidence:** `tests/lexer/main.rs::operators::as_question_is_one_token`, `tests/lexer/main.rs::operators::as_alone_is_a_keyword`, `tests/lexer/main.rs::operators::separated_as_and_question_mark_is_not_the_operator`, `tests/lexer/main.rs::operators::as_question_requires_the_whole_word_as`, `tests/lexer/main.rs::operators::question_mark_after_as_question_is_unexpected`, `tests/lexer/main.rs::operators::every_approved_operator_and_punctuation`
-- **Previous evidence:** `tests/lexer/main.rs::operators::as_question_is_one_token`, `tests/lexer/main.rs::operators::as_alone_is_an_identifier`, `tests/lexer/main.rs::operators::separated_as_and_question_mark_is_not_the_operator`, `tests/lexer/main.rs::operators::as_question_requires_the_whole_word_as`, `tests/lexer/main.rs::operators::question_mark_after_as_question_is_unexpected`, `tests/lexer/main.rs::operators::every_approved_operator_and_punctuation`
-- **Notes:** Parser and type semantics are PAR-VAL-01 and TYP-REF-12. The operator forms only when the complete identifier is exactly `as` and is immediately followed by `?`; in `has?`, `As?`, or `alias?`, the `?` remains an unexpected character. The former `as_alone_is_an_identifier` test was replaced by `as_alone_is_a_keyword`. Plain `as` is hard-reserved; it is not a type assertion or conversion.
+- **Previous evidence:** `tests/lexer/main.rs::operators::as_question_is_one_token`, `tests/lexer/main.rs::operators::as_alone_is_a_keyword`, `tests/lexer/main.rs::operators::separated_as_and_question_mark_is_not_the_operator`, `tests/lexer/main.rs::operators::as_question_requires_the_whole_word_as`, `tests/lexer/main.rs::operators::question_mark_after_as_question_is_unexpected`, `tests/lexer/main.rs::operators::every_approved_operator_and_punctuation`
+- **Historical note:** Original predecessor evidence: `tests/lexer/main.rs::operators::as_question_is_one_token`, `tests/lexer/main.rs::operators::as_alone_is_an_identifier`, `tests/lexer/main.rs::operators::separated_as_and_question_mark_is_not_the_operator`, `tests/lexer/main.rs::operators::as_question_requires_the_whole_word_as`, `tests/lexer/main.rs::operators::question_mark_after_as_question_is_unexpected`, `tests/lexer/main.rs::operators::every_approved_operator_and_punctuation`
+- **Notes:** Parser and type semantics are PAR-VAL-01 and TYP-REF-12. The operator forms only when the complete identifier is exactly `as` and is immediately followed by `?`; in `has?`, `As?`, or `alias?`, the `?` is a separate legal punctuation token, not an unexpected character. The former `as_alone_is_an_identifier` test was replaced by `as_alone_is_a_keyword`. Plain `as` is hard-reserved; it is not a type assertion or conversion.
 
 ### LEX-OP-06 — Percent token for truncated remainder
 
@@ -361,6 +367,12 @@
 - **Notes:** Approved 2026-10-25 (PAR-TYPE-08, TYP-UNI-05). The lexer emits `TokenKind::SetDifference` and `TokenKind::SetComplement`. Neither combines with a following character, so `\\` and `~~` are each two tokens and `~=` is `~` then `=`. A `\` at the end of a line is followed by an ordinary newline token.
 
 ## Whitespace and indentation
+
+### LEX-OP-08 — Optional, coalescing and built-in qualifier tokens
+
+- **Status:** Approved
+- **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
+- **Done when:** `?`, maximal-munch `??`, and `@` lex as punctuation/operator tokens, while `as?` remains one indivisible token; whitespace prevents forming `??` or `as?` across separate tokens.
 
 ### LEX-WS-01 — Spaces and line breaks
 
@@ -405,9 +417,9 @@
 
 ### LEX-ERR-02 — Unexpected characters
 
-- **Status:** Implemented
+- **Status:** Needs update
 - **Spec:** [lexical.md — Lexical errors](../spec/lexical.md#lexical-errors)
-- **Done when:** A run of characters that cannot start a token (emoji, symbols such as `∑` or `€`, ASCII characters outside the approved operator set) is one error token with one diagnostic; the newly approved `/` token is not rejected.
-- **Evidence:** `tests/lexer/main.rs::operators::unsupported_ascii_characters_are_rejected`, `tests/lexer/main.rs::operators::adjacent_unexpected_characters_form_one_error`, `tests/lexer/main.rs::operators::slash_ends_an_unexpected_character_run`, `tests/lexer/main.rs::identifiers::non_letter_symbols_are_rejected`, `tests/lexer/main.rs::identifiers::rejected_symbol_after_identifier_recovers`
-- **Previous evidence:** `tests/lexer/main.rs::operators::unsupported_ascii_characters_are_rejected`, `tests/lexer/main.rs::operators::adjacent_unexpected_characters_form_one_error`, `tests/lexer/main.rs::identifiers::non_letter_symbols_are_rejected`, `tests/lexer/main.rs::identifiers::rejected_symbol_after_identifier_recovers`
-- **Notes:** The unsupported-character test no longer includes `/`, which is a token under LEX-OP-04, or `-`, `!`, `<`, and `>`, which are tokens under LEX-OP-03. `tests/lexer/main.rs::operators::lexing_recovers_after_unexpected_characters` now uses `;` instead of `-`, and `tests/lexer/main.rs::numbers::minus_is_not_part_of_a_number` now expects a `-` token rather than an error. It also no longer includes `%`, `\`, or `~`, which are tokens under LEX-OP-06 and LEX-OP-07.
+- **Done when:** A run of characters that cannot start a token (emoji, symbols such as `∑` or `€`, ASCII characters outside the approved operator set) is one error token with one diagnostic; the approved `/`, `@`, and `?` tokens are not rejected.
+- **Previous evidence:** `tests/lexer/main.rs::operators::unsupported_ascii_characters_are_rejected`, `tests/lexer/main.rs::operators::adjacent_unexpected_characters_form_one_error`, `tests/lexer/main.rs::operators::slash_ends_an_unexpected_character_run`, `tests/lexer/main.rs::identifiers::non_letter_symbols_are_rejected`, `tests/lexer/main.rs::identifiers::rejected_symbol_after_identifier_recovers`
+- **Historical note:** Original predecessor evidence: `tests/lexer/main.rs::operators::unsupported_ascii_characters_are_rejected`, `tests/lexer/main.rs::operators::adjacent_unexpected_characters_form_one_error`, `tests/lexer/main.rs::identifiers::non_letter_symbols_are_rejected`, `tests/lexer/main.rs::identifiers::rejected_symbol_after_identifier_recovers`
+- **Notes:** The unsupported-character test no longer includes `/`, which is a token under LEX-OP-04, or `-`, `!`, `<`, and `>`, which are tokens under LEX-OP-03. `tests/lexer/main.rs::operators::lexing_recovers_after_unexpected_characters` now uses `;` instead of `-`, and `tests/lexer/main.rs::numbers::minus_is_not_part_of_a_number` now expects a `-` token rather than an error. It also no longer includes `%`, `\`, or `~`, which are tokens under LEX-OP-06 and LEX-OP-07. This new revision additionally accepts `@` and `?` under LEX-OP-08.

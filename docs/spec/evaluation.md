@@ -68,11 +68,17 @@ A failure to prove a fact outside the supported solver is **not** proof that the
 
 ## Diagnostics
 
-Violated or unestablished mandatory guarantees are compile errors; provably redundant but valid code may warn; unsuccessful optional analyses need no diagnostic. Warnings do not prevent compilation or change semantics (TYP-DIAG-01).
+Violated or unestablished mandatory guarantees are compile errors; provably redundant but valid code may warn in non-strict mode, while strict mode reports all diagnosed problematic code as errors (TYP-DIAG-01, TYP-DIAG-05). Unsuccessful optional analyses need no diagnostic. Warnings do not prevent compilation or change semantics. Redundant `??` is explicitly a diagnostic under TYP-DIAG-06, independent of call-site specialization; the selection and default of diagnostic modes remain TYP-DIAG-04.
 
 Natcode has strict and non-strict compiler diagnostic modes. In strict mode, every reported problem is a compile error, not a warning, including cases that would be warnings in non-strict mode. Existing mandatory errors remain errors in both modes, and inconclusive optional analyses alone do not become diagnostic errors (TYP-DIAG-05). Which otherwise valid constructs merit diagnostics, how the mode is selected, and the default mode remain open (TYP-DIAG-04).
 
 Natcode diagnostics should be understandable without compiler or type-theory terminology (TYP-DIAG-02). When possible, an error should explain in ordinary language what the developer wrote, why Natcode cannot accept it, and what form would work instead. Invalid `where` forms are hard compile errors with source spans, and a concrete rewrite should be shown when the compiler can confidently provide one. Whether a valid `as?` whose success or failure is already statically known should produce an informational or warning diagnostic remains open (TYP-DIAG-03).
+
+## Optional coalescing evaluation
+
+`left ?? right` evaluates its left operand once and evaluates the right operand only when the left produces the built-in `none` value (RUN-OPT-01). A designated error value is not `none`; coalescing does not turn errors into defaults. Structural property absence is not itself a value and cannot be handled by `??` without first proving that the property exists (TYP-OPT-02).
+
+Both operands are **statically type-checked** in the function's permitted input domain, even when a particular call-site specialization proves the right operand unreachable. Call-site inference may determine a more precise result type but does not create new diagnostics at the call site. A provably non-`None` left operand makes coalescing redundant: non-strict mode reports a warning and strict mode a compile error, located at the redundant `??` expression. A left operand provably equal to `none` is a valid coalesce and is not diagnosed as redundant (TYP-DIAG-06).
 
 ## Error handling
 

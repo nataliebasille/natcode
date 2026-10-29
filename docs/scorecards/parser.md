@@ -151,6 +151,12 @@
 - **Evidence:** `tests/parser/main.rs::postfix::calls_use_parentheses`, `tests/parser/main.rs::postfix::whitespace_application_is_rejected`, `tests/parser/main.rs::postfix::member_access_and_calls_chain_left_to_right`, `tests/parser/main.rs::postfix::keyword_spellings_are_member_names`, `tests/parser/main.rs::prefix::prefix_operators_bind_looser_than_postfix`, `tests/parser/main.rs::prefix::prefix_operators_bind_tighter_than_binary`, `tests/parser/main.rs::binary::multiplicative_binds_tighter_than_additive`, `tests/parser/main.rs::binary::arithmetic_is_left_associative`, `tests/parser/main.rs::binary::comparisons_bind_looser_than_arithmetic`, `tests/parser/main.rs::binary::comparisons_are_non_associative`, `tests/parser/main.rs::binary::and_binds_tighter_than_or`, `tests/parser/main.rs::binary::logical_operators_are_left_associative`, `tests/parser/main.rs::lambdas::approved_parameter_forms`, `tests/parser/main.rs::lambdas::arrow_is_right_associative_and_lowest`, `tests/parser/main.rs::lambdas::lambdas_as_operands_and_arguments`, `tests/parser/main.rs::lambdas::non_parameter_left_operands_are_rejected`, `tests/parser/main.rs::lambdas::nested_groups_and_lambda_heads`, `tests/parser/main.rs::line_breaks::block_comment_line_breaks_are_not_joined`, `tests/parser/main.rs::primaries::type_operators_are_not_value_operators`
 - **Notes:** `&&` and `||` short-circuit. Type-expression `|` and `&` are not value operators and remain PAR-TYPE-01; `/` is division in value and type computations; set difference is `\` (PAR-TYPE-08). Euclidean modulo is separately approved but its operator spelling is still open (PAR-EXPR-03); when introduced, it uses the multiplicative tier and left associativity. Pipe syntax and precedence remain PAR-PIPE-01. Validation `as?` applies after ordinary arithmetic unless its expression is parenthesized (PAR-VAL-01); its other grammar remains dedicated. The implementation (`natcode::parser::parse_expression`) parses comma-separated positional call arguments and the approved lambda parameter forms with expression bodies. A complete operand left of `=>`, as in `a || x => y`, is rejected because it is not a parameter list. Member names may use keyword spellings (`record.type`), as `lexical.md` permits for property names; whether `true` and `false` may too is PAR-EXPR-04. A line break inside a block comment ends a line like an explicit one (LEX-COM-04). Line continuation (PAR-BLK-02), lambda block bodies (PAR-BLK-01), labeled arguments and immediately invoked lambdas (PAR-FN-01), `as?` (PAR-VAL-01, PAR-VAL-02), `_` placeholders (PAR-EXPR-02), object literals, and `when` are not parsed yet.
 
+### PAR-EXPR-05 — Lazy absence-coalescing expression
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Value expression grammar and precedence](../spec/syntax-and-types.md#value-expression-grammar-and-precedence)
+- **Done when:** `??` parses as right-associative binary coalescing, below arithmetic and above comparisons, `&&`, `||`, and `as?`; `a ?? b ?? c` means `a ?? (b ?? c)`. This does not resolve other `as?` precedence questions tracked by PAR-VAL-02.
+
 ### PAR-EXPR-02 — Expression placeholders and partial application
 
 - **Status:** Open question
@@ -186,6 +192,12 @@
   3. What remaining function-value/call grammar needs to be established?
 - **Notes:** Approved portions: named functions use `fn`; parameters may omit annotations (PAR-FN-04) or use `name: Type` and defaults `name: Type = expression`, with defaults allowed before required parameters. Calls to named functions use `label: expression`, with arbitrary argument order. Separate external labels and internal bindings use `external as internal: Type`, optionally with a default. Lambdas use positional unannotated parameters (`x => x * x`, `(x, y) => x + y`, `() => 42`), with parentheses optional only for a sole untyped parameter. Standalone lambda declarations such as `double = x => x * 2` are invalid, but callbacks and returning lambdas are valid; `fn` functions can be passed as positional callbacks.
 
+
+### PAR-FN-05 — Nullable constraints do not omit arguments
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Function parameters and labeled calls](../spec/syntax-and-types.md#function-parameters-and-labeled-calls)
+- **Done when:** A parameter constrained with `T?` is still required unless a default expression is supplied; `name: Number? = none` permits omission, while `name: Number?` alone does not.
 
 ### PAR-FN-04 — Optional annotations for implicitly polymorphic parameters
 
@@ -242,6 +254,12 @@
 - **Done when:** Object literals support `{}`; comma-separated properties with an optional trailing comma; explicit `key: expression` properties; identifier shorthand such as `{ name }`; static identifier, string-literal, and numeric-literal keys; and computed `[expression]: expression` keys. Commas are required between entries even across line breaks. Shorthand is identifier-only. Repeating the same written static key in one literal is a compile error.
 - **Notes:** Ordinary object properties use `:` rather than `=` (PAR-OBJ-02). Dynamic-key type representation and collision-sensitive inference are TYP-OBJ-01. Object spread is PAR-OBJ-03. The distinct export-alias syntax is `export { localName as publicName }` (PAR-EXP-02).
 
+### PAR-OBJ-04 — Optional keys in record types, not object literals
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Type-expression computations and record syntax](../spec/syntax-and-types.md#type-expression-computations-and-record-syntax)
+- **Done when:** A record type may contain `name?: Type`, while a value object literal `{ name?: expression }` is a compile error. Presence is not synthesized when constructing objects.
+
 ### PAR-OBJ-02 — Object property colons and arrow-body disambiguation
 
 - **Status:** Approved
@@ -293,6 +311,18 @@
 - **Spec:** [syntax-and-types.md — Type-expression computations and record syntax](../spec/syntax-and-types.md#type-expression-computations-and-record-syntax)
 - **Done when:** A value-binding name may be used as an operand in a type computation; its inferred type and dependencies are resolved by type analysis, without enabling arbitrary effectful execution.
 - **Notes:** The preservation of relationships between repeated and intermediate bindings is TYP-COMP-02.
+
+### PAR-TYPE-13 — Postfix optional type operator
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Optional types and absence coalescing](../spec/syntax-and-types.md#optional-types-and-absence-coalescing)
+- **Done when:** Postfix `?` applies to the nearest valid type operand, with parentheses to widen its scope and mandatory grouping for a `where` refinement such as `(Number where x => x > 0)?`. Repeated postfix `?` is valid.
+
+### PAR-TYPE-14 — `@` qualified built-in type
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Built-in names and explicit qualification](../spec/syntax-and-types.md#built-in-names-and-explicit-qualification)
+- **Done when:** `@Number`, `@String`, `@None`, `@Any`, etc. parse as explicit built-in type references, usable in nested type expressions and patterns. `@` does not introduce arbitrary module or root-name qualification.
 
 ### PAR-TYPE-02 — Remaining type declaration grammar
 
@@ -381,6 +411,18 @@
 - **Questions:**
   1. What is the detailed grammar for constructor-destructuring patterns and any additional literal, destructuring, and other pattern forms within subjectful `when`? Constructor destructuring is approved.
   2. Where may `_` appear as a wildcard within compound patterns?
+
+### PAR-PAT-03 — Structural record patterns
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — When expressions](../spec/syntax-and-types.md#when-expressions)
+- **Done when:** Subjectful `when` and `where` accept `{}`, `{ age }`, `{ age: Number }`, nested record patterns, literal tests, and multiple-field conjunctive patterns. Extra fields do not invalidate a pattern.
+
+### PAR-PAT-04 — Explicit aliases within compound patterns
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — When expressions](../spec/syntax-and-types.md#when-expressions)
+- **Done when:** `as` binds a matched value in patterns such as `{ age: Number as numericAge }`, including nested and literal patterns, without an implicit binding from a typed field test.
 
 ### PAR-PAT-02 — Shared pattern language for `when` and `where`
 

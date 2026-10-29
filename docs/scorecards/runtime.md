@@ -12,6 +12,14 @@
 - **Done when:** At runtime, `&&` and `||` short-circuit and return only Boolean results, and prefix `!` returns Boolean negation. Non-Boolean operands are rejected by static typing rather than implicitly converted through truthiness. These operations do not return arbitrary operand values.
 - **Notes:** Approved 2026-10-25; type checking is TYP-BOOL-01.
 
+## Absence coalescing
+
+### RUN-OPT-01 — Lazy, once-only coalescing
+
+- **Status:** Approved
+- **Spec:** [evaluation.md — Optional coalescing evaluation](../spec/evaluation.md#optional-coalescing-evaluation)
+- **Done when:** `a ?? b` evaluates `a` once, evaluates `b` only if the result is exactly `none`, and returns the original non-`none` left result otherwise (including designated error values). It does not treat missing record properties as `none`.
+
 ## Laziness
 
 ### RUN-LAZY-01 — Demand-driven top-level bindings

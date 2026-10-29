@@ -93,7 +93,7 @@ from "./math" import { PI }, Math
 
 - `Math` is a **PascalCase namespace alias**.
 - `{ PI, square }` imports named exports as direct local bindings.
-- `*` imports **all possible exported names** as direct local bindings; `_` is **not** an import wildcard.
+- `*` imports **only exported names guaranteed in every possible object shape** as direct local bindings; `_` is **not** an import wildcard.
 - The combined form `{ PI }, Math` imports `PI` directly and places only the **remaining** names in `Math`; `Math.PI` is absent from that combined import.
 - The designer also wants remaining exports to be importable unqualified via wildcard in a combined selective import; the grammar for this is PAR-IMP-08.
 - Import aliases use `as`, original exported name first: `from "./math" import { publicName as localName }`.
@@ -106,7 +106,7 @@ from "./math" import { PI }, Math
 - Local imports use explicit relative prefixes `./` or `../`, resolved against the importing file.
 - `.nat` can be omitted for Natcode source modules; non-Natcode formats (such as `.json`) use an explicit extension.
 - Direct imports of **JSON** are supported in principle; their value representation is RES-MOD-08. Other non-Natcode file types are RES-MOD-09.
-- Built-in and external package path schemes are RES-MOD-07.
+- Built-in and external package path schemes are RES-MOD-07. Built-in types alone are automatically in scope; other types require local declaration or explicit import. Ambient type declarations are not currently supported (RES-BLT-01).
 - **Circular module dependencies are forbidden**, including cycles through several modules; the compiler reports an error.
 
 ## Import names and shadowing
@@ -131,28 +131,28 @@ Multiple imports of the same module initially reference the **same logical expor
 ## Exported object shapes and optional properties
 
 - The exported object may have multiple possible statically inferred shapes (e.g., a union of object types).
-- The compiler must statically enumerate the **finite set of possible public property names**, but the presence and values of each property can vary at runtime.
-- A named import is legal when the property exists in **at least one** possible export shape. If absent in some branches, its inferred type includes a `None` case.
-- Importing a property that exists in **no** possible export shape is a compile-time error.
-- Wildcard imports include the **union of all possible export names**, even conditionally present ones.
-- No `null` or `undefined` values are intended for Natcode. The exact semantics and spelling of `None` are TYP-NONE-01.
+- The compiler must statically enumerate the **finite set of possible public property names**; their values and presence may vary across possible shapes.
+- **Every named import requires its exported property to exist in every possible export shape**. Importing a conditionally absent or never-present property is a compile error; missing keys are never silently converted into `none`.
+- Wildcard imports bind **only the keys present in every possible export shape**. Keys present in only some shapes are excluded, rather than synthesized as nullable bindings.
+- A property whose value may explicitly be `none` is still present and therefore importable; its value type may include built-in `None` normally.
+- Accessing a possibly absent property through an imported namespace has the same compile-time presence requirement as any other record member access.
 - A dynamic object with arbitrary runtime keys may be exported **inside a statically named property** (e.g. `export { data }`); arbitrary unenumerable runtime keys are not allowed as the module's top-level public export interface.
 
 ```natcode
-// api.nat (illustrative conditional syntax)
-export if condition then
-    { x = 10, y = 20 }
-else
-    { x = 30, z = 40 }
+// api.nat: y exists in both shapes, even when its value is none.
+api = when getCondition()
+    true => ({ x: 10, y: none })
+    false => ({ x: 30, y: 20 })
+export api
+
+// consumer.nat: both names may be imported.
+// from "./api" import { x, y }
 ```
 
 ```natcode
-// consumer.nat
-from "./api" import *
-// x: 10 | 30
-// y: 20 | None
-// z: 40 | None
-export {}
+// A separate export whose possibilities are:
+// { x: 10, y: 20 } OR { x: 30, z: 40 }
+// Named imports of y or z are errors; wildcard imports bind x only.
 ```
 
 ## Lazy module evaluation
