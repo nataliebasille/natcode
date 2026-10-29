@@ -370,7 +370,7 @@
 
 - **Status:** Approved
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
-- **Done when:** `?`, maximal-munch `??`, and `@` lex as punctuation/operator tokens, while `as?` remains one indivisible token; whitespace prevents forming `??` or `as?` across separate tokens.
+- **Done when:** `?`, maximal-munch `??`, and `@` lex as punctuation/operator tokens, while `as?` remains one indivisible token; whitespace prevents forming `??` or `as?` across separate tokens. The same `??` token is interpreted by the parser as two postfix optional markers in type context and as coalescing in value context.
 
 ### LEX-WS-01 — Spaces and line breaks
 
