@@ -705,7 +705,7 @@ Each built-in type is an independent scorecard item. Each type also has a distin
   1. Which additional built-in types, if any, are needed beyond the individually tracked current inventory?
 - **Notes:** Does not reopen approved individual entries or the decision that only built-in types are automatically available. Future additions must have their own built-in and refinement scorecard items.
 
-### Built-in refinements: individual items
+## Built-in refinements: individual items
 
 ### TYP-BRF-01 — `Any where ...`
 
