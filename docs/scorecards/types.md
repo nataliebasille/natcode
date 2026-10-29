@@ -465,7 +465,7 @@
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Optional types and absence coalescing](../spec/syntax-and-types.md#optional-types-and-absence-coalescing)
-- **Done when:** `A ?? B` infers `A` if non-`None`, `B` if definitely `None`, otherwise `(A \\ None) | B`, simplified by provable subset relations, including `Any \\ None`. Both operands are always checked in the full function input domain even if right is unreachable at a particular call site. Exact call-site return inference remains supported.
+- **Done when:** `A ?? B` infers `A` if non-`None`, `B` if definitely `None`, otherwise `(A \ None) | B`, simplified by provable subset relations, including `Any \ None`. Both operands are always checked in the full function input domain even if right is unreachable at a particular call site. Exact call-site return inference remains supported.
 
 ### TYP-OPT-04 — Record pattern membership, narrowing and exhaustiveness
 
