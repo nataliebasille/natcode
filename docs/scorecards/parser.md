@@ -316,7 +316,7 @@
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — Optional types and absence coalescing](../spec/syntax-and-types.md#optional-types-and-absence-coalescing)
-- **Done when:** Postfix `?` applies to the nearest valid type operand, with parentheses to widen its scope and mandatory grouping for a `where` refinement such as `(Number where x => x > 0)?`. Repeated postfix `?` is valid.
+- **Done when:** Postfix `?` applies to the nearest valid type operand, with parentheses to widen its scope and mandatory grouping for a `where` refinement such as `(Number where x => x > 0)?`. Repeated postfix `?` is valid: the maximal-munch `??` token means two adjacent optional postfix operators when parsed in type context, rather than the value-level coalescing operator.
 
 ### PAR-TYPE-14 — `@` qualified built-in type
 
