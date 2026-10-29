@@ -127,7 +127,7 @@ The numeric representation, result type when combining `Integer` and `Number`, r
 
 The built-in literal `none` has exact singleton type `None = {none}`. `None` is an ordinary set of values in the type algebra and is distinct from `Empty` (which contains no values). It replaces the former proposed `Unit` and `null`/`Null` designs. Operations whose only meaningful result is absence, such as `print`, return `none` with type `None` (TYP-NONE-01, TYP-BLT-09).
 
-A postfix `?` in **type expressions** is transparent union with `None`: `T? = T | None`. It applies to every type expression, including literal, nominal, structural, and set types. It binds to the closest preceding type operand; parentheses select larger operands. A `where` refinement must be parenthesized before applying `?`: `(Number where x => x > 0)?`. No tagged option layers are introduced, so `T?? = T?`, `None? = None`, `Empty? = None`, and `Any? = Any`. Explicit library-defined `Option` types remain nominal and may preserve nested tagging (PAR-TYPE-13, TYP-OPT-01).
+A postfix `?` in **type expressions** is transparent union with `None`: `T? = T | None`. It applies to every type expression, including literal, nominal, structural, and set types. It binds to the closest preceding type operand; parentheses select larger operands. A `where` refinement must be parenthesized before applying `?`: `(Number where x => x > 0)?`. No tagged option layers are introduced; the parser interprets the `??` token as two consecutive postfix optional markers in type-expression context, so `T?? = T?`, `None? = None`, `Empty? = None`, and `Any? = Any`. Explicit library-defined `Option` types remain nominal and may preserve nested tagging (PAR-TYPE-13, TYP-OPT-01).
 
 ```natcode
 type PossiblyNumeric = Number?
