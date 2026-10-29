@@ -139,7 +139,7 @@ A declaration or function parameter constraint `T?` checks assignability but doe
 
 Value-level `left ?? right` evaluates `left` exactly once, returning it unless its value is **exactly `none`**. Only then is `right` evaluated. It is right-associative: `a ?? b ?? c` means `a ?? (b ?? c)`. It does not inspect property absence or automatically handle designated error values, which remain non-`none` values (PAR-EXPR-05, RUN-OPT-01).
 
-For inferred left type `A` and right type `B`, the result is `A` if `none` is impossible, `B` if the left is definitely `None`, or `(A \\ None) | B` when both paths are possible. The latter is simplified under the existing set-algebra rules. The fallback is still statically type-checked even when laziness or call-site inference shows it will not run at a particular call site (TYP-OPT-03).
+For inferred left type `A` and right type `B`, the result is `A` if `none` is impossible, `B` if the left is definitely `None`, or `(A \ None) | B` when both paths are possible. The latter is simplified under the existing set-algebra rules. The fallback is still statically type-checked even when laziness or call-site inference shows it will not run at a particular call site (TYP-OPT-03).
 
 ```natcode
 type Positive = Number where x => x > 0
@@ -148,7 +148,7 @@ fn getAge(age: Number?) {
 }
 // A call with age: 20 infers 20; a call with age: none infers 0.
 // A call with age: Positive? infers Positive | 0.
-// A value of type Any coalesced with 0 infers Any \\ None.
+// A value of type Any coalesced with 0 infers Any \ None.
 ```
 
 A property possibly absent from a record cannot be read directly or coalesced through `record.age ?? default` until its presence is proven. `??` concerns a **value** equal to `none`, never the absence of a record key (TYP-OPT-02).
