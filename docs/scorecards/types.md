@@ -1,7 +1,7 @@
 # Types scorecard
 
 - **Prefix:** TYP
-- **Covers:** Nominal types, constructors and aliases; type inference and checking; set-theoretic union and intersection; function return inference; compile-time evaluation; module export kinds and shapes.
+- **Covers:** Language-level type semantics and their required behavior: nominal types, constructors and aliases; type inference and checking rules; set-theoretic union and intersection; function return inference; compile-time evaluation; module export kinds and shapes. Checker integration and implementation tracking live in [typechecker.md](typechecker.md).
 
 ## Nominal types and aliases
 
