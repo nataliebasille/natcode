@@ -588,6 +588,20 @@ mod nominal_types {
     }
 
     #[test]
+    fn reserved_none_literal_is_not_a_type_name() {
+        assert_rejected("unique type none()", DiagnosticKind::UnexpectedToken);
+        assert_rejected("unique type none(Number)", DiagnosticKind::UnexpectedToken);
+        assert_rejected("type none = Number", DiagnosticKind::UnexpectedToken);
+        assert_rejected("unique type Wrap(none)", DiagnosticKind::Unsupported);
+        assert_rejected(
+            "unique type Pair(Number, none)",
+            DiagnosticKind::Unsupported,
+        );
+        assert_parses("unique type None()", "(unique-type None ())");
+        assert_parses("unique type Wrap(None)", "(unique-type Wrap (None))");
+    }
+
+    #[test]
     fn bare_type_constructor_and_unique_alias_are_invalid() {
         assert_rejected(
             "type UserId(Number)",

@@ -941,6 +941,16 @@ impl Parser<'_> {
         self.error(DiagnosticKind::Unsupported, message.to_string(), span)
     }
 
+    /// Lowercase `none` is a hard-reserved literal (LEX-KW-16), but the lexer
+    /// does not reserve it yet and emits an identifier.
+    fn at_none_literal(&self) -> bool {
+        self.at(TokenKind::Identifier) && self.peek().text == "none"
+    }
+
+    fn at_type_name(&self) -> bool {
+        self.at(TokenKind::Identifier) && !self.at_none_literal()
+    }
+
     /// Parses one complete declaration followed by end of input.
     fn declaration(&mut self) -> Parsed<Declaration> {
         let start = self.peek().span.start;
@@ -955,7 +965,7 @@ impl Parser<'_> {
             TokenKind::Type => return self.transparent_type(start),
             _ => return self.unexpected("a declaration"),
         }
-        if !self.at(TokenKind::Identifier) {
+        if !self.at_type_name() {
             return self.unexpected("a type name");
         }
         let name = self.name();
@@ -995,7 +1005,7 @@ impl Parser<'_> {
     /// `type Name ...`, whose `type` keyword starts at `start`.
     fn transparent_type(&mut self, start: usize) -> Parsed<Declaration> {
         self.advance();
-        if !self.at(TokenKind::Identifier) {
+        if !self.at_type_name() {
             return self.unexpected("a type name");
         }
         self.advance();
@@ -1046,6 +1056,11 @@ impl Parser<'_> {
     }
 
     fn payload_type(&mut self) -> Parsed<TypeExpr> {
+        if self.at_none_literal() {
+            return self.unsupported(
+                "the `none` literal is not supported in payload types yet (LEX-KW-16, TYP-NONE-01)",
+            );
+        }
         match self.peek().kind {
             TokenKind::Identifier => {
                 let name = self.name();
