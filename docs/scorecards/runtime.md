@@ -99,6 +99,19 @@
   2. When a computed key collides with an existing property, what overwrite and evaluation-order semantics apply?
 - **Notes:** Computed `[expression]: value` key syntax is already approved in PAR-OBJ-01; this item does not reopen that decision. The collision-aware type representation remains open in TYP-OBJ-01. Dynamic-key objects may be exported only inside a statically named property.
 
+## Arrays
+
+### RUN-ARR-01 — Array runtime semantics
+
+- **Status:** Open question
+- **Spec:** [syntax-and-types.md — Code blocks and data structures](../spec/syntax-and-types.md#code-blocks-and-data-structures)
+- **Questions:**
+  1. What are the observable mutation/update semantics of arrays: are they immutable persistent values, and what value does an element update produce?
+  2. What are the runtime rules for indexing and slicing, including out-of-bounds access and any negative-index behavior?
+  3. How does Natcode's laziness apply to array elements, including forcing and memoization?
+  4. Which array operations, if any, are intrinsic runtime behavior rather than ordinary library functions, and what behavior must all backends preserve?
+- **Notes:** Array syntax is PAR-ARR-01 and type/inference semantics are TYP-ARR-01. This item does not choose a storage representation or backend implementation strategy.
+
 ## Runtime validation
 
 ### RUN-VAL-01 — Execute restricted-type validation
