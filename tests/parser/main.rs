@@ -129,6 +129,26 @@ mod primaries {
     }
 
     #[test]
+    fn none_is_a_literal_not_an_identifier() {
+        // `Display` prints the literal and an identifier the same way, so
+        // inspect the node kinds directly.
+        assert!(matches!(parse("none").kind, ExprKind::None));
+        assert!(matches!(&parse("None").kind, ExprKind::Identifier(name) if name == "None"));
+
+        let expr = parse("f(none) == none");
+        assert_eq!(expr.to_string(), "(== (call f none) none)");
+        let ExprKind::Binary { left, right, .. } = &expr.kind else {
+            panic!("expected a binary expression");
+        };
+        assert!(matches!(right.kind, ExprKind::None));
+        let ExprKind::Call { callee, args } = &left.kind else {
+            panic!("expected a call");
+        };
+        assert!(matches!(&callee.kind, ExprKind::Identifier(name) if name == "f"));
+        assert!(matches!(args.as_slice(), [arg] if matches!(arg.kind, ExprKind::None)));
+    }
+
+    #[test]
     fn spans_cover_the_whole_expression() {
         let expr = parse("(a + b) * c");
         assert_eq!(expr.span, Span { start: 0, end: 11 });
@@ -214,7 +234,7 @@ mod postfix {
         assert_parses("record.type", "(. record type)");
         assert_parses("record.when.where", "(. (. record when) where)");
         assert_parses("m.from(x).as", "(. (call (. m from) x) as)");
-        for keyword in ["import", "export", "unique", "fn"] {
+        for keyword in ["import", "export", "unique", "fn", "none"] {
             assert_parses(&format!("a.{keyword}"), &format!("(. a {keyword})"));
         }
         assert_rejected("type", DiagnosticKind::UnexpectedToken);

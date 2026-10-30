@@ -44,7 +44,7 @@
   1. Which additional words, if any, should be reserved beyond the approved set?
   2. Should generator/effect words such as `yield`, `async`, or `await` become reserved? Their semantics remain open.
   3. Is `then` or any other branch-related word necessary once `when` handles conditionals?
-- **Notes:** The lexer currently recognizes `from`, `import`, `export`, `unique`, `type`, `fn`, `when`, `where`, `as`, `true`, and `false`. `match` is no longer reserved (LEX-KW-07). `if`, `else`, `elif`, `case`, `return`, and `null` are explicitly excluded by approved decisions. Other words, such as `then`, `let`, `val`, `var`, `yield`, `async`, and `await`, currently lex as identifiers (`tests/lexer/main.rs::keywords::undecided_words_are_not_reserved_for_now`).
+- **Notes:** The lexer currently recognizes `from`, `import`, `export`, `unique`, `type`, `fn`, `when`, `where`, `as`, `none`, `true`, and `false`. `match` is no longer reserved (LEX-KW-07). `if`, `else`, `elif`, `case`, `return`, and `null` are explicitly excluded by approved decisions. Other words, such as `then`, `let`, `val`, `var`, `yield`, `async`, and `await`, currently lex as identifiers (`tests/lexer/main.rs::keywords::undecided_words_are_not_reserved_for_now`).
 
 ### LEX-KW-04 — Hard-reserved keyword strategy
 
@@ -95,9 +95,11 @@
 
 ### LEX-KW-16 — Built-in `none` literal keyword
 
-- **Status:** Approved
+- **Status:** Implemented
 - **Spec:** [lexical.md — Tokens](../spec/lexical.md#tokens)
 - **Done when:** Lowercase `none` lexes as a hard-reserved literal token with no ordinary identifier interpretation, while PascalCase `None` remains a type/constructor identifier.
+- **Evidence:** `tests/lexer/main.rs::keywords::none_is_a_reserved_literal`, `tests/parser/main.rs::primaries::none_is_a_literal_not_an_identifier`
+- **Notes:** The lexer emits `TokenKind::None`; other casings and longer words (`NONE`, `none_`, `nonempty`) remain identifiers. The parser reads the token as the literal primary `ExprKind::None`.
 
 ### LEX-KW-10 — No return keyword
 
