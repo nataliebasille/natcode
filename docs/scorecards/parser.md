@@ -363,9 +363,11 @@
 
 ### PAR-TYPE-04 — Positional nominal constructors
 
-- **Status:** Approved
+- **Status:** Implemented
 - **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
 - **Done when:** `unique type UserId(Number)` and `unique type Point(Number, Number)` parse as nominal type declarations with positional constructor payloads.
+- **Evidence:** `tests/parser/main.rs::nominal_types::positional_constructor_payloads`, `tests/parser/main.rs::nominal_types::declaration_and_payload_spans`, `tests/parser/main.rs::nominal_types::malformed_declarations_are_rejected`, `tests/parser/main.rs::nominal_types::reserved_none_literal_is_not_a_type_name`, `tests/parser/main.rs::nominal_types::bare_type_constructor_and_unique_alias_are_invalid`, `tests/parser/main.rs::nominal_types::forms_owned_by_other_items_are_not_parsed_yet`, `tests/parser/main.rs::nominal_types::multiline_forms_are_not_parsed_yet`
+- **Notes:** The implementation (`natcode::parser::parse_declaration`) parses one `unique type Name(T1, ..., Tn)` declaration with zero or more payloads, such as `unique type Unit()`. The payload list is comma-separated like a value call, so a trailing comma is rejected. Payloads are type names for now. Other payload type expressions (PAR-TYPE-01, PAR-TYPE-07 to PAR-TYPE-14), `where` restrictions (PAR-REF-05), constructor lists (PAR-TYPE-06), transparent `type` declarations (PAR-TYPE-05), and payload lists spanning lines (PAR-BLK-02) are reported as unsupported. `type Name(...)` and `unique type Name = expression` are rejected as PAR-TYPE-03 requires. Lowercase `none` is hard-reserved (LEX-KW-16), so it is rejected as a declaration name and reported as unsupported as a payload, even though the lexer does not reserve it yet.
 
 ### PAR-TYPE-05 — Alias declarations
 
