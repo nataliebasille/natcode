@@ -287,6 +287,19 @@
   2. If supported, where may spread entries appear, may multiple spreads occur, and do they use the same comma-separation rules as ordinary object entries?
 - **Notes:** Object-spread typing and overwrite semantics should be tracked separately from parser syntax if spread is approved.
 
+## Arrays
+
+### PAR-ARR-01 — Array value and type syntax
+
+- **Status:** Open question
+- **Spec:** [syntax-and-types.md — Code blocks and data structures](../spec/syntax-and-types.md#code-blocks-and-data-structures)
+- **Questions:**
+  1. What syntax constructs array values, including empty and multiline literals and separators?
+  2. What syntax denotes array types in type expressions, including element types and any fixed-length or tuple-like forms?
+  3. What syntax accesses array elements or slices, and what array destructuring or pattern forms are supported?
+  4. Are spread, range, or comprehension forms part of the initial array syntax, and if so how are they spelled and grouped?
+- **Notes:** This item does not decide whether arrays are a public built-in type or an ordinary type abstraction. Array type semantics are TYP-ARR-01 and runtime behavior is RUN-ARR-01.
+
 ### PAR-TYPE-01 — Remaining type-expression precedence
 
 - **Status:** Open question
