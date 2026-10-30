@@ -11,7 +11,7 @@ The scorecards are the **only** record of status. Spec files in [`../spec/`](../
 | [lexer.md](lexer.md) | `LEX` | Tokens, identifiers, comments, whitespace, indentation |
 | [parser.md](parser.md) | `PAR` | Grammar, module file structure, syntax errors |
 | [resolver.md](resolver.md) | `RES` | Names, scopes, shadowing, closures, module/import graph, export interfaces |
-| [types.md](types.md) | `TYP` | Literal inference, constraints, unions/intersections, constant evaluation, export kinds |
+| [types.md](types.md) | `TYP` | Language-level type semantics: inference, constraints, unions/intersections, refinements, export kinds |\n| [typechecker.md](typechecker.md) | `CHK` | Type-checker integration, typed results, diagnostics, and conformance against approved type semantics |
 | [runtime.md](runtime.md) | `RUN` | Lazy evaluation, memoization, namespaces as values, persistent updates, effects |
 | [interpreter.md](interpreter.md) | `INT` | Native interpreter execution and conformance |
 | [backend-js.md](backend-js.md) | `JS` | JavaScript code generation and conformance |
