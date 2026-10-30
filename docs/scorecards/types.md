@@ -333,6 +333,18 @@
 - **Done when:** Each function parameter is implicitly a separate polymorphic type variable, constrained by its optional written annotation or by `Any` if absent. A function can preserve the exact call-site argument type through return values, records, and branches even when other parameters share the same annotation; annotations constrain accepted types without widening them.
 - **Notes:** No explicit generic-parameter syntax is implied. Parameter annotation grammar is PAR-FN-04.
 
+### TYP-FN-07 — First-class function type semantics
+
+- **Status:** Open question
+- **Spec:** [evaluation.md — Function return inference: context-independent](../spec/evaluation.md#function-return-inference-context-independent)
+- **Questions:**
+  1. What values belong to a function type, and what are the assignability and subtype rules between function parameter and result types, including parameter labels?
+  2. How are implicitly polymorphic function values represented and instantiated when assigned, passed as arguments, returned, or constrained by a written function type?
+  3. How do function types participate in ordinary Natcode type algebra and refinement operations, including union, intersection, difference, complement, optionality, and `where`?
+  4. Is there a structural way to denote the set of all callable function values, or does the eventual design require a built-in `Function` type?
+- **Notes:** Function-type syntax is PAR-FN-06. This item does not decide the general assignability model in TYP-CON-03 or add a built-in `Function`; it records the function-specific questions that must integrate with those designs.
+
+
 ### TYP-FN-02 — Exact types through function-local declarations
 
 - **Status:** Approved
