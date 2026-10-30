@@ -272,6 +272,50 @@ mod keywords {
     }
 
     #[test]
+    fn none_is_a_reserved_literal() {
+        assert_clean(
+            "none = none",
+            &[(None, "none"), (Assign, "="), (None, "none")],
+        );
+        // PascalCase `None` remains an ordinary type/constructor identifier.
+        assert_clean(
+            "x: None = Option.None",
+            &[
+                (Identifier, "x"),
+                (Colon, ":"),
+                (Identifier, "None"),
+                (Assign, "="),
+                (Identifier, "Option"),
+                (MemberAccess, "."),
+                (Identifier, "None"),
+            ],
+        );
+        assert_clean(
+            "NONE nOne none_ _none nones nonempty",
+            &[
+                (Identifier, "NONE"),
+                (Identifier, "nOne"),
+                (Identifier, "none_"),
+                (Identifier, "_none"),
+                (Identifier, "nones"),
+                (Identifier, "nonempty"),
+            ],
+        );
+        assert_clean(
+            "{ none: 1 }.none",
+            &[
+                (LBrace, "{"),
+                (None, "none"),
+                (Colon, ":"),
+                (Number, "1"),
+                (RBrace, "}"),
+                (MemberAccess, "."),
+                (None, "none"),
+            ],
+        );
+    }
+
+    #[test]
     fn return_is_an_identifier() {
         assert_clean(
             "return = 1",

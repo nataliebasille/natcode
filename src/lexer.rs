@@ -3,7 +3,7 @@
 //! Implements the Implemented `LEX-*` items: UAX #31 identifiers (XID_Start
 //! or `_`, then XID_Continue) normalized to NFC, the hard-reserved
 //! `from`/`import`/`export`/`unique`/`type`/`fn`/`when`/`where`/`as` keywords,
-//! boolean literals, decimal numbers, escape-free double-quoted strings,
+//! boolean literals, the hard-reserved `none` literal, decimal numbers, escape-free double-quoted strings,
 //! line/nested block comments, the core operator set (including `/` and the
 //! indivisible `as?`), the value-expression operators `-` `!` `<` `<=` `>`
 //! `>=` `==` `!=` `&&` `||` (multi-character operators by maximal munch),
@@ -22,6 +22,7 @@ pub enum TokenKind {
     String,
     True,
     False,
+    None,               // `none`, the built-in absence literal; `None` stays an identifier.
     From,
     Import,
     Export,
@@ -412,6 +413,7 @@ impl Lexer<'_> {
             "as" => TokenKind::As,
             "true" => TokenKind::True,
             "false" => TokenKind::False,
+            "none" => TokenKind::None,
             _ => TokenKind::Identifier,
         };
         self.push_text(kind, text, start, start_pos);

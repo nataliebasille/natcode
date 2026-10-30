@@ -47,6 +47,7 @@ impl fmt::Display for Expr {
                 ExprKind::Identifier(text) | ExprKind::Number(text) => f.write_str(text)?,
                 ExprKind::String(text) => write!(f, "{text:?}")?,
                 ExprKind::Boolean(value) => write!(f, "{value}")?,
+                ExprKind::None => f.write_str("none")?,
                 ExprKind::Paren(inner) => {
                     f.write_str("(paren ")?;
                     stack.extend([Item::Text(")"), Item::Expr(inner)]);
@@ -141,7 +142,8 @@ fn detach_children(kind: &mut ExprKind, pending: &mut Vec<Expr>) {
         ExprKind::Identifier(_)
         | ExprKind::Number(_)
         | ExprKind::String(_)
-        | ExprKind::Boolean(_) => {}
+        | ExprKind::Boolean(_)
+        | ExprKind::None => {}
     }
 }
 
@@ -153,6 +155,8 @@ pub enum ExprKind {
     /// Contents of a string literal, without its quotes.
     String(String),
     Boolean(bool),
+    /// The built-in absence literal `none`.
+    None,
     /// Explicit grouping parentheses, kept so that formatting can preserve them.
     Paren(Box<Expr>),
     Member {
@@ -606,6 +610,7 @@ impl Parser<'_> {
             TokenKind::String => ExprKind::String(token.text[1..token.text.len() - 1].to_string()),
             TokenKind::True => ExprKind::Boolean(true),
             TokenKind::False => ExprKind::Boolean(false),
+            TokenKind::None => ExprKind::None,
             TokenKind::Wildcard => {
                 return self.error(
                     DiagnosticKind::Unsupported,
@@ -883,6 +888,7 @@ fn is_keyword(kind: TokenKind) -> bool {
             | TokenKind::When
             | TokenKind::Where
             | TokenKind::As
+            | TokenKind::None
     )
 }
 
