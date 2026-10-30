@@ -725,11 +725,17 @@ Each built-in type is an independent scorecard item. Each type also has a distin
 
 ### TYP-BLT-10 — Remaining built-in type inventory
 
-- **Status:** Open question
+- **Status:** Approved
 - **Spec:** [syntax-and-types.md — Built-in names and explicit qualification](../spec/syntax-and-types.md#built-in-names-and-explicit-qualification)
-- **Questions:**
-  1. Which additional built-in types, if any, are needed beyond the individually tracked current inventory?
-- **Notes:** Does not reopen approved individual entries or the decision that only built-in types are automatically available. Future additions must have their own built-in and refinement scorecard items.
+- **Done when:** A public Natcode built-in type exists only when its language semantics cannot be faithfully expressed as an ordinary Natcode-defined type; compiler/runtime implementation primitives do not automatically become public built-ins. The initial public built-in inventory is closed to the individually tracked built-ins, and any later addition receives its own built-in and refinement scorecard items.
+- **Notes:** This closes the catch-all inventory question rather than leaving it permanently open. `ValidationError` is added by TYP-BLT-11 because the language-level `as?` operator intrinsically produces it. No built-in `Object` or `Record` is needed because `{}` is the structural record type with zero required properties and therefore accepts any record under width subtyping. No built-in `Function` or `Array` is introduced now; first-class function design is tracked by PAR-FN-06/TYP-FN-07 and array design by PAR-ARR-01/TYP-ARR-01/RUN-ARR-01. Built-in status for `Map`, a public `Type`/metatype, `Byte`/`Bytes`, `Set`, `List`/sequence, and tuple-like concepts is deferred until those abstractions are designed. No general built-in `Error` is introduced at this stage; arbitrary error designation remains TYP-ERR-01.
+
+### TYP-BLT-11 — `ValidationError` built-in
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Runtime validation](../spec/syntax-and-types.md#runtime-validation)
+- **Done when:** `ValidationError` is a public built-in designated error type, available without an import and explicitly addressable as `@ValidationError`, because the language-level `as?` operator intrinsically produces it; every valid `x as? T` has result type `T | ValidationError` as established by TYP-REF-13.
+- **Notes:** The exact data/constructor shape, validation messages, metadata, and nested failure representation remain open in TYP-REF-16. This item does not introduce a general built-in `Error` type.
 
 ## Built-in refinements: individual items
 
@@ -790,3 +796,10 @@ Each built-in type is an independent scorecard item. Each type also has a distin
   1. Which string predicates, including grapheme-cluster length, have guaranteed compile-time support?
   2. How are Unicode normalization and Unicode-version-dependent predicates treated in string refinements?
 - **Notes:** The `String` built-in and grapheme-based default operations are approved independently in TYP-BLT-07. String refinement capability was previously left for future design.
+
+### TYP-BRF-11 — `ValidationError where ...`
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Refinement types with `where`](../spec/syntax-and-types.md#refinement-types-with-where)
+- **Done when:** A `ValidationError where ...` refinement follows the ordinary transparent-subset rules and introduces no new nominal identity; which internal fields, constructor shapes, or failure metadata can be inspected remains governed by TYP-REF-16.
+- **Notes:** This item records the required per-built-in refinement behavior without deciding the still-open payload representation of `ValidationError`.
