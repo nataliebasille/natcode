@@ -14,6 +14,8 @@ identifier: Type = expression
 - `:` is an optional **assignability constraint**. The initializer's inferred type must be equal to or assignable to the declared type.
 - Any type expression, including a `where` refinement, may appear after `:`. For example, `x: number where n => n > 0 = 5` requires the initializer to satisfy that restricted type (TYP-REF-11).
 - A constraint **does not widen** or overwrite the inferred type. Thus `x: number = 42` still has inferred type `42`.
+
+- A nullable constraint follows the same rule: `x: Number? = 42` retains exact inferred type `42`, while `x: Number? = none` has exact type `None` (TYP-OPT-01).
 - The `&` operator is reserved for type **intersections**, not type constraints.
 
 ## Immutability, redeclaration, and scope

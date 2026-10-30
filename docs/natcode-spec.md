@@ -16,17 +16,18 @@ Source text is UTF-8. Positions are reported as byte-offset spans plus 1-based l
 
 | Category | Forms |
 | --- | --- |
-| Reserved keywords | `from`, `import`, `export`, `unique`, `type`, `fn`, `when`, `where`, `as`. These are case-sensitive, hard-reserved words (LEX-KW-01, LEX-KW-04 through LEX-KW-07, LEX-KW-12, LEX-KW-13, LEX-KW-15). |
+| Reserved keywords | `from`, `import`, `export`, `unique`, `type`, `fn`, `when`, `where`, `as`, `none`. These are case-sensitive, hard-reserved words (LEX-KW-01, LEX-KW-04 through LEX-KW-07, LEX-KW-12, LEX-KW-13, LEX-KW-15). |
 | Boolean literals | `true`, `false` |
+| Absence literal | `none` (built-in singleton value; LEX-KW-16) |
 | Identifiers | Unicode identifiers per UAX #31: first character is `XID_Start` or `_`; following characters are `XID_Continue`. Letters of any script (`café`, `größe`, `π`, `中文`) are allowed. |
 | Wildcard | A standalone `_` is its own token, never an identifier. `_x`, `__`, and `x_` are identifiers. |
 | Numbers | Decimal integers (`42`) and decimal fractions (`3.14159`), using ASCII digits only. |
 | Strings | Double-quoted, single-line: `"Alice"`, `"./math"`. Any character except a line break is allowed, including non-ASCII. |
-| Operators and punctuation | `=` `=>` `:` `\|` `&` `\` `~` `/` `as?` `{` `}` `(` `)` `,` `.` `*` `+` `-` `%` `!` `<` `<=` `>` `>=` `==` `!=` `&&` `||` |
+| Operators and punctuation | `=` `=>` `:` `\|` `&` `\` `~` `/` `as?` `{` `}` `(` `)` `,` `.` `*` `+` `-` `%` `!` `<` `<=` `>` `>=` `==` `!=` `&&` `||` `?` `??` `@` |
 | Comments | `// …` to end of line; `/* … */` block comments, which nest. Comment text produces no ordinary tokens. Physical line breaks inside block comments must remain visible to layout analysis (LEX-COM-04), whether through newline tokens or source-position/layout metadata. |
 | Line breaks | LF or CRLF; each is one newline token. Spaces are insignificant between tokens. |
 
-The reserved words are recognized as keywords regardless of position; they cannot name ordinary bindings. `unique` is the hard-reserved modifier in nominal declarations written `unique type`. `alias` is an ordinary identifier, not a declaration keyword. Keyword spellings are permitted as object property names, with details of the object grammar still to be determined (PAR-OBJ-01). `match`, `if`, `else`, `elif`, and `case` are not reserved words or language control-flow constructs. The unified matching and conditional keyword is `when` (LEX-KW-07). `return` is not a control-flow construct or keyword. `try`, `catch`, and `throw` are not reserved or built-in exception constructs (LEX-KW-11). `null` is not a native literal or reserved word; absence is represented using constructors such as `None`. `where` is the refinement-type keyword. `as` is a hard-reserved renaming keyword (LEX-KW-15) used in imports, exports, and function parameter aliases (PAR-IMP-07, PAR-EXP-02, PAR-FN-01). It cannot name a value, and it is not a type assertion or conversion. `as?` is one indivisible, distinct runtime-validation operator token (LEX-OP-05); whitespace-separated `as ?` is not the operator. Value-expression operators `-`, `!`, `<`, `<=`, `>`, `>=`, `==`, `!=`, `&&`, and `||` are tokenized per LEX-OP-03; `-` has both unary and binary parser roles. `/` is the arithmetic-division token in both value and type computations (LEX-OP-04). `\` and `~` are the type set difference and complement operator tokens (LEX-OP-07). `%` is the truncated-remainder token (LEX-OP-06). Euclidean modulo is approved semantically, but no spelling or token is yet approved (PAR-EXPR-03). Multi-character operators use maximal munch (LEX-OP-02). A future pipe operator remains open under PAR-PIPE-01. Further words, including `then` and generator/effect vocabulary, remain open questions (LEX-KW-03).
+The reserved words are recognized as keywords regardless of position; they cannot name ordinary bindings. `unique` is the hard-reserved modifier in nominal declarations written `unique type`. `alias` is an ordinary identifier, not a declaration keyword. Keyword spellings are permitted as object property names, with details of the object grammar still to be determined (PAR-OBJ-01). `match`, `if`, `else`, `elif`, and `case` are not reserved words or language control-flow constructs. The unified matching and conditional keyword is `when` (LEX-KW-07). `return` is not a control-flow construct or keyword. `try`, `catch`, and `throw` are not reserved or built-in exception constructs (LEX-KW-11). `null` is not a native literal or reserved word. `none` is a hard-reserved literal whose type is the built-in singleton `None`, distinct from nominal constructors such as `Option.None`. `where` is the refinement-type keyword. `as` is a hard-reserved renaming keyword (LEX-KW-15) used in imports, exports, and function parameter aliases (PAR-IMP-07, PAR-EXP-02, PAR-FN-01). It cannot name a value, and it is not a type assertion or conversion. `as?` is one indivisible, distinct runtime-validation operator token (LEX-OP-05); whitespace-separated `as ?` is not the operator. Value-expression operators `-`, `!`, `<`, `<=`, `>`, `>=`, `==`, `!=`, `&&`, and `||` are tokenized per LEX-OP-03; `-` has both unary and binary parser roles. `/` is the arithmetic-division token in both value and type computations (LEX-OP-04). `\` and `~` are the type set difference and complement operator tokens (LEX-OP-07). `%` is the truncated-remainder token (LEX-OP-06). Euclidean modulo is approved semantically, but no spelling or token is yet approved (PAR-EXPR-03). Multi-character operators use maximal munch (LEX-OP-02). `?` is a postfix type-operator token (also used in optional record field declarations), `??` is one token by maximal munch, and `@` explicitly qualifies built-in type names. In a **type expression**, the `??` token immediately after a type operand represents two successive postfix optional markers (so `T?? = T?`), while in a value expression it is the infix coalescing operator. The parser distinguishes the uses by grammar rather than asking the lexer to split the token. None of them changes the existing indivisible `as?` token (LEX-OP-05, LEX-OP-08). A future pipe operator remains open under PAR-PIPE-01. Further words, including `then` and generator/effect vocabulary, remain open questions (LEX-KW-03).
 
 ## Layout and indentation
 
@@ -53,7 +54,7 @@ Identifiers are normalized to Unicode **NFC**, so visually identical spellings (
 
 ## Lexical errors
 
-Any character that cannot begin a token is an error, including emoji, non-identifier symbols such as `∑` or `€`, and ASCII characters outside the operator set (for example `;`, `@`, `?`). An unterminated block comment is an error. Lexing recovers after every error and reports all diagnostics in source order.
+Any character that cannot begin a token is an error, including emoji, non-identifier symbols such as `∑` or `€`, and ASCII characters outside the operator set (for example `;`). An unterminated block comment is an error. Lexing recovers after every error and reports all diagnostics in source order.
 
 ---
 
@@ -117,6 +118,8 @@ user = {
 
 Repeating the same written static key in one object literal is a compile error. The type representation of dynamic computed keys, including possible collisions with statically known properties and the relationship between objects and `Map`, remains TYP-OBJ-01. Object spread syntax is tracked separately by PAR-OBJ-03.
 
+Optional-property notation is a **record type** form, not an object construction form. `{ age?: Number }` allows records with `age` absent, or with `age` present and assignable to `Number`. Object literals explicitly include or omit properties: `{ age?: 42 }` is invalid, while `{}`, `{ age: 42 }`, and `{ age: none }` are distinct valid constructions (PAR-OBJ-04, TYP-OPT-02). An absent property is not a present property whose value is `none`.
+
 Exported-object forms such as `export { value }` and export aliases with `=` are separate grammar, unaffected by the object-literal property rule.
 
 ## Canonical formatting
@@ -151,14 +154,15 @@ Ordinary value-expression operators bind from highest to lowest as follows:
 | 2 | unary `!`, unary `-` | prefix |
 | 3 | `*`, `/`, `%` | left |
 | 4 | `+`, binary `-` | left |
-| 5 | `<`, `<=`, `>`, `>=`, `==`, `!=` | non-associative |
-| 6 | `&&` | left, short-circuiting |
-| 7 | `||` | left, short-circuiting |
-| 8 | `=>` | right |
+| 5 | `??` (absence coalescing) | right, short-circuiting |
+| 6 | `<`, `<=`, `>`, `>=`, `==`, `!=` | non-associative |
+| 7 | `&&` | left, short-circuiting |
+| 8 | `||` | left, short-circuiting |
+| 9 | `=>` | right |
 
 Thus `a + b * c` means `a + (b * c)`, `a - b - c` means `(a - b) - c`, `a * b / c` means `(a * b) / c`, `!ready && enabled` means `(!ready) && enabled`, and `x => y => x + y` means `x => (y => x + y)`. Comparison operators do not chain: `a < b < c` is invalid; write `a < b && b < c`.
 
-Member access and calls form one postfix layer, so `foo.bar(x).baz()` groups as `(((foo.bar)(x)).baz)()`. Type-expression `|` and `&` are separate union/intersection operators and are not ordinary value operators. Pipe syntax and precedence remain open under PAR-PIPE-01. `/` denotes numeric division in both value expressions and type-level computations; type set difference uses `\` (PAR-TYPE-08). Validation with `as?` applies to the complete preceding arithmetic expression unless parenthesized as an operand (PAR-VAL-01); its right-hand type expression retains its own grammar.
+Member access and calls form one postfix layer, so `foo.bar(x).baz()` groups as `(((foo.bar)(x)).baz)()`. Type-expression `|` and `&` are separate union/intersection operators and are not ordinary value operators. Pipe syntax and precedence remain open under PAR-PIPE-01. `/` denotes numeric division in both value expressions and type-level computations; type set difference uses `\` (PAR-TYPE-08). Validation with `as?` applies to the complete preceding arithmetic expression unless parenthesized as an operand (PAR-VAL-01). Coalescing `??` binds more tightly than `as?`, so `value ?? 1 as? Positive` means `(value ?? 1) as? Positive`. The remaining relationship of `as?` to comparisons and Boolean operators remains PAR-VAL-02; its right-hand type expression retains its own grammar.
 
 ## Strict Boolean operations
 
@@ -178,6 +182,36 @@ Prefix `~` is reserved for type complement; Boolean NOT remains `!` (TYP-UNI-05)
 Division, truncated remainder, and Euclidean modulo require a **provably nonzero divisor** (TYP-ARITH-04). A zero literal is rejected at compile time; an unknown numeric divisor is rejected unless the compiler has established that it cannot be zero, for example through a refinement or a successful runtime `as?` check. That validator's possible `ValidationError` is propagated through otherwise valid arithmetic under the approved error-propagation principle (TYP-ERR-03); exact propagation mechanics remain open in TYP-ERR-01. A proof failure is not silently treated as false.
 
 The numeric representation, result type when combining `Integer` and `Number`, rounding, overflow, and non-finite-value behavior remain open in TYP-BLT-05 and TYP-BLT-06.
+
+## Optional types and absence coalescing
+
+The built-in literal `none` has exact singleton type `None = {none}`. `None` is an ordinary set of values in the type algebra and is distinct from `Empty` (which contains no values). It replaces the former proposed `Unit` and `null`/`Null` designs. Operations whose only meaningful result is absence, such as `print`, return `none` with type `None` (TYP-NONE-01, TYP-BLT-09).
+
+A postfix `?` in **type expressions** is transparent union with `None`: `T? = T | None`. It applies to every type expression, including literal, nominal, structural, and set types. It binds to the closest preceding type operand; parentheses select larger operands. A `where` refinement must be parenthesized before applying `?`: `(Number where x => x > 0)?`. No tagged option layers are introduced; the parser interprets the `??` token as two consecutive postfix optional markers in type-expression context, so `T?? = T?`, `None? = None`, `Empty? = None`, and `Any? = Any`. Explicit library-defined `Option` types remain nominal and may preserve nested tagging (PAR-TYPE-13, TYP-OPT-01).
+
+```natcode
+type PossiblyNumeric = Number?
+type OptionalPositive = (Number where x => x > 0)?
+type MaybePoint = Position?
+```
+
+A declaration or function parameter constraint `T?` checks assignability but does not widen the actual inferred type: `x: Number? = 42` retains literal type `42`; `x: Number? = none` has type `None`. Constructor payload restrictions continue to apply: a `Position(Number, Number)` constructor does not accept `none` for a declared `Number` parameter merely because `Position?` is a valid type.
+
+Value-level `left ?? right` evaluates `left` exactly once, returning it unless its value is **exactly `none`**. Only then is `right` evaluated. It is right-associative: `a ?? b ?? c` means `a ?? (b ?? c)`. It does not inspect property absence or automatically handle designated error values, which remain non-`none` values (PAR-EXPR-05, RUN-OPT-01).
+
+For inferred left type `A` and right type `B`, the result is `A` if `none` is impossible, `B` if the left is definitely `None`, or `(A \ None) | B` when both paths are possible. The latter is simplified under the existing set-algebra rules. The fallback is still statically type-checked even when laziness or call-site inference shows it will not run at a particular call site (TYP-OPT-03).
+
+```natcode
+type Positive = Number where x => x > 0
+fn getAge(age: Number?) {
+    age ?? 0
+}
+// A call with age: 20 infers 20; a call with age: none infers 0.
+// A call with age: Positive? infers Positive | 0.
+// A value of type Any coalesced with 0 infers Any \ None.
+```
+
+A property possibly absent from a record cannot be read directly or coalesced through `record.age ?? default` until its presence is proven. `??` concerns a **value** equal to `none`, never the absence of a record key (TYP-OPT-02).
 
 ## When expressions
 
@@ -204,6 +238,12 @@ Subject-based branches may mix literals, nominal constructor patterns, and refer
 
 Both forms must be exhaustive (TYP-PAT-01). The remaining possible value set must be provably `Empty` after the branches, otherwise a final `_` is required. `_` stands for the remaining universal case, may occur **at most once**, and must be **last**. A provably redundant `_` or any other provably unreachable `when` branch is a **compilation error**, not a warning. Restricted input types participate in this calculation, so constructors already eliminated from the subject type do not need branches. Arbitrary predicates do not establish exhaustiveness unless their coverage can be proven. In ambiguous layout, diagnostics should explain why plausible branch ownership interpretations fail; no layout fix is applied by guessing. Pattern guards and the complete compound-pattern grammar remain open.
 
+Record patterns have structural, width-subtyping membership: `{}` matches any record (including one with extra fields) but not arbitrary non-record values. `{ age }` matches only a record with a present `age` key, **captures** that value into `age`, and narrows the original subject so subsequent member access is valid. `{ age: Number }` requires a present numeric value and narrows the subject but does **not** implicitly capture `age`; `{ age: Number as numericAge }` also binds an explicit alias. Nested record patterns, multiple-property conjunctive tests, literal-value tests (such as `{ status: "active" }` and `{ age: none }`), and `as` captures inside compound patterns are supported (PAR-PAT-03/04, TYP-OPT-04). `{ age: None }` requires a **present** property containing `none`; it never matches an absent key.
+
+For ordered subjectful `when` patterns, each subsequent branch sees the subject type narrowed by subtracting all earlier matched regions. Provably unreachable branches are compile errors, including `{ age: Number }` after `{ age }`. Exhaustiveness uses structural presence and type knowledge. Under PAR-PAT-02, these record pattern forms also work in `where`, **without changing `where`'s disjoint-ordinary-pattern and no-fallthrough rules**.
+
+An unqualified type/constructor pattern must have a single valid interpretation. If a type name and a contextually eligible nominal constructor (or multiple constructors) are both valid candidates, compilation fails for ambiguity; qualify explicitly, such as `@Number` for the built-in type and `Token.Number` for the constructor (RES-BLT-03). A lowercase `none` pattern matches only the built-in singleton; `Option.None` denotes the nominal constructor. A candidate excluded by the subject's type does not introduce an artificial ambiguity.
+
 ## Declaration keywords and expression results
 
 - `fn` introduces named function declarations (PAR-FN-02). Core parameter, label, and default forms are approved below; remaining grammar stays PAR-FN-01.
@@ -216,6 +256,8 @@ Both forms must be exhaustive (TYP-PAT-01). The remaining possible value set mus
 ## Function parameters and labeled calls
 
 Named functions may omit parameter type annotations. Every parameter is implicitly polymorphic and has its own independent type variable, constrained by its annotation or by `Any` when omitted (PAR-FN-04, TYP-FN-06). An explicit annotation constrains acceptable arguments but does not widen their exact types. Calls to a named `fn` declaration use `label: expression` (not `label = expression`), and labeled arguments may appear in any order. Parameter defaults use `=` and may precede required parameters (PAR-FN-01).
+
+`T?` on a function parameter allows the **value** `none`, but does not allow omission of its argument. Omission is permitted only by an explicitly declared default such as `age: Number? = none`. This is independent of optional record properties (PAR-FN-05, TYP-OPT-05).
 
 ```natcode
 fn greet(first: String = "Ada", last: String) {
@@ -245,6 +287,20 @@ Lambda parameters remain positional and cannot have inline type annotations. Val
 Natcode seeks a TypeScript-like ergonomics with a substantially more functional model, emphasizing purity, piping, and pattern matching. These are **design goals** (see RUN-EFF-01, PAR-PIPE-01, and PAR-PAT-01).
 
 Ordinary variable types and function return types are intended to be inferred. The optional declaration constraint `x: Type = expression` is permitted as an **assignability check** without replacing or widening the inferred type; this updates the earlier inference-only proposal.
+
+## Built-in names and explicit qualification
+
+The initially approved built-in type names include `Any`, `Empty`, `None`, `Boolean`, `Number`, `Integer`, and `String`; the full inventory and any future additions are tracked per type in TYP-BLT-01 through TYP-BLT-10. No `Char` built-in exists. Built-in types are the only types automatically in scope in every module; other type names must be declared locally or explicitly imported. Ambient user-defined types and implicit library preludes are not part of the current model (RES-BLT-01).
+
+Built-in names are **not reserved type identifiers**: local types may shadow them under ordinary lexical resolution. A built-in type is always accessible by the `@` qualifier, e.g. `@Number`, `@String`, `@None`, `@Any`, or `@Empty`. The `@Name` syntax resolves **only compiler-provided built-in types**, not user-defined types, modules, or arbitrary root-qualified names. Normal unqualified lookup still applies when no nearer declaration shadows the built-in (PAR-TYPE-14, RES-BLT-02).
+
+```natcode
+unique type Number(String)
+numberValue: Number = Number("42")
+builtinValue: @Number = 42
+```
+
+`none` is a reserved lowercase literal, not a type name or nominal constructor. `None` is the built-in type's unqualified name, unless shadowed, and `@None` always names the built-in. A constructor named `None` (for example `Option.None`) is a separate nominal value.
 
 ## Nominal types, constructors, and aliases
 
@@ -684,6 +740,8 @@ A target type therefore conceptually induces a validator with the shape `U -> T 
 
 Type expressions accept named and qualified types, constructor restrictions, parentheses, primitive literal types (numeric literals including negative values and decimals; double-quoted strings; and `true`/`false`), and structural record types (PAR-TYPE-09). Record types use `{}` for the empty record, `key: Type` properties, required commas between properties, and an optional trailing comma. Static keys can be identifiers, string literals, or numeric literals, matching object literals. Computed and dynamic property typing remains an open question (TYP-OBJ-01).
 
+Record type entries can also use `key?: Type` to make the **key optional** without inserting a value. `{ age?: Number }` and `{ age: Number? }` differ: the former allows missing `age`, while the latter requires a present key whose value may be `none`; `{ age?: Number? }` allows both absence and a present `none` value. Overlapping optional constraints intersect by presence/value possibilities: `{ age?: Number } & { age?: String }` permits records omitting `age`, even if no value can satisfy both present-value types. These rules use structural width subtyping and preserve correlations (PAR-OBJ-04, TYP-OPT-02).
+
 ```natcode
 type User = { name: String, age: Number, active: Boolean }
 type Tagged = { kind: "left", value: Number }
@@ -773,6 +831,8 @@ identifier: Type = expression
 - `:` is an optional **assignability constraint**. The initializer's inferred type must be equal to or assignable to the declared type.
 - Any type expression, including a `where` refinement, may appear after `:`. For example, `x: number where n => n > 0 = 5` requires the initializer to satisfy that restricted type (TYP-REF-11).
 - A constraint **does not widen** or overwrite the inferred type. Thus `x: number = 42` still has inferred type `42`.
+
+- A nullable constraint follows the same rule: `x: Number? = 42` retains exact inferred type `42`, while `x: Number? = none` has exact type `None` (TYP-OPT-01).
 - The `&` operator is reserved for type **intersections**, not type constraints.
 
 ## Immutability, redeclaration, and scope
@@ -942,7 +1002,7 @@ from "./math" import { PI }, Math
 
 - `Math` is a **PascalCase namespace alias**.
 - `{ PI, square }` imports named exports as direct local bindings.
-- `*` imports **all possible exported names** as direct local bindings; `_` is **not** an import wildcard.
+- `*` imports **only exported names guaranteed in every possible object shape** as direct local bindings; `_` is **not** an import wildcard.
 - The combined form `{ PI }, Math` imports `PI` directly and places only the **remaining** names in `Math`; `Math.PI` is absent from that combined import.
 - The designer also wants remaining exports to be importable unqualified via wildcard in a combined selective import; the grammar for this is PAR-IMP-08.
 - Import aliases use `as`, original exported name first: `from "./math" import { publicName as localName }`.
@@ -955,7 +1015,7 @@ from "./math" import { PI }, Math
 - Local imports use explicit relative prefixes `./` or `../`, resolved against the importing file.
 - `.nat` can be omitted for Natcode source modules; non-Natcode formats (such as `.json`) use an explicit extension.
 - Direct imports of **JSON** are supported in principle; their value representation is RES-MOD-08. Other non-Natcode file types are RES-MOD-09.
-- Built-in and external package path schemes are RES-MOD-07.
+- Built-in and external package path schemes are RES-MOD-07. Built-in types alone are automatically in scope; other types require local declaration or explicit import. Ambient type declarations are not currently supported (RES-BLT-01).
 - **Circular module dependencies are forbidden**, including cycles through several modules; the compiler reports an error.
 
 ## Import names and shadowing
@@ -980,28 +1040,28 @@ Multiple imports of the same module initially reference the **same logical expor
 ## Exported object shapes and optional properties
 
 - The exported object may have multiple possible statically inferred shapes (e.g., a union of object types).
-- The compiler must statically enumerate the **finite set of possible public property names**, but the presence and values of each property can vary at runtime.
-- A named import is legal when the property exists in **at least one** possible export shape. If absent in some branches, its inferred type includes a `None` case.
-- Importing a property that exists in **no** possible export shape is a compile-time error.
-- Wildcard imports include the **union of all possible export names**, even conditionally present ones.
-- No `null` or `undefined` values are intended for Natcode. The exact semantics and spelling of `None` are TYP-NONE-01.
+- The compiler must statically enumerate the **finite set of possible public property names**; their values and presence may vary across possible shapes.
+- **Every named import requires its exported property to exist in every possible export shape**. Importing a conditionally absent or never-present property is a compile error; missing keys are never silently converted into `none`.
+- Wildcard imports bind **only the keys present in every possible export shape**. Keys present in only some shapes are excluded, rather than synthesized as nullable bindings.
+- A property whose value may explicitly be `none` is still present and therefore importable; its value type may include built-in `None` normally.
+- Accessing a possibly absent property through an imported namespace has the same compile-time presence requirement as any other record member access.
 - A dynamic object with arbitrary runtime keys may be exported **inside a statically named property** (e.g. `export { data }`); arbitrary unenumerable runtime keys are not allowed as the module's top-level public export interface.
 
 ```natcode
-// api.nat (illustrative conditional syntax)
-export if condition then
-    { x = 10, y = 20 }
-else
-    { x = 30, z = 40 }
+// api.nat: y exists in both shapes, even when its value is none.
+api = when getCondition()
+    true => ({ x: 10, y: none })
+    false => ({ x: 30, y: 20 })
+export api
+
+// consumer.nat: both names may be imported.
+// from "./api" import { x, y }
 ```
 
 ```natcode
-// consumer.nat
-from "./api" import *
-// x: 10 | 30
-// y: 20 | None
-// z: 40 | None
-export {}
+// A separate export whose possibilities are:
+// { x: 10, y: 20 } OR { x: 30, z: 40 }
+// Named imports of y or z are errors; wildcard imports bind x only.
 ```
 
 ## Lazy module evaluation
@@ -1088,9 +1148,17 @@ A failure to prove a fact outside the supported solver is **not** proof that the
 
 ## Diagnostics
 
-Violated or unestablished mandatory guarantees are compile errors; provably redundant but valid code may warn; unsuccessful optional analyses need no diagnostic. Warnings do not prevent compilation or change semantics (TYP-DIAG-01).
+Violated or unestablished mandatory guarantees are compile errors; provably redundant but valid code may warn in non-strict mode, while strict mode reports all diagnosed problematic code as errors (TYP-DIAG-01, TYP-DIAG-05). Unsuccessful optional analyses need no diagnostic. Warnings do not prevent compilation or change semantics. Redundant `??` is explicitly a diagnostic under TYP-DIAG-06, independent of call-site specialization; the selection and default of diagnostic modes remain TYP-DIAG-04.
+
+Natcode has strict and non-strict compiler diagnostic modes. In strict mode, every reported problem is a compile error, not a warning, including cases that would be warnings in non-strict mode. Existing mandatory errors remain errors in both modes, and inconclusive optional analyses alone do not become diagnostic errors (TYP-DIAG-05). Which otherwise valid constructs merit diagnostics, how the mode is selected, and the default mode remain open (TYP-DIAG-04).
 
 Natcode diagnostics should be understandable without compiler or type-theory terminology (TYP-DIAG-02). When possible, an error should explain in ordinary language what the developer wrote, why Natcode cannot accept it, and what form would work instead. Invalid `where` forms are hard compile errors with source spans, and a concrete rewrite should be shown when the compiler can confidently provide one. Whether a valid `as?` whose success or failure is already statically known should produce an informational or warning diagnostic remains open (TYP-DIAG-03).
+
+## Optional coalescing evaluation
+
+`left ?? right` evaluates its left operand once and evaluates the right operand only when the left produces the built-in `none` value (RUN-OPT-01). A designated error value is not `none`; coalescing does not turn errors into defaults. Structural property absence is not itself a value and cannot be handled by `??` without first proving that the property exists (TYP-OPT-02).
+
+Both operands are **statically type-checked** in the function's permitted input domain, even when a particular call-site specialization proves the right operand unreachable. Call-site inference may determine a more precise result type but does not create new diagnostics at the call site. A provably non-`None` left operand makes coalescing redundant: non-strict mode reports a warning and strict mode a compile error, located at the redundant `??` expression. A left operand provably equal to `none` is a valid coalesce and is not diagnosed as redundant (TYP-DIAG-06).
 
 ## Error handling
 

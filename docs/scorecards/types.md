@@ -333,6 +333,18 @@
 - **Done when:** Each function parameter is implicitly a separate polymorphic type variable, constrained by its optional written annotation or by `Any` if absent. A function can preserve the exact call-site argument type through return values, records, and branches even when other parameters share the same annotation; annotations constrain accepted types without widening them.
 - **Notes:** No explicit generic-parameter syntax is implied. Parameter annotation grammar is PAR-FN-04.
 
+### TYP-FN-07 — First-class function type semantics
+
+- **Status:** Open question
+- **Spec:** [evaluation.md — Function return inference: context-independent](../spec/evaluation.md#function-return-inference-context-independent)
+- **Questions:**
+  1. What values belong to a function type, and what are the assignability and subtype rules between function parameter and result types, including parameter labels?
+  2. How are implicitly polymorphic function values represented and instantiated when assigned, passed as arguments, returned, or constrained by a written function type?
+  3. How do function types participate in ordinary Natcode type algebra and refinement operations, including union, intersection, difference, complement, optionality, and `where`?
+  4. Is there a structural way to denote the set of all callable function values, or does the eventual design require a built-in `Function` type?
+- **Notes:** Function-type syntax is PAR-FN-06. This item does not decide the general assignability model in TYP-CON-03 or add a built-in `Function`; it records the function-specific questions that must integrate with those designs.
+
+
 ### TYP-FN-02 — Exact types through function-local declarations
 
 - **Status:** Approved
@@ -418,11 +430,80 @@
   2. Should it warn or otherwise report when the compiler can already prove that it must fail?
 - **Notes:** Regardless of diagnostics, TYP-REF-13 keeps the stable `T | ValidationError` signature and permits compile-time elimination of runtime work.
 
+### TYP-DIAG-04 — Compiler diagnostic mode configuration
+
+- **Status:** Open question
+- **Spec:** [evaluation.md — Diagnostics](../spec/evaluation.md#diagnostics)
+- **Questions:**
+  1. How is strict versus non-strict compiler mode selected, and which mode is the default?
+  2. Which otherwise valid constructs, beyond the now-approved redundant `??` diagnostic in TYP-DIAG-06, warrant a diagnostic?
+  3. How should non-strict mode classify new diagnostics while preserving existing unconditional errors, including unreachable `when` branches (TYP-DIAG-01 and TYP-PAT-01)?
+  4. Does mode selection affect only diagnostic severity, without changing type inference or runtime semantics?
+- **Notes:** The existence of strict and non-strict modes and strict mode's error-only diagnostic behavior are approved under TYP-DIAG-05. This item tracks only the remaining unresolved design questions.
+
+### TYP-DIAG-06 — Redundant coalescing is diagnosed at its definition
+
+- **Status:** Approved
+- **Spec:** [evaluation.md — Optional coalescing evaluation](../spec/evaluation.md#optional-coalescing-evaluation)
+- **Done when:** A `??` whose left operand provably excludes `none` is diagnosed at that expression: warning in non-strict mode, compile error in strict mode. Diagnostics are based on the containing function's permitted input domain, never on a particular call site's specialization. A certainly-`none` left operand is not a redundancy diagnostic.
+
+### TYP-DIAG-05 — Strict mode reports problematic code as errors
+
+- **Status:** Approved
+- **Spec:** [evaluation.md — Diagnostics](../spec/evaluation.md#diagnostics)
+- **Done when:** The compiler supports strict and non-strict diagnostic modes. In strict mode, every diagnosed problematic construct is a compile error, never a warning, including cases that would only produce warnings in non-strict mode. Mandatory errors remain errors in both modes; inconclusive optional analyses do not acquire diagnostics just because strict mode is enabled. Which constructs warrant diagnostics and how modes are selected remain TYP-DIAG-04.
+
 ### TYP-PAT-01 — Exhaustiveness and redundant catch-all
 
 - **Status:** Approved
 - **Spec:** [syntax-and-types.md — When expressions](../spec/syntax-and-types.md#when-expressions)
 - **Done when:** Subject-based and subjectless `when` are exhaustive: remaining possibilities must be provably `Empty` or a final `_` branch must cover them. `_` represents the remaining `Any` case, occurs at most once and only as the final branch, and is a compile error if redundant. Every provably unreachable branch is a compile error (not a warning). Constructors eliminated by a restricted subject type need no branch, and arbitrary predicates alone do not prove exhaustiveness.
+
+## Optional values, coalescing and record types
+
+### TYP-OPT-01 — Transparent nullable postfix types
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Optional types and absence coalescing](../spec/syntax-and-types.md#optional-types-and-absence-coalescing)
+- **Done when:** `T?` denotes `T | None` for every type expression, with ordinary exact set normalization; `T?? = T?`, `Empty? = None`, and `Any? = Any`. A type constraint does not widen exact literal inference.
+
+### TYP-OPT-02 — Optional record-key presence and safe access
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Type-expression computations and record syntax](../spec/syntax-and-types.md#type-expression-computations-and-record-syntax)
+- **Done when:** `{ age?: Number }` permits absent `age` or a present numeric value, distinct from required `{ age: Number? }`; direct access to a possibly missing key errors until its presence is established. Missing and present `none` remain distinct. Width subtyping and intersections preserve absence possibilities and record-shape correlations.
+
+### TYP-OPT-03 — Exact coalescing result types and static checking
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Optional types and absence coalescing](../spec/syntax-and-types.md#optional-types-and-absence-coalescing)
+- **Done when:** `A ?? B` infers `A` if non-`None`, `B` if definitely `None`, otherwise `(A \ None) | B`, simplified by provable subset relations, including `Any \ None`. Both operands are always checked in the full function input domain even if right is unreachable at a particular call site. Exact call-site return inference remains supported.
+
+### TYP-OPT-04 — Record pattern membership, narrowing and exhaustiveness
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — When expressions](../spec/syntax-and-types.md#when-expressions)
+- **Done when:** Record patterns test key presence, typed or literal values, and nested patterns; `{age}` captures while `{age: Number}` only tests and narrows; explicit `as` aliases capture. Earlier `when` matches narrow later branches by set difference, with provable unreachable branches rejected. `where` shares patterns while retaining its disjointness and no-fallthrough rules.
+
+### TYP-OPT-05 — Nullable parameters do not imply optional arguments
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Function parameters and labeled calls](../spec/syntax-and-types.md#function-parameters-and-labeled-calls)
+- **Done when:** A `T?` function parameter accepts `none` but remains a required argument unless an explicit default is declared, for example `age: Number? = none`.
+
+## Arrays
+
+### TYP-ARR-01 — Array type model and inference
+
+- **Status:** Open question
+- **Spec:** [syntax-and-types.md — Code blocks and data structures](../spec/syntax-and-types.md#code-blocks-and-data-structures)
+- **Questions:**
+  1. What does Natcode mean by an array type, and is it distinct from any future list, tuple, or other sequence abstraction?
+  2. How are array literal types inferred, including empty arrays, heterogeneous elements, exact per-position information, and element-type widening?
+  3. Are fixed-length heterogeneous tuple-like values represented by array types or by a distinct type form?
+  4. What are the assignability and variance rules for array types, and how do arrays participate in union, intersection, difference, complement, optionality, and `where`?
+  5. Does the final array model require a compiler-provided public built-in `Array` type, or can its observable type semantics be expressed without one?
+- **Notes:** Surface syntax is PAR-ARR-01 and runtime behavior is RUN-ARR-01. This item intentionally leaves the built-in inventory question unresolved until the array model is designed.
 
 ## Object types
 
@@ -469,12 +550,12 @@
 - **Spec:** [modules.md — Exported object shapes and optional properties](../spec/modules.md#exported-object-shapes-and-optional-properties)
 - **Done when:** Union-shaped export objects contribute every possible key; a top-level export with an unenumerable key set is rejected.
 
-### TYP-EXP-06 — Conditionally present export keys include absence
+### TYP-EXP-06 — Imports require guaranteed export-key presence
 
 - **Status:** Approved
 - **Spec:** [modules.md — Exported object shapes and optional properties](../spec/modules.md#exported-object-shapes-and-optional-properties)
-- **Done when:** A key present in only some export shapes is importable, and its inferred type includes a `None`-like case.
-- **Notes:** The representation of `None` is TYP-NONE-01.
+- **Done when:** A named import is valid only if its key exists in every possible exported object shape; conditional absence causes an error, not an implicit `None` value. Explicit `none` in a present property is permitted.
+- **Notes:** Reverses the former approval allowing imports of keys present in only some shapes. Wildcard import filtering is RES-IMP-03 and ordinary record presence is TYP-OPT-02.
 
 ## Open type-system subjects
 
@@ -502,13 +583,12 @@
 - **Done when:** For an otherwise valid built-in arithmetic operation with a designated error value as an operand, the original error is propagated instead of performing arithmetic on it; possible error outcomes remain in the expression's result type. For example, `Number | ValidationError` combined with `Number` may produce `Number | ValidationError` rather than a mandatory wrapper.
 - **Notes:** Extending this principle to other applicable built-in operators is approved in principle, but exact coverage, evaluation order, short-circuiting, precedence among multiple errors, and precise typing remain open in TYP-ERR-01. This item does not determine how error types are designated. It also does not override the statically provable nonzero divisor requirement for successful division/modulo paths (TYP-ARITH-04).
 
-### TYP-NONE-01 — Representation of `None`
+### TYP-NONE-01 — Built-in `none` singleton and set membership
 
-- **Status:** Open question
-- **Spec:** [modules.md — Exported object shapes and optional properties](../spec/modules.md#exported-object-shapes-and-optional-properties)
-- **Questions:**
-  1. What are the spelling and semantics of `None` (Natcode has no `null` or `undefined`)?
-  2. How is it checked against other types?
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Optional types and absence coalescing](../spec/syntax-and-types.md#optional-types-and-absence-coalescing)
+- **Done when:** Hard-reserved literal `none` has exact singleton type `None = {none}`, which participates in ordinary type union/intersection/difference and is distinct from `Empty` and nominal `Option.None`; functions or operations with no other meaningful result, such as `print`, return `none`.
+- **Notes:** Replaces proposed `Unit`, `null`/`Null`, and implicit absence-as-missing-value designs.
 
 ### TYP-ADT-01 — Nominal algebraic types with constructors
 
@@ -588,12 +668,12 @@ Each built-in type is an independent scorecard item. Each type also has a distin
 - **Done when:** `Empty` denotes a type with no inhabitants as established by TYP-UNI-07.
 - **Notes:** Function termination, successful return guarantees, and whether functions may declare `Empty` returns are outside built-in type scope and remain open in the function semantics work.
 
-### TYP-BLT-03 — `Unit` built-in
+### TYP-BLT-03 — `Unit` built-in (retired)
 
-- **Status:** Approved
-- **Spec:** [syntax-and-types.md — Union and intersection types](../spec/syntax-and-types.md#union-and-intersection-types)
-- **Done when:** `Unit` has exactly one value, `()`, distinct from the uninhabited `Empty` type; `(): Unit` is valid.
-- **Notes:** This does not decide implicit function returns, effects, termination, or function return guarantees.
+- **Status:** Superseded
+- **Spec:** [syntax-and-types.md — Optional types and absence coalescing](../spec/syntax-and-types.md#optional-types-and-absence-coalescing)
+- **Superseded by:** TYP-BLT-09
+- **Notes:** The former singleton `Unit`/`()` design was replaced by the built-in literal `none` and singleton type `None`. The historical decision is retained; `Unit` is not a current built-in.
 
 ### TYP-BLT-04 — `Boolean` built-in
 
@@ -637,7 +717,21 @@ Each built-in type is an independent scorecard item. Each type also has a distin
 - **Done when:** The built-in type inventory does not contain a `Char` type; a single user-perceived character is representable as a `String`.
 - **Notes:** Explicit rejection of `Char` as a built-in, not a deferred decision. A user-defined refinement alias does not make it a built-in.
 
-### Built-in refinements: individual items
+### TYP-BLT-09 — `None` built-in
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Optional types and absence coalescing](../spec/syntax-and-types.md#optional-types-and-absence-coalescing)
+- **Done when:** The built-in `None` contains exactly `none`, is distinct from `Empty`, replaces `Unit`, and is available without an import, as described by TYP-NONE-01.
+
+### TYP-BLT-10 — Remaining built-in type inventory
+
+- **Status:** Open question
+- **Spec:** [syntax-and-types.md — Built-in names and explicit qualification](../spec/syntax-and-types.md#built-in-names-and-explicit-qualification)
+- **Questions:**
+  1. Which additional built-in types, if any, are needed beyond the individually tracked current inventory?
+- **Notes:** Does not reopen approved individual entries or the decision that only built-in types are automatically available. Future additions must have their own built-in and refinement scorecard items.
+
+## Built-in refinements: individual items
 
 ### TYP-BRF-01 — `Any where ...`
 
@@ -651,11 +745,18 @@ Each built-in type is an independent scorecard item. Each type also has a distin
 - **Spec:** [syntax-and-types.md — Where patterns and filtering](../spec/syntax-and-types.md#where-patterns-and-filtering)
 - **Done when:** A refinement over `Empty` remains `Empty`, following TYP-REF-07.
 
-### TYP-BRF-03 — `Unit where ...`
+### TYP-BRF-03 — `Unit where ...` (retired)
+
+- **Status:** Superseded
+- **Spec:** [syntax-and-types.md — Optional types and absence coalescing](../spec/syntax-and-types.md#optional-types-and-absence-coalescing)
+- **Superseded by:** TYP-BRF-09
+- **Notes:** Refinement of the retired `Unit` built-in is replaced by refinement of the `None` singleton.
+
+### TYP-BRF-09 — `None where ...`
 
 - **Status:** Approved
-- **Spec:** [syntax-and-types.md — Refinement types with `where`](../spec/syntax-and-types.md#refinement-types-with-where)
-- **Done when:** A `Unit` refinement obeys the general `where` rules, selecting `()` or yielding `Empty` depending on its established predicate; no distinct refinement syntax is introduced.
+- **Spec:** [syntax-and-types.md — Optional types and absence coalescing](../spec/syntax-and-types.md#optional-types-and-absence-coalescing)
+- **Done when:** `None where ...` follows normal transparent `where` filtering: it selects `none` or resolves to `Empty` according to its Boolean predicate, without introducing a new nominal identity.
 
 ### TYP-BRF-04 — `Boolean where ...`
 

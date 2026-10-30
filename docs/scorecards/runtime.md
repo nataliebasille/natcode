@@ -12,6 +12,14 @@
 - **Done when:** At runtime, `&&` and `||` short-circuit and return only Boolean results, and prefix `!` returns Boolean negation. Non-Boolean operands are rejected by static typing rather than implicitly converted through truthiness. These operations do not return arbitrary operand values.
 - **Notes:** Approved 2026-10-25; type checking is TYP-BOOL-01.
 
+## Absence coalescing
+
+### RUN-OPT-01 — Lazy, once-only coalescing
+
+- **Status:** Approved
+- **Spec:** [evaluation.md — Optional coalescing evaluation](../spec/evaluation.md#optional-coalescing-evaluation)
+- **Done when:** `a ?? b` evaluates `a` once, evaluates `b` only if the result is exactly `none`, and returns the original non-`none` left result otherwise (including designated error values). It does not treat missing record properties as `none`.
+
 ## Laziness
 
 ### RUN-LAZY-01 — Demand-driven top-level bindings
@@ -90,6 +98,19 @@
   1. How are computed keys evaluated and converted to property keys at runtime, and how are properties accessed dynamically?
   2. When a computed key collides with an existing property, what overwrite and evaluation-order semantics apply?
 - **Notes:** Computed `[expression]: value` key syntax is already approved in PAR-OBJ-01; this item does not reopen that decision. The collision-aware type representation remains open in TYP-OBJ-01. Dynamic-key objects may be exported only inside a statically named property.
+
+## Arrays
+
+### RUN-ARR-01 — Array runtime semantics
+
+- **Status:** Open question
+- **Spec:** [syntax-and-types.md — Code blocks and data structures](../spec/syntax-and-types.md#code-blocks-and-data-structures)
+- **Questions:**
+  1. What are the observable mutation/update semantics of arrays: are they immutable persistent values, and what value does an element update produce?
+  2. What are the runtime rules for indexing and slicing, including out-of-bounds access and any negative-index behavior?
+  3. How does Natcode's laziness apply to array elements, including forcing and memoization?
+  4. Which array operations, if any, are intrinsic runtime behavior rather than ordinary library functions, and what behavior must all backends preserve?
+- **Notes:** Array syntax is PAR-ARR-01 and type/inference semantics are TYP-ARR-01. This item does not choose a storage representation or backend implementation strategy.
 
 ## Runtime validation
 

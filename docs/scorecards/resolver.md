@@ -50,6 +50,26 @@
 - **Spec:** [syntax-and-types.md — Nominal types, constructors, and aliases](../spec/syntax-and-types.md#nominal-types-constructors-and-aliases)
 - **Done when:** `type Some = Option.Some` binds the same constructor for construction and pattern matching without introducing another nominal identity.
 
+## Built-in name resolution and implicit type availability
+
+### RES-BLT-01 — Only built-in types are implicitly visible
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Built-in names and explicit qualification](../spec/syntax-and-types.md#built-in-names-and-explicit-qualification)
+- **Done when:** Each module implicitly sees only compiler-defined built-in types; all user-defined types must be locally declared or explicitly imported. Ambient user-defined types and automatic library preludes are unsupported for now.
+
+### RES-BLT-02 — Shadowable built-in names and `@` escape
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — Built-in names and explicit qualification](../spec/syntax-and-types.md#built-in-names-and-explicit-qualification)
+- **Done when:** Unqualified built-in type names resolve under ordinary lexical shadowing, while `@Name` always means that built-in irrespective of shadowing. `@Name` is invalid for arbitrary non-built-in names and is not a module namespace qualifier.
+
+### RES-BLT-03 — Ambiguous type and constructor patterns are errors
+
+- **Status:** Approved
+- **Spec:** [syntax-and-types.md — When expressions](../spec/syntax-and-types.md#when-expressions)
+- **Done when:** An unqualified pattern identifier with more than one valid type/constructor interpretation is a compile error. Built-ins can be selected using `@Name`, and nominal constructors with `Type.Constructor`; candidates incompatible with the subject's type are not counted as ambiguities. The rule applies to both `when` and `where`.
+
 ## Refinement resolution
 
 ### RES-REF-01 — Contextual constructor names inside `where`
@@ -201,7 +221,7 @@
 
 - **Status:** Approved
 - **Spec:** [modules.md — Exported object shapes and optional properties](../spec/modules.md#exported-object-shapes-and-optional-properties)
-- **Done when:** `from "./math" import *` binds every statically possible export name as a local, including conditionally present keys.
+- **Done when:** `from "./math" import *` binds only keys guaranteed in every possible export shape, excluding conditionally present keys.
 
 ### RES-IMP-04 — Combined import removes named keys from the namespace
 
@@ -227,11 +247,11 @@
 - **Spec:** [modules.md — Import names and shadowing](../spec/modules.md#import-names-and-shadowing)
 - **Done when:** Two imports introducing the same local name are an error, even from the same source binding or when unused; distinct aliases are accepted.
 
-### RES-IMP-08 — Imports of never-present keys rejected
+### RES-IMP-08 — Imports of absent or conditionally present keys rejected
 
 - **Status:** Approved
 - **Spec:** [modules.md — Exported object shapes and optional properties](../spec/modules.md#exported-object-shapes-and-optional-properties)
-- **Done when:** A named import of a key absent from every possible export shape is an error.
+- **Done when:** A named import of a key absent from **any** possible exported shape is a compile error; an explicitly present `none` value does not make a key absent.
 - **Notes:** Relies on export shape inference (TYP-EXP-05).
 
 ### RES-IMP-09 — Conflicts within one compound import
