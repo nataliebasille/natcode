@@ -192,6 +192,17 @@
   3. What remaining function-value/call grammar needs to be established?
 - **Notes:** Approved portions: named functions use `fn`; parameters may omit annotations (PAR-FN-04) or use `name: Type` and defaults `name: Type = expression`, with defaults allowed before required parameters. Calls to named functions use `label: expression`, with arbitrary argument order. Separate external labels and internal bindings use `external as internal: Type`, optionally with a default. Lambdas use positional unannotated parameters (`x => x * x`, `(x, y) => x + y`, `() => 42`), with parentheses optional only for a sole untyped parameter. Standalone lambda declarations such as `double = x => x * 2` are invalid, but callbacks and returning lambdas are valid; `fn` functions can be passed as positional callbacks.
 
+### PAR-FN-06 — First-class function type syntax
+
+- **Status:** Open question
+- **Spec:** [syntax-and-types.md — Function parameters and labeled calls](../spec/syntax-and-types.md#function-parameters-and-labeled-calls)
+- **Questions:**
+  1. What type-expression syntax denotes a first-class function type, including zero-, one-, and multi-parameter functions and their result types?
+  2. How are parameter labels and separate external/internal names represented in function types, including positional callback types?
+  3. What precedence and grouping rules let function types compose with postfix optionality, set operators, `where`, and parentheses?
+- **Notes:** Function values must be expressible as types, but no concrete function-type spelling is approved yet. This item owns syntax only; membership, assignability, polymorphism, and any universal callable type are TYP-FN-07. It does not itself introduce a built-in `Function` type.
+
+
 
 ### PAR-FN-05 — Nullable constraints do not omit arguments
 
