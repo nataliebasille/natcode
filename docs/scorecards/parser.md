@@ -106,7 +106,7 @@
 
 - **Status:** Approved
 - **Spec:** [modules.md — Exported kind: object library or function executable](../spec/modules.md#exported-kind-object-library-or-function-executable)
-- **Done when:** `export { PI, square }` and `export {}` parse as export objects.
+- **Done when:** `export { PI, square }`, `export {}`, and `export { answer = 42, computed = calculate() }` parse as export objects. `name = expression` defines a public property directly from an arbitrary expression without requiring a pre-existing local binding; it is distinct from renaming an existing binding with `name as alias` (PAR-EXP-02).
 
 ### PAR-EXP-02 — Export aliases
 
