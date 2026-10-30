@@ -491,6 +491,20 @@
 - **Spec:** [syntax-and-types.md — Function parameters and labeled calls](../spec/syntax-and-types.md#function-parameters-and-labeled-calls)
 - **Done when:** A `T?` function parameter accepts `none` but remains a required argument unless an explicit default is declared, for example `age: Number? = none`.
 
+## Arrays
+
+### TYP-ARR-01 — Array type model and inference
+
+- **Status:** Open question
+- **Spec:** [syntax-and-types.md — Code blocks and data structures](../spec/syntax-and-types.md#code-blocks-and-data-structures)
+- **Questions:**
+  1. What does Natcode mean by an array type, and is it distinct from any future list, tuple, or other sequence abstraction?
+  2. How are array literal types inferred, including empty arrays, heterogeneous elements, exact per-position information, and element-type widening?
+  3. Are fixed-length heterogeneous tuple-like values represented by array types or by a distinct type form?
+  4. What are the assignability and variance rules for array types, and how do arrays participate in union, intersection, difference, complement, optionality, and `where`?
+  5. Does the final array model require a compiler-provided public built-in `Array` type, or can its observable type semantics be expressed without one?
+- **Notes:** Surface syntax is PAR-ARR-01 and runtime behavior is RUN-ARR-01. This item intentionally leaves the built-in inventory question unresolved until the array model is designed.
+
 ## Object types
 
 ### TYP-OBJ-01 — Dynamic object key typing
