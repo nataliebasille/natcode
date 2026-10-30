@@ -15,6 +15,28 @@ fn position_of(src: &str, offset: usize) -> Position {
     }
 }
 
+/// Multi-line source written indented in a test: drops the line after the
+/// opening quote and the blank line before the closing quote, removes the
+/// indentation shared by every non-blank line, and joins lines with `\n`.
+fn dedent(text: &str) -> String {
+    let lines: Vec<&str> = text.lines().skip(1).collect();
+    let lines = match lines.last() {
+        Some(last) if last.trim().is_empty() => &lines[..lines.len() - 1],
+        _ => &lines[..],
+    };
+    let indent = lines
+        .iter()
+        .filter(|line| !line.trim().is_empty())
+        .map(|line| line.len() - line.trim_start().len())
+        .min()
+        .unwrap_or(0);
+    lines
+        .iter()
+        .map(|line| line.get(indent..).unwrap_or(""))
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
 fn parse(src: &str) -> Expr {
     let result = parse_expression(src);
     assert!(
@@ -465,5 +487,180 @@ mod nesting {
     #[test]
     fn block_bodies_are_not_parsed_yet() {
         assert_rejected("x => { x }", DiagnosticKind::Unsupported);
+    }
+}
+
+mod nominal_types {
+    use super::*;
+    use natcode::parser::{Declaration, DeclarationKind, TypeExprKind, parse_declaration};
+
+    fn parse(src: &str) -> Declaration {
+        let result = parse_declaration(src);
+        assert!(
+            result.diagnostics.is_empty(),
+            "unexpected diagnostics for {src:?}: {:?}",
+            result.diagnostics
+        );
+        result.value.expect("a declaration")
+    }
+
+    fn assert_parses(src: &str, expected: &str) {
+        assert_eq!(parse(src).to_string(), expected, "tree for {src:?}");
+    }
+
+    fn assert_rejected(src: &str, kind: DiagnosticKind) {
+        let result = parse_declaration(src);
+        assert!(result.value.is_none(), "{src:?} should be rejected");
+        let kinds: Vec<DiagnosticKind> = result.diagnostics.iter().map(|d| d.kind).collect();
+        assert_eq!(kinds, vec![kind], "diagnostics for {src:?}");
+        let diagnostic = &result.diagnostics[0];
+        assert_eq!(
+            diagnostic.start,
+            position_of(src, diagnostic.span.start),
+            "diagnostic position for {src:?}"
+        );
+    }
+
+    #[test]
+    fn positional_constructor_payloads() {
+        assert_parses(
+            "unique type UserId(Number)",
+            "(unique-type UserId (Number))",
+        );
+        assert_parses(
+            "unique type Point(Number, Number)",
+            "(unique-type Point (Number Number))",
+        );
+        assert_parses(
+            "unique type Sprint(Position, Color)",
+            "(unique-type Sprint (Position Color))",
+        );
+        assert_parses(
+            "unique type Point(number,number)",
+            "(unique-type Point (number number))",
+        );
+        assert_parses("unique type Unit()", "(unique-type Unit ())");
+        assert_parses(
+            "unique /* c */ type Id( /* c */ Number )",
+            "(unique-type Id (Number))",
+        );
+    }
+
+    #[test]
+    fn declaration_and_payload_spans() {
+        let decl = parse("unique type Point(Number, Number)");
+        assert_eq!(decl.span, Span { start: 0, end: 33 });
+        let DeclarationKind::NominalType { name, payload } = &decl.kind;
+        assert_eq!(name.text, "Point");
+        assert_eq!(name.span, Span { start: 12, end: 17 });
+        let spans: Vec<Span> = payload.iter().map(|t| t.span).collect();
+        assert_eq!(
+            spans,
+            vec![Span { start: 18, end: 24 }, Span { start: 26, end: 32 }]
+        );
+        assert!(matches!(&payload[0].kind, TypeExprKind::Name(n) if n == "Number"));
+    }
+
+    #[test]
+    fn malformed_declarations_are_rejected() {
+        for src in [
+            "",
+            "unique",
+            "unique Point(Number)",
+            "unique type",
+            "unique type (Number)",
+            "unique type type(Number)",
+            "unique type _(Number)",
+            "unique type Point Number",
+            "unique type Point(",
+            "unique type Point(Number",
+            "unique type Point(Number Number)",
+            "unique type Point(Number,)",
+            "unique type Point(,)",
+            "unique type Point(,Number)",
+            "unique type Point(Number) Number",
+            "unique type Point(Number)(Number)",
+            "unique type Point(Number)\n",
+            "Point(Number)",
+        ] {
+            assert_rejected(src, DiagnosticKind::UnexpectedToken);
+        }
+    }
+
+    #[test]
+    fn bare_type_constructor_and_unique_alias_are_invalid() {
+        assert_rejected(
+            "type UserId(Number)",
+            DiagnosticKind::InvalidTypeDeclaration,
+        );
+        assert_rejected(
+            "unique type UserId = Number",
+            DiagnosticKind::InvalidTypeDeclaration,
+        );
+    }
+
+    #[test]
+    fn forms_owned_by_other_items_are_not_parsed_yet() {
+        for src in [
+            "unique type Option",
+            "type Identifier = UserId | ProductId",
+            "unique type Range(Number, Number) where (start, end) => start < end",
+            "unique type Port(Number where p => p > 0)",
+            "unique type Pair(Number | String)",
+            "unique type Pair(Number & String)",
+            "unique type Pair(Number \\ String)",
+            "unique type Pair(~Number)",
+            "unique type Wrap(Value(\"one\"))",
+            "unique type Wrap(Option.Some)",
+            "unique type One(1)",
+            "unique type Named(\"x\")",
+            "unique type Flag(true)",
+            "unique type Rec({ x: Number })",
+            "unique type Grouped((Number))",
+        ] {
+            assert_rejected(src, DiagnosticKind::Unsupported);
+        }
+    }
+
+    #[test]
+    fn multiline_forms_are_not_parsed_yet() {
+        let constructor_list = dedent(
+            "
+            unique type Option
+                Some(Any)
+                None
+            ",
+        );
+        let payload_per_line = dedent(
+            "
+            unique type Point(
+                Number,
+                Number
+            )
+            ",
+        );
+        let continued_payload = dedent(
+            "
+            unique type Point(Number,
+                Number)
+            ",
+        );
+        for src in [constructor_list, payload_per_line, continued_payload] {
+            assert_rejected(&src, DiagnosticKind::Unsupported);
+        }
+    }
+
+    #[test]
+    fn dedent_strips_the_common_indentation() {
+        assert_eq!(
+            dedent(
+                "
+                a(
+                    b
+                )
+                ",
+            ),
+            "a(\n    b\n)"
+        );
     }
 }

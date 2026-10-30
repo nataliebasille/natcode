@@ -13,6 +13,12 @@
 //! inside a block comment ends a line like any other (LEX-COM-04). The parser
 //! stops at the first syntax error; error recovery is PAR-ERR-01.
 //!
+//! Also parses one nominal type declaration with a positional constructor,
+//! `unique type Name(T1, ..., Tn)` (PAR-TYPE-04), whose payloads are type
+//! names. Constructor lists (PAR-TYPE-06), transparent `type` declarations
+//! (PAR-TYPE-05), `where` restrictions (PAR-REF-05), and other type
+//! expressions are not parsed yet.
+//!
 //! Parsing, printing, and dropping trees use explicit stacks rather than
 //! recursion, so deeply nested input cannot overflow the call stack.
 
@@ -179,6 +185,52 @@ pub enum ExprKind {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Declaration {
+    pub kind: DeclarationKind,
+    pub span: Span,
+}
+
+/// Writes the declaration as an S-expression, such as
+/// `(unique-type Point (Number Number))`.
+impl fmt::Display for Declaration {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &self.kind {
+            DeclarationKind::NominalType { name, payload } => {
+                write!(f, "(unique-type {} (", name.text)?;
+                for (index, ty) in payload.iter().enumerate() {
+                    if index > 0 {
+                        f.write_str(" ")?;
+                    }
+                    match &ty.kind {
+                        TypeExprKind::Name(text) => f.write_str(text)?,
+                    }
+                }
+                f.write_str("))")
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DeclarationKind {
+    /// `unique type Name(T1, ..., Tn)` with `n >= 0`: a fresh nominal type
+    /// whose one constructor, also called `Name`, takes positional payloads.
+    NominalType { name: Name, payload: Vec<TypeExpr> },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TypeExpr {
+    pub kind: TypeExprKind,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TypeExprKind {
+    /// A type referenced by name, such as `Number` or `Position`.
+    Name(String),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Name {
     pub text: String,
     pub span: Span,
@@ -245,6 +297,8 @@ pub enum DiagnosticKind {
     ChainedComparison,
     /// The left side of `=>` is not a lambda parameter list.
     InvalidLambdaParameters,
+    /// `type Name(...)` or `unique type Name = expression` (PAR-TYPE-03).
+    InvalidTypeDeclaration,
     /// Syntax owned by a scorecard item that is not implemented yet.
     Unsupported,
 }
@@ -266,6 +320,19 @@ pub struct ParseResult<T> {
 
 /// Parses `source` as one complete value expression.
 pub fn parse_expression(source: &str) -> ParseResult<Expr> {
+    run(source, |parser| parser.parse())
+}
+
+/// Parses `source` as one complete declaration. So far this is only a
+/// nominal type with a positional constructor (PAR-TYPE-04).
+pub fn parse_declaration(source: &str) -> ParseResult<Declaration> {
+    run(source, |parser| parser.declaration())
+}
+
+fn run<T>(
+    source: &str,
+    parse: impl for<'a> FnOnce(&mut Parser<'a>) -> Parsed<T>,
+) -> ParseResult<T> {
     let lexed = tokenize(source);
     let mut diagnostics: Vec<Diagnostic> = lexed
         .diagnostics
@@ -285,7 +352,7 @@ pub fn parse_expression(source: &str) -> ParseResult<Expr> {
         pos: 0,
         diagnostics: Vec::new(),
     };
-    let value = parser.parse().ok();
+    let value = parse(&mut parser).ok();
     let lexical_error = !diagnostics.is_empty();
     diagnostics.append(&mut parser.diagnostics);
     ParseResult {
@@ -867,6 +934,146 @@ impl Parser<'_> {
             text: token.text.clone(),
             span: token.span,
         }
+    }
+
+    fn unsupported<T>(&mut self, message: &str) -> Parsed<T> {
+        let span = self.peek().span;
+        self.error(DiagnosticKind::Unsupported, message.to_string(), span)
+    }
+
+    /// Parses one complete declaration followed by end of input.
+    fn declaration(&mut self) -> Parsed<Declaration> {
+        let start = self.peek().span.start;
+        match self.peek().kind {
+            TokenKind::Unique => {
+                self.advance();
+                if !self.at(TokenKind::Type) {
+                    return self.unexpected("`type` after `unique`");
+                }
+                self.advance();
+            }
+            TokenKind::Type => return self.transparent_type(start),
+            _ => return self.unexpected("a declaration"),
+        }
+        if !self.at(TokenKind::Identifier) {
+            return self.unexpected("a type name");
+        }
+        let name = self.name();
+        match self.peek().kind {
+            TokenKind::LParen => {}
+            TokenKind::Assign => {
+                let end = self.peek().span.end;
+                return self.error(
+                    DiagnosticKind::InvalidTypeDeclaration,
+                    "`unique type Name = expression` is invalid; use `type Name = expression` for a transparent name (PAR-TYPE-03)".to_string(),
+                    Span { start, end },
+                );
+            }
+            TokenKind::Newline | TokenKind::Eof => {
+                return self.unsupported(
+                    "constructor lists after `unique type Name` are not supported yet (PAR-TYPE-06)",
+                );
+            }
+            _ => return self.unexpected("`(` after the type name"),
+        }
+        let (payload, end) = self.payload_types()?;
+        match self.peek().kind {
+            TokenKind::Eof => {}
+            TokenKind::Where => {
+                return self.unsupported(
+                    "`where` restrictions on a constructor are not supported yet (PAR-REF-05)",
+                );
+            }
+            _ => return self.unexpected("end of declaration"),
+        }
+        Ok(Declaration {
+            kind: DeclarationKind::NominalType { name, payload },
+            span: Span { start, end },
+        })
+    }
+
+    /// `type Name ...`, whose `type` keyword starts at `start`.
+    fn transparent_type(&mut self, start: usize) -> Parsed<Declaration> {
+        self.advance();
+        if !self.at(TokenKind::Identifier) {
+            return self.unexpected("a type name");
+        }
+        self.advance();
+        match self.peek().kind {
+            TokenKind::LParen => {
+                let end = self.peek().span.end;
+                self.error(
+                    DiagnosticKind::InvalidTypeDeclaration,
+                    "`type Name(...)` is invalid; declare a nominal constructor with `unique type Name(...)` (PAR-TYPE-03)".to_string(),
+                    Span { start, end },
+                )
+            }
+            TokenKind::Assign => self
+                .unsupported("transparent `type Name = expression` declarations are not supported yet (PAR-TYPE-05)"),
+            _ => self.unexpected("`=` after the type name"),
+        }
+    }
+
+    /// `()` or `(T1, ..., Tn)`, returning the payload types and the end of `)`.
+    fn payload_types(&mut self) -> Parsed<(Vec<TypeExpr>, usize)> {
+        self.advance();
+        let mut payload = Vec::new();
+        if self.at(TokenKind::RParen) {
+            return Ok((payload, self.advance().span.end));
+        }
+        loop {
+            payload.push(self.payload_type()?);
+            match self.peek().kind {
+                TokenKind::Comma => {
+                    self.advance();
+                }
+                TokenKind::RParen => return Ok((payload, self.advance().span.end)),
+                TokenKind::Newline => return self.multiline_payload(),
+                TokenKind::Where => {
+                    return self.unsupported(
+                        "`where` restrictions on a payload type are not supported yet (PAR-REF-05)",
+                    );
+                }
+                TokenKind::MemberAccess
+                | TokenKind::LParen
+                | TokenKind::Union
+                | TokenKind::Intersection
+                | TokenKind::SetDifference => return self.unsupported_type_expression(),
+                kind if binary_op(kind).is_some() => return self.unsupported_type_expression(),
+                _ => return self.unexpected("`,` or `)` in the payload list"),
+            }
+        }
+    }
+
+    fn payload_type(&mut self) -> Parsed<TypeExpr> {
+        match self.peek().kind {
+            TokenKind::Identifier => {
+                let name = self.name();
+                Ok(TypeExpr {
+                    kind: TypeExprKind::Name(name.text),
+                    span: name.span,
+                })
+            }
+            TokenKind::Number
+            | TokenKind::String
+            | TokenKind::True
+            | TokenKind::False
+            | TokenKind::LParen
+            | TokenKind::LBrace
+            | TokenKind::Minus
+            | TokenKind::Not
+            | TokenKind::SetComplement => self.unsupported_type_expression(),
+            TokenKind::Newline => self.multiline_payload(),
+            _ => self.unexpected("a payload type"),
+        }
+    }
+
+    fn unsupported_type_expression<T>(&mut self) -> Parsed<T> {
+        self.unsupported("payload types other than a type name are not supported yet (PAR-TYPE-01, PAR-TYPE-07 to PAR-TYPE-14)")
+    }
+
+    fn multiline_payload<T>(&mut self) -> Parsed<T> {
+        self.unsupported("payload lists spanning lines are not supported yet (PAR-BLK-02)")
     }
 }
 
